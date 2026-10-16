@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Runners · Bureau</title>
+<!-- Page bureau de l'appli Runners, v4 : liens des runners, demandes à n'importe quelle date, rappels des runners, passages du jour ; v4 : actualisation automatique, un passage peut clore plusieurs demandes -->
+<link rel="icon" type="image/png" href="icon-192.png">
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<style>
+:root{
+  --bg:#F3F4F1; --surface:#FFFFFF; --surface-2:#F6F7F4; --line:#DCE0DA; --line-strong:#C9CFC8;
+  --fg:#17201B; --muted:#5B655F; --head:#17201B; --head-fg:#FFFFFF; --head-muted:#C9D2CC; --head-accent:#B9D7C8;
+  --accent:#1F5D45; --accent-fg:#FFFFFF; --accent-soft:#E3EEE8;
+  --info:#23477A; --info-soft:#E4EAF4; --warn:#8A3109; --warn-soft:#FBEADF;
+  --sans:'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono:'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#111613; --surface:#1A211D; --surface-2:#222A25; --line:#2E3832; --line-strong:#3F4B44;
+  --fg:#E8ECE9; --muted:#9AA69F; --head:#0B0F0D; --head-muted:#A9B5AE; --head-accent:#8FC4AA;
+  --accent:#4FA383; --accent-fg:#0B0F0D; --accent-soft:#1E3329;
+  --info:#9DB8E3; --info-soft:#1D2A3D; --warn:#F0A97C; --warn-soft:#3A2418; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111613; --surface:#1A211D; --surface-2:#222A25; --line:#2E3832; --line-strong:#3F4B44;
+  --fg:#E8ECE9; --muted:#9AA69F; --head:#0B0F0D; --head-muted:#A9B5AE; --head-accent:#8FC4AA;
+  --accent:#4FA383; --accent-fg:#0B0F0D; --accent-soft:#1E3329;
+  --info:#9DB8E3; --info-soft:#1D2A3D; --warn:#F0A97C; --warn-soft:#3A2418; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:15px;-webkit-font-smoothing:antialiased;font-feature-settings:"tnum" 1}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+[hidden]{display:none!important}
+.wrap{max-width:980px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{background:var(--head);color:var(--head-fg);padding:18px 0 0}
+.brand{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px}
+.brand b{font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--head-accent)}
+.brand span{color:var(--head-muted)}
+h1{margin:4px 0 2px;font-size:22px;font-weight:700;letter-spacing:-.01em}
+.sub{font-size:13px;color:var(--head-muted)}
+nav{display:flex;gap:4px;margin-top:14px;overflow-x:auto;scrollbar-width:none}
+nav button{flex:none;min-height:44px;padding:0 16px;border:none;border-radius:10px 10px 0 0;background:transparent;color:var(--head-muted);font-weight:600;font-size:14px}
+nav button.on{background:var(--bg);color:var(--fg)}
+nav .cnt{display:inline-block;min-width:20px;margin-left:6px;padding:0 6px;border-radius:999px;background:rgba(255,255,255,.14);font-size:12px}
+nav button.on .cnt{background:var(--accent);color:var(--accent-fg)}
+main{padding-top:20px;padding-bottom:48px;display:flex;flex-direction:column;gap:16px}
+.grid{display:grid;grid-template-columns:minmax(0,1fr);gap:16px}
+@media (min-width:820px){.grid.two{grid-template-columns:minmax(0,5fr) minmax(0,6fr)}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:0 1px 2px rgba(16,24,20,.05);overflow:hidden}
+.card-h{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--line)}
+.card-h h2{margin:0;font-size:16px;font-weight:700}
+.card-b{padding:16px;display:flex;flex-direction:column;gap:12px}
+.mlabel{font-size:10.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:13px;font-weight:600}
+.two-f{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+input,select,textarea{width:100%;min-height:44px;padding:10px 12px;border-radius:10px;border:1px solid var(--line-strong);background:var(--surface)}
+textarea{min-height:72px;resize:vertical}
+input.plate{font-family:var(--mono);text-transform:uppercase;font-size:17px;letter-spacing:.03em}
+.hint{font-size:13px;color:var(--muted);min-height:18px}
+.hint.ok{color:var(--accent)}
+.quick{display:flex;flex-wrap:wrap;gap:6px}
+.quick button{min-height:36px;padding:0 12px;border-radius:999px;border:1px solid var(--line-strong);background:var(--surface);font-size:13px;font-weight:600}
+.pill.mine{background:var(--surface-2);color:var(--fg);box-shadow:inset 0 0 0 1px var(--line-strong)}
+.pill.late{background:var(--warn-soft);color:var(--warn)}
+.btn{min-height:44px;padding:10px 16px;border-radius:10px;border:1px solid var(--line-strong);background:var(--surface);font-size:14px;font-weight:600;white-space:nowrap}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.btn.danger{border-color:var(--warn);color:var(--warn)}
+.btn.small{min-height:36px;padding:6px 12px;font-size:13px}
+.btn:disabled{opacity:.5;cursor:default}
+.checks{display:flex;flex-wrap:wrap;gap:6px}
+.checks label{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 12px;border-radius:999px;border:1px solid var(--line-strong);font-size:13.5px;font-weight:600;cursor:pointer}
+.checks input{width:auto;min-height:0;accent-color:var(--accent)}
+.li{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:12px 16px}
+.li+.li{border-top:1px solid var(--line)}
+.li-b{min-width:0;display:flex;flex-direction:column;gap:3px}
+.plate-t{font-family:var(--mono);font-weight:600;font-size:15px;letter-spacing:.03em}
+.meta{font-size:13px;color:var(--muted)}
+.pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+.pill.ok{background:var(--accent-soft);color:var(--accent)}
+.pill.ko{background:var(--warn-soft);color:var(--warn)}
+.pill.wait{background:var(--info-soft);color:var(--info)}
+.li.ko{background:var(--warn-soft)}
+.li.ko .meta{color:var(--fg)}
+.empty{padding:24px 16px;text-align:center;color:var(--muted);font-size:14px}
+.runners{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
+.rc{display:flex;flex-direction:column;gap:10px;padding:16px}
+.rc-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.rc-h b{font-size:18px}
+.qr{align-self:center;width:180px;height:180px;padding:8px;border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:center}
+.qr svg{width:100%;height:100%}
+.link{font-family:var(--mono);font-size:12px;word-break:break-all;padding:8px 10px;border-radius:8px;background:var(--surface-2);border:1px solid var(--line)}
+.acts{display:flex;gap:8px;flex-wrap:wrap}
+.gate{max-width:420px;margin:40px auto;display:flex;flex-direction:column;gap:12px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;max-width:min(440px,calc(100% - 32px));padding:10px 14px;border-radius:10px;background:var(--head);color:var(--head-fg);font-size:14px;z-index:5}
+a{color:var(--accent);font-weight:600}
+@media print{header nav,.acts,.no-print,.toast{display:none!important}.runners{grid-template-columns:1fr 1fr}.rc{break-inside:avoid}}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="brand"><b>City Drop · Runners</b><span id="mode"></span></div>
+    <h1>Service parc</h1>
+    <div class="sub" id="sub"></div>
+    <nav id="tabs" aria-label="Sections"></nav>
+  </div>
+</header>
+<main class="wrap" id="view"></main>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script src="config.js"></script>
+<script>
+(function(){
+'use strict';
+const API=String((window.CONFIG&&window.CONFIG.api)||'').trim();
+const DEMO=!API;
+const POINTS=['La Def','Saint-Cloud','Aulnay','Paris-Centre','Coignières'];
+const APP_URL=location.origin+location.pathname.replace(/[^/]*$/,'');
+
+/* ---------- Outils ---------- */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const norm=s=>String(s||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+function iso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function dayOffset(n){const d=new Date();d.setDate(d.getDate()+n);return iso(d)}
+const TODAY=dayOffset(0),TOMORROW=dayOffset(1);
+const DOW=['dim.','lun.','mar.','mer.','jeu.','ven.','sam.'];const MON=['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+function dLabel(d){const [y,m,j]=d.split('-').map(Number);return DOW[new Date(y,m-1,j).getDay()]+' '+j+' '+MON[m-1]}
+function dayName(d){return d===TODAY?"Aujourd'hui":d===TOMORROW?'Demain':dLabel(d)}
+function toast(m){const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>{t.hidden=true},3000)}
+function linkFor(code){return APP_URL+'?c='+encodeURIComponent(code)}
+function qrSvg(text){
+  if(typeof window.qrcode!=='function')return '';
+  try{const q=window.qrcode(0,'M');q.addData(text);q.make();return q.createSvgTag({cellSize:4,margin:0,scalable:true})}catch(e){return ''}
+}
+
+/* ---------- Code bureau ---------- */
+let CODE='';
+try{CODE=new URLSearchParams(location.search).get('b')||'';if(CODE)localStorage.setItem('runners-bureau',CODE);else CODE=localStorage.getItem('runners-bureau')||''}catch(e){}
+
+/* ---------- Données ---------- */
+let D=null,err='',tab='demandes',confirmCode='',loading=false;
+function demo(){
+  const pl=['AA-101-CD','AA-102-CD','AA-103-CD','AA-104-CD','AA-105-CD','AA-106-CD','AA-107-CD','AA-108-CD','AA-109-CD','AA-110-CD','AA-111-CD','AA-112-CD','AA-113-CD','AA-114-CD','AA-115-CD','AA-116-CD'];
+  const md=['Opel Movano 2023','Iveco Daily 2025','Iveco Daily 2024','Opel Movano 2024','Opel Movano 2023','MAN TGE 2024','Opel Movano 2025','Iveco Daily 2025','Opel Movano 2024','MAN TGE 2023','Opel Movano 2025','Iveco Daily 2024','MAN TGE 2025','Iveco Daily 2023','Opel Movano 2024','MAN TGE 2024'];
+  return {
+    runners:[['Anis','La Def'],['Philippe','Saint-Cloud'],['Kamel','La Def'],['Tarek','Aulnay'],['Fahem','Paris-Centre']].map(r=>({prenom:r[0],code:r[0].toLowerCase()+'-demo2k7q9m',points:r[1],actif:'oui'})),
+    demandes:[{id:'D-demo1',date:TODAY,runner:'Tous',plaque:'AA-110-CD',point:'La Def',consigne:'Rentré hors planning : faire le tour du véhicule et une photo du compteur.',statut:'à faire',auteur:'Service parc'},
+      {id:'R-demo2',date:dayOffset(3),runner:'Anis',plaque:'AA-115-CD',point:'La Def',consigne:'Revoir le rétroviseur gauche',statut:'à faire',auteur:'Anis'}],
+    passages:[
+      {horodatage:TODAY+'T07:50:00',runner:'Anis',plaque:'AA-102-CD',point:'La Def',resultat:'OK',problemes:'',commentaire:'',photo:''},
+      {horodatage:TODAY+'T09:12:00',runner:'Tarek',plaque:'AA-104-CD',point:'Aulnay',resultat:'Problème',problemes:'Rétroviseur endommagé',commentaire:'côté droit, coque fendue',photo:'#'},
+      {horodatage:TODAY+'T10:05:00',runner:'Kamel',plaque:'AA-113-CD',point:'La Def',resultat:'OK',problemes:'',commentaire:'',photo:''}
+    ],
+    planning:{entetes:['plaque','modele'],lignes:pl.map((p,i)=>[p,md[i]])},
+    misAJour:new Date(Date.now()-2*3600e3).toISOString()
+  };
+}
+function call(params,body){
+  const ctl=new AbortController();const t=setTimeout(()=>ctl.abort(),20000);
+  const url=params?API+'?'+new URLSearchParams(params):API;
+  return fetch(url,body?{method:'POST',body:JSON.stringify(body),signal:ctl.signal}:{signal:ctl.signal,cache:'no-store'})
+    .then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}).finally(()=>clearTimeout(t));
+}
+async function act(action,fields){
+  if(DEMO){demoAct(action,fields);render();return {ok:true}}
+  try{const r=await call(null,Object.assign({bureau:CODE,action},fields));if(r.erreur){toast(r.erreur);return r}await load();return r}
+  catch(e){toast('Pas de réseau. Réessayez.');return {erreur:'réseau'}}
+}
+function demoAct(action,f){
+  if(action==='demande')D.demandes.push(Object.assign({id:'D-'+Date.now().toString(36),statut:'à faire'},f));
+  if(action==='demande_suppr')D.demandes=D.demandes.filter(d=>d.id!==f.id);
+  if(action==='runner_ajout')D.runners.push({prenom:f.prenom,code:f.prenom.toLowerCase()+'-demo'+Math.random().toString(36).slice(2,8),points:f.points,actif:'oui'});
+  if(action==='runner_code'){const r=D.runners.find(x=>x.prenom===f.prenom);if(r)r.code=r.prenom.toLowerCase()+'-demo'+Math.random().toString(36).slice(2,8)}
+}
+async function load(){
+  if(DEMO){D=D||demo();render();return}
+  if(!CODE){render();return}
+  loading=true;render();
+  try{const r=await call({bureau:CODE,action:'donnees'});if(r.erreur){err=r.erreur;D=null}else{err='';D=r}}
+  catch(e){err=D?'':'Pas de réseau. Réessayez.';if(D)toast('Pas de réseau : données non actualisées.')}
+  loading=false;render();
+}
+function fleet(){
+  const m=new Map();if(!D||!D.planning)return m;
+  const h=(D.planning.entetes||[]).map(x=>String(x).trim().toLowerCase());
+  const ip=h.findIndex(x=>['plaque','immat','immatriculation'].includes(x));
+  const im=h.findIndex(x=>['modele','modèle','marque_modele','marque modèle','marque_modele_annee','vehicule','véhicule'].includes(x));
+  if(ip<0)return m;
+  (D.planning.lignes||[]).forEach(r=>{const p=String(r[ip]||'').trim().toUpperCase();if(p&&!m.has(p))m.set(p,im>=0?String(r[im]||''):'')});
+  return m;
+}
+
+/* ---------- Écrans ---------- */
+function vDemandes(){
+  const runners=D.runners.filter(r=>String(r.actif).toLowerCase()!=='non');
+  const list=D.demandes.filter(d=>d.statut!=='supprimée').sort((a,b)=>(a.date+a.id).localeCompare(b.date+b.id));
+  const plates=[...fleet().keys()];
+  return `<div class="grid two">
+  <section class="card" aria-labelledby="h-new">
+    <div class="card-h"><h2 id="h-new">Ajouter un véhicule à voir</h2></div>
+    <form class="card-b" id="fDemande" autocomplete="off">
+      <div class="field"><label for="dPlate">Plaque</label><input id="dPlate" class="plate" list="fleet" placeholder="AA-123-CD" required><datalist id="fleet">${plates.map(p=>`<option value="${esc(p)}">`).join('')}</datalist><div class="hint" id="dHint"></div></div>
+      <div class="two-f">
+        <div class="field"><label for="dRunner">Runner</label><select id="dRunner"><option value="Tous">Tous</option>${runners.map(r=>`<option>${esc(r.prenom)}</option>`).join('')}</select></div>
+        <div class="field"><label for="dDate">Jour</label><input type="date" id="dDate" min="${TODAY}" max="${dayOffset(90)}" value="${TODAY}" required></div>
+      </div>
+      <div class="quick" role="group" aria-label="Raccourcis de date">${[["Aujourd'hui",0],['Demain',1],['Dans 1 semaine',7],['Dans 2 semaines',14]].map(([t,n])=>`<button type="button" data-quick="${dayOffset(n)}">${t}</button>`).join('')}</div>
+      <div class="field"><label for="dPoint">Point</label><select id="dPoint"><option value="">Non précisé</option>${POINTS.map(p=>`<option>${esc(p)}</option>`).join('')}</select></div>
+      <div class="field"><label for="dText">Consigne pour le runner</label><textarea id="dText" placeholder="Exemple : faire le tour du véhicule et une photo du compteur." maxlength="200"></textarea></div>
+      <button type="submit" class="btn primary">Ajouter</button>
+      <div class="meta">Le jour venu, le véhicule apparaît en haut de l'appli du runner, avec le bandeau « Demandé par le service parc ».</div>
+    </form>
+  </section>
+  <section class="card" aria-labelledby="h-list">
+    <div class="card-h"><h2 id="h-list">Demandes et rappels à venir</h2><span class="meta">${list.length}</span></div>
+    ${list.length?list.map(d=>`<div class="li"><div class="li-b"><div><span class="plate-t">${esc(d.plaque)}</span> <span class="pill ${d.statut==='faite'?'ok':d.date<TODAY?'late':'wait'}">${d.statut==='faite'?'Faite':d.date<TODAY?'En retard':'À faire'}</span>${d.auteur&&d.auteur!=='Service parc'?` <span class="pill mine">Rappel de ${esc(d.auteur)}</span>`:''}</div>
+      <div class="meta">${esc(dayName(d.date))} · ${esc(d.runner==='Tous'?'Tous les runners':d.runner)}${d.point?' · '+esc(d.point):''}</div>${d.consigne?`<div>${esc(d.consigne)}</div>`:''}</div>
+      ${d.statut==='faite'?'':`<button type="button" class="btn small danger" data-del="${esc(d.id)}">Retirer</button>`}</div>`).join('')
+    :'<div class="empty">Aucune demande ni rappel à venir.</div>'}
+  </section></div>`;
+}
+function vPassages(){
+  const list=D.passages.slice().sort((a,b)=>String(b.horodatage).localeCompare(String(a.horodatage)));
+  const pb=list.filter(x=>x.resultat==='Problème');
+  const row=x=>`<div class="li ${x.resultat==='Problème'?'ko':''}"><div class="li-b">
+    <div><span class="plate-t">${esc(x.plaque)}</span> <span class="pill ${x.resultat==='Problème'?'ko':'ok'}">${x.resultat==='Problème'?'Problème':'OK'}</span></div>
+    <div class="meta">${esc(String(x.horodatage).slice(11,16).replace(':','h'))} · ${esc(x.runner)} · ${esc(x.point||'Hors liste')}</div>
+    ${x.problemes?`<div><b>${esc(x.problemes)}</b>${x.commentaire?' · '+esc(x.commentaire):''}</div>`:x.commentaire?`<div>${esc(x.commentaire)}</div>`:''}
+    ${x.photo&&/^https:\/\//.test(x.photo)?`<div>${String(x.photo).split(' ').filter(Boolean).map((l,i)=>`<a href="${esc(l)}" target="_blank" rel="noopener">Photo ${i+1}</a>`).join(' · ')}</div>`:x.photo?'<div class="meta">Photo jointe (démonstration)</div>':''}
+  </div></div>`;
+  return `<div class="grid two">
+  <section class="card"><div class="card-h"><h2>Problèmes signalés</h2><span class="meta">${pb.length}</span></div>${pb.length?pb.map(row).join(''):'<div class="empty">Aucun problème signalé aujourd\'hui.</div>'}</section>
+  <section class="card"><div class="card-h"><h2>Tous les passages du jour</h2><span class="meta">${list.length}</span></div>${list.length?list.map(row).join(''):'<div class="empty">Aucun passage pour l\'instant.</div>'}</section>
+  </div>`;
+}
+function vRunners(){
+  const qrOk=typeof window.qrcode==='function';
+  return `<section class="card no-print"><div class="card-h"><h2>Ajouter un runner</h2></div>
+    <form class="card-b" id="fRunner" autocomplete="off">
+      <div class="field"><label for="rName">Prénom</label><input id="rName" required maxlength="30"></div>
+      <div class="field"><span class="mlabel">Ses points</span><div class="checks">${POINTS.map(p=>`<label><input type="checkbox" name="rPt" value="${esc(p)}">${esc(p)}</label>`).join('')}</div></div>
+      <div><button type="submit" class="btn primary">Créer son lien</button></div>
+    </form></section>
+  <div class="runners">${D.runners.filter(r=>String(r.actif).toLowerCase()!=='non').map(r=>{const url=linkFor(r.code);return `
+    <section class="card rc">
+      <div class="rc-h"><b>${esc(r.prenom)}</b><span class="meta">${esc(r.points||'Aucun point')}</span></div>
+      ${qrOk?`<div class="qr" role="img" aria-label="QR code du lien de ${esc(r.prenom)}">${qrSvg(url)}</div>`:''}
+      <div class="link">${esc(url)}</div>
+      <div class="acts">
+        <button type="button" class="btn small" data-copy="${esc(url)}">Copier le lien</button>
+        ${confirmCode===r.prenom?`<button type="button" class="btn small danger" data-newcode="${esc(r.prenom)}">Confirmer : l'ancien lien ne marchera plus</button><button type="button" class="btn small" data-cancel="1">Annuler</button>`
+        :`<button type="button" class="btn small" data-ask="${esc(r.prenom)}">Nouveau lien</button>`}
+      </div>
+    </section>`}).join('')}</div>
+  <div class="meta no-print">Pour installer l'appli : sur le téléphone du runner, scanner son QR code avec l'appareil photo, puis « Ajouter à l'écran d'accueil ». « Nouveau lien » sert si un téléphone est perdu : l'ancien lien est aussitôt désactivé. Pour retirer un runner, mettre « non » dans la colonne « actif » de l'onglet Runners du Google Sheet.</div>
+  <div class="no-print"><button type="button" class="btn" id="print">Imprimer les QR codes</button></div>`;
+}
+function gate(){
+  return `<form class="card gate" id="fCode"><div class="card-b">
+    <h2 style="margin:0;font-size:18px">Code du service parc</h2>
+    <div class="meta">${err?esc(err):'Collez le code bureau (onglet Réglages du Google Sheet). Il reste enregistré sur cet ordinateur.'}</div>
+    <input id="bCode" required autocomplete="off" spellcheck="false">
+    <button type="submit" class="btn primary">Ouvrir</button></div></form>`;
+}
+function render(){
+  $('#mode').textContent=DEMO?'Démonstration · données fictives':D&&D.misAJour?(()=>{const d=new Date(D.misAJour);return isNaN(d)?'':'Planning du '+d.getDate()+' '+MON[d.getMonth()]+' à '+String(d.getHours()).padStart(2,'0')+'h'+String(d.getMinutes()).padStart(2,'0')})():'';
+  $('#sub').textContent=dLabel(TODAY).replace(/^./,c=>c.toUpperCase());
+  if(!D){$('#tabs').innerHTML='';$('#view').innerHTML=loading?'<div class="empty">Chargement…</div>':gate();return}
+  const nb={demandes:D.demandes.filter(d=>d.statut==='à faire').length,passages:D.passages.length,runners:D.runners.filter(r=>String(r.actif).toLowerCase()!=='non').length};
+  $('#tabs').innerHTML=[['demandes','Dernière minute'],['passages','Passages du jour'],['runners','Runners et liens']].map(([k,t])=>`<button type="button" class="${k===tab?'on':''}" data-tab="${k}" aria-current="${k===tab?'page':'false'}">${t}<span class="cnt">${nb[k]}</span></button>`).join('')+(DEMO?'':'<button type="button" id="reload">Actualiser</button>');
+  const keep=tab==='demandes'?['dPlate','dRunner','dDate','dPoint','dText'].map(id=>[id,$('#'+id)&&$('#'+id).value]):[];
+  $('#view').innerHTML=tab==='passages'?vPassages():tab==='runners'?vRunners():vDemandes();
+  keep.forEach(([id,v])=>{if(v!=null&&$('#'+id))$('#'+id).value=v});
+  if(tab==='demandes')plateHint();
+}
+function plateHint(){const i=$('#dPlate');if(!i)return;const p=i.value.trim().toUpperCase();const f=fleet();const h=$('#dHint');
+  if(norm(p).length<7){h.textContent='';h.className='hint';return}
+  const hit=[...f.keys()].find(k=>norm(k)===norm(p));
+  h.textContent=hit?(f.get(hit)||'Véhicule de la flotte'):'Pas dans l\'export : la demande sera créée quand même.';h.className='hint'+(hit?' ok':'')}
+
+/* ---------- Événements ---------- */
+document.addEventListener('click',async e=>{
+  const b=e.target.closest('button');if(!b)return;const d=b.dataset;
+  if(d.tab){tab=d.tab;confirmCode='';render();return}
+  if(d.quick){$('#dDate').value=d.quick;return}
+  if(b.id==='reload'){load();return}
+  if(b.id==='print'){window.print();return}
+  if(d.del){b.disabled=true;await act('demande_suppr',{id:d.del});toast('Demande retirée.');return}
+  if(d.copy){try{await navigator.clipboard.writeText(d.copy);toast('Lien copié.')}catch(err){toast('Copie impossible : sélectionnez le lien à la main.')}return}
+  if(d.ask){confirmCode=d.ask;render();return}
+  if(d.cancel){confirmCode='';render();return}
+  if(d.newcode){b.disabled=true;const r=await act('runner_code',{prenom:d.newcode});confirmCode='';render();if(!r.erreur)toast('Nouveau lien créé pour '+d.newcode+'. Réinstallez l\'appli sur son téléphone.');return}
+});
+document.addEventListener('input',e=>{if(e.target.id==='dPlate')plateHint()});
+document.addEventListener('submit',async e=>{
+  e.preventDefault();const f=e.target;
+  if(f.id==='fCode'){CODE=$('#bCode').value.trim();try{localStorage.setItem('runners-bureau',CODE)}catch(x){}err='';load();return}
+  if(f.id==='fDemande'){
+    const plaque=$('#dPlate').value.trim().toUpperCase();if(norm(plaque).length<5){toast('Plaque incomplète.');return}
+    const date=$('#dDate').value;if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||date<TODAY){toast('Choisissez un jour à partir d\'aujourd\'hui.');return}
+    const btn=f.querySelector('[type=submit]');btn.disabled=true;
+    const r=await act('demande',{plaque,runner:$('#dRunner').value,date,point:$('#dPoint').value,consigne:$('#dText').value.trim(),auteur:'Service parc'});
+    btn.disabled=false;
+    if(!r.erreur){['dPlate','dText'].forEach(id=>{if($('#'+id))$('#'+id).value=''});plateHint();toast(plaque+' ajouté pour '+dayName(date).toLowerCase().replace(/\.$/,'')+'. Le runner le verra ce jour-là.')}
+    return}
+  if(f.id==='fRunner'){
+    const prenom=$('#rName').value.trim();if(!prenom)return;
+    const points=[...document.querySelectorAll('input[name=rPt]:checked')].map(x=>x.value).join(', ');
+    const r=await act('runner_ajout',{prenom,points});if(!r.erreur)toast('Lien créé pour '+prenom+'.');return}
+});
+/* Actualisation toute seule toutes les 3 minutes (sauf pendant la saisie d'une demande) */
+setInterval(()=>{if(!DEMO&&CODE&&D&&document.visibilityState==='visible'&&tab!=='demandes')load()},180000);
+document.addEventListener('visibilitychange',()=>{if(!DEMO&&CODE&&D&&document.visibilityState==='visible'&&tab!=='demandes')load()});
+load();
+})();
+</script>
+</body>
+</html>

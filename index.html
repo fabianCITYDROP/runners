@@ -1,0 +1,964 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Runners</title>
+<!-- Appli Runners City Drop, v22 : version reliée au Google Sheet (voir config.js) ; gros caractères, 3 photos, aujourd'hui au milieu, recherche en haut, page des rappels ; v22 : corrections après test complet ; v23 : planning compact (grosses flottes), dates avec le mois, longs textes coupés sur les cartes ; v24 : rapide sur téléphone lent avec une grosse flotte (planning préparé par Google et rangé à part, écran redessiné seulement s'il change) ; v25 : message de fin de tournée simplifié (date en entier, plaques les unes sous les autres, sans heure ni prénom) -->
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<meta name="theme-color" content="#17201B">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Runners">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Une colonne, en-tête sombre, deux onglets fixés en bas, fiche véhicule plein écran. */
+:root{
+  --bg:#F3F4F1; --surface:#FFFFFF; --surface-2:#F6F7F4; --line:#DCE0DA; --line-strong:#C9CFC8;
+  --fg:#17201B; --muted:#5B655F; --head:#17201B; --head-fg:#FFFFFF; --head-muted:#C9D2CC; --head-accent:#B9D7C8;
+  --accent:#1F5D45; --accent-fg:#FFFFFF; --accent-soft:#E3EEE8;
+  --info:#23477A; --info-soft:#E4EAF4; --info-line:#B9C8DE;
+  --warn:#8A3109; --warn-soft:#FBEADF;
+  --red:#A11D1D; --red-soft:#FBE3E1; --yellow:#7A5A00; --yellow-soft:#FBF0C8;
+  --sans:'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono:'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#111613; --surface:#1A211D; --surface-2:#222A25; --line:#2E3832; --line-strong:#3F4B44;
+  --fg:#E8ECE9; --muted:#9AA69F; --head:#0B0F0D; --head-muted:#A9B5AE; --head-accent:#8FC4AA;
+  --accent:#4FA383; --accent-fg:#0B0F0D; --accent-soft:#1E3329;
+  --info:#9DB8E3; --info-soft:#1D2A3D; --info-line:#34496A;
+  --warn:#F0A97C; --warn-soft:#3A2418; --red:#F29A93; --red-soft:#3D1C1A; --yellow:#E8C95A; --yellow-soft:#352C10; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111613; --surface:#1A211D; --surface-2:#222A25; --line:#2E3832; --line-strong:#3F4B44;
+  --fg:#E8ECE9; --muted:#9AA69F; --head:#0B0F0D; --head-muted:#A9B5AE; --head-accent:#8FC4AA;
+  --accent:#4FA383; --accent-fg:#0B0F0D; --accent-soft:#1E3329;
+  --info:#9DB8E3; --info-soft:#1D2A3D; --info-line:#34496A;
+  --warn:#F0A97C; --warn-soft:#3A2418; --red:#F29A93; --red-soft:#3D1C1A; --yellow:#E8C95A; --yellow-soft:#352C10; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:15px;-webkit-font-smoothing:antialiased;font-feature-settings:"tnum" 1;-webkit-tap-highlight-color:transparent}
+body.noscroll{overflow:hidden}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+svg{flex:none}
+[hidden]{display:none!important}
+.pad{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+/* En-tête */
+.app{max-width:480px;margin:0 auto;min-height:100%;display:flex;flex-direction:column}
+header.top{background:var(--head);color:var(--head-fg);padding-top:calc(14px + env(safe-area-inset-top,0px));padding-bottom:14px;display:flex;flex-direction:column;gap:2px}
+.brand{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:32px}
+.brand b{font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--head-accent)}
+.who{border:1px solid rgba(255,255,255,.18);background:transparent;color:var(--head-fg);font-size:13px;font-weight:600;padding:5px 12px;border-radius:999px;min-height:32px}
+.who span{font-size:10px;opacity:.7}
+span.who{display:inline-flex;align-items:center}
+header h1{margin:0;font-size:20px;font-weight:700;letter-spacing:-.01em}
+.sub{font-size:13px;color:var(--head-muted)}
+.source{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:10px;padding:8px 10px;border-radius:8px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.08);font-size:12.5px;color:var(--head-muted)}
+.source.alert{border-color:rgba(240,169,124,.5);color:#F6C9AC}
+.source label,.source button{flex:none;border:none;background:none;padding:6px 0;color:var(--head-fg);font-weight:600;text-decoration:underline;cursor:pointer;white-space:nowrap}
+
+/* Contenu */
+main{flex:1;padding-top:16px;padding-bottom:calc(96px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:16px}
+.mlabel{font-size:10.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.plate{font-family:var(--mono);font-size:17px;font-weight:600;letter-spacing:.03em}
+.model{font-size:15px;font-weight:600}
+.spec{font-size:14px;color:var(--muted)}
+.meta{font-size:13px;color:var(--muted)}
+.pts{display:flex;gap:5px}
+.pt{flex:1 1 auto;min-width:0;min-height:40px;padding:0 6px;border-radius:999px;border:1px solid var(--line-strong);background:var(--surface);font-size:12.5px;font-weight:600;letter-spacing:-.01em;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pt.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+.days{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin:0 -16px;padding:2px 16px}
+.days::-webkit-scrollbar{display:none}
+.day{flex:none;min-width:58px;min-height:52px;padding:4px 8px;border-radius:12px;border:1px solid var(--line-strong);background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;color:var(--muted)}
+.day small{font-size:11.5px;font-weight:600}
+.day b{font-size:16px;font-weight:700;color:var(--fg)}
+.day.on{background:var(--head);border-color:var(--head);color:var(--head-muted)}
+.day.on b{color:var(--head-fg)}
+.later{padding:12px 14px;border-radius:12px;background:var(--surface-2);border:1px dashed var(--line-strong);font-size:14px;color:var(--muted)}
+.pill.mine{background:var(--red-soft);color:var(--red)}
+.pill.late{background:var(--warn-soft);color:var(--warn)}
+.dateinput{width:100%;min-height:56px;padding:10px 12px;border-radius:12px;border:2px solid var(--line-strong);background:var(--surface);font-size:17px}
+.imp.mine{background:var(--red-soft);color:var(--red)}
+.imp.mine .imp-t{color:var(--fg)}
+.imp .lnk{align-self:flex-start;margin-top:4px;padding:6px 0;border:none;background:none;font-size:14px;font-weight:600;color:inherit;text-decoration:underline}
+.psec{display:flex;flex-direction:column;gap:12px}
+.psec+.psec{margin-top:10px}
+.pband{position:sticky;top:env(safe-area-inset-top,0px);z-index:2;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 16px;border-radius:14px;background:var(--head);color:var(--head-fg);box-shadow:0 4px 10px rgba(0,0,0,.12)}
+.pband h2{margin:0;font-size:22px;font-weight:700;letter-spacing:-.01em}
+.pband-n{font-size:13px;color:var(--head-muted);white-space:nowrap}
+.pband-n b{font-size:18px;color:var(--head-fg)}
+.pband.ask{background:var(--red);color:var(--surface)}
+.pband.ask h2{font-size:18px}
+.pband.ask .pband-n,.pband.ask .pband-n b{color:var(--surface)}
+.row{width:100%;display:flex;align-items:center;gap:12px;padding:14px;border-radius:14px;background:var(--surface);border:1px solid var(--line);box-shadow:0 1px 2px rgba(16,24,20,.05);text-align:left}
+.row:active{background:var(--surface-2)}
+.row.ask{border:2px solid var(--red)}
+.pill.ask{background:var(--red-soft);color:var(--red)}
+.pill.seen{background:var(--accent-soft);color:var(--accent)}
+.pill.unseen{background:var(--surface-2);color:var(--muted);box-shadow:inset 0 0 0 1px var(--line)}
+.times2{display:flex;flex-direction:column;gap:1px;font-size:14px;color:var(--muted)}
+.times2 b{font-weight:600;color:var(--fg)}
+.days{cursor:grab;user-select:none}
+.row-b{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.row-t{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.chev{color:var(--muted);flex:none}
+.pill{padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:600;white-space:nowrap}
+.pill.dep{background:var(--warn-soft);color:var(--warn)}
+.pill.arr{background:var(--info-soft);color:var(--info)}
+.mini{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:500}
+.mini i,.imp-h i{width:8px;height:8px;border-radius:50%;background:currentColor;flex:none}
+.mini.meca{color:var(--red)}.mini.normal{color:var(--yellow)}.mini.dmg{color:var(--warn)}.mini.ok{color:var(--accent)}.mini.info{color:var(--info)}
+.consigne{font-size:14px;color:var(--fg)}
+.empty{display:flex;flex-direction:column;gap:4px;padding:32px 16px;border:1px dashed var(--line-strong);border-radius:14px;text-align:center;color:var(--muted);font-size:14px}
+.empty b{color:var(--fg);font-size:15px}
+.empty.small{padding:16px}
+.prog{display:flex;flex-direction:column;gap:8px;padding:14px;border-radius:14px;background:var(--surface);border:1px solid var(--line)}
+.prog-h{display:flex;justify-content:space-between;align-items:baseline}
+.prog-h b{font-size:22px;font-weight:700}.prog-h b span{font-size:14px;font-weight:500;color:var(--muted)}
+.list{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.list .row{border:none;border-radius:0;box-shadow:none}
+.list .row+.row{border-top:1px solid var(--line)}
+.okdot{width:28px;height:28px;flex:none;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center}
+.okdot svg{width:14px;height:14px}
+.okdot.ko{background:var(--warn-soft);color:var(--warn);font-weight:700}
+.okdot.wait{background:var(--surface-2);color:var(--muted)}
+pre.report{margin:0;white-space:pre-wrap;word-break:break-word;font-family:var(--mono);font-size:12.5px;line-height:1.5;padding:12px;border-radius:10px;background:var(--surface-2);border:1px solid var(--line)}
+.gate{flex:1;display:flex;flex-direction:column;justify-content:center;gap:12px;padding:32px 8px;text-align:center}
+.gate b{font-size:20px}
+.gate p{margin:0;color:var(--muted);font-size:15px;line-height:1.45}
+
+/* Boutons et champs */
+.btn{min-height:44px;padding:10px 14px;border-radius:10px;border:1px solid var(--line-strong);background:var(--surface);font-size:14px;font-weight:600}
+.btn:disabled{opacity:.5;cursor:default}
+.btn.wide{width:100%;min-height:52px;font-size:15px;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn.big{width:100%;min-height:60px;font-size:17px;font-weight:700;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:10px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.btn.warn{background:var(--warn);border-color:var(--warn);color:var(--surface)}
+.btn.warn-o{background:var(--surface);border:2px solid var(--warn);color:var(--warn)}
+.btn.ghosttxt{border:none;background:transparent;color:var(--muted);text-decoration:underline}
+.back{display:inline-flex;align-items:center;gap:4px;min-height:44px;padding:0 8px 0 0;border:none;background:transparent;font-size:16px;font-weight:600;color:var(--accent)}
+input[type=search],textarea{width:100%;min-height:44px;padding:10px 12px;border-radius:10px;border:1px solid var(--line-strong);background:var(--surface)}
+textarea{min-height:80px;resize:vertical}
+input.plateinput{font-family:var(--mono);text-transform:uppercase;font-size:22px;min-height:56px;letter-spacing:.04em}
+
+/* Choix du runner (démonstration) */
+.picker{overflow:hidden;display:flex;flex-direction:column;gap:8px;padding:14px;border-radius:14px;background:var(--surface);border:1px solid var(--accent)}
+.choice{display:flex;flex-direction:column;margin:0 -14px -14px;border-top:1px solid var(--line)}
+.opt-row{display:flex;align-items:center;gap:12px;min-height:48px;padding:0 14px;border:none;background:transparent;font-size:15px;font-weight:500;text-align:left}
+.opt-row+.opt-row{border-top:1px solid var(--line)}
+.opt-row .box{width:22px;height:22px;flex:none;border-radius:50%;border:2px solid var(--line-strong);display:flex;align-items:center;justify-content:center}
+.opt-row .box svg{width:13px;height:13px}
+.opt-row.on{color:var(--accent);font-weight:600}
+.opt-row.on .box{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+
+/* Fiche véhicule */
+#sheet{position:fixed;inset:0;z-index:20;background:var(--bg);overflow-y:auto;display:flex;flex-direction:column}
+.sh-top{position:sticky;top:0;z-index:1;background:var(--bg);padding-top:calc(8px + env(safe-area-inset-top,0px));padding-bottom:4px}
+.sh-id{display:flex;flex-direction:column;gap:4px;padding-top:4px;padding-bottom:12px}
+.plate.xl{font-size:28px}
+.sh-id .model{font-size:17px}
+.sh-body{flex:1;display:flex;flex-direction:column;gap:12px;padding-top:4px;padding-bottom:16px}
+.sh-foot{position:sticky;bottom:0;display:flex;flex-direction:column;gap:10px;background:var(--bg);border-top:1px solid var(--line);padding-top:12px;padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}
+.card0{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.times{display:grid;grid-template-columns:1fr 1px 1fr;gap:12px;padding:12px 14px}
+.times .sep{background:var(--line)}
+.tc{display:flex;flex-direction:column;gap:2px;min-width:0}
+.tt{font-size:20px;font-weight:700;letter-spacing:-.01em}
+.tt.muted{color:var(--muted)}
+.td{font-size:12.5px;color:var(--muted)}
+.sec{padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.evl{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.evl li{display:flex;justify-content:space-between;gap:10px;padding:6px 0;font-size:13.5px}
+.evl li+li{border-top:1px dashed var(--line)}
+.evl em{font-style:normal;font-size:12px;color:var(--warn);white-space:nowrap}
+.imp{display:flex;flex-direction:column;gap:3px;padding:10px 12px;border-radius:10px}
+.imp-h{display:flex;align-items:center;gap:7px;font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase}
+.imp-t{font-size:14px;font-weight:600}
+.imp-p{font-size:13px;font-weight:500}
+.imp-p span{opacity:.75;font-weight:400}
+.imp.meca{background:var(--red-soft);color:var(--red)}
+.imp.normal{background:var(--yellow-soft);color:var(--yellow)}
+.imp.info{background:var(--red-soft);color:var(--red)}
+.imp.info .imp-t{color:var(--fg)}
+.status{padding:12px 14px;border-radius:12px;font-weight:600;font-size:15px}
+.status.ok{background:var(--accent-soft);color:var(--accent)}
+.status.ko{background:var(--warn-soft);color:var(--warn)}
+.q{font-size:20px;font-weight:700}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tile{min-height:64px;padding:10px 12px;border-radius:12px;border:2px solid var(--line-strong);background:var(--surface);font-size:15px;font-weight:600;text-align:left}
+.tile.on{border-color:var(--warn);background:var(--warn-soft);color:var(--warn)}
+.tile small{font-size:13px;font-weight:500;color:var(--muted)}
+.tile.on small{color:inherit}
+.tile.pick.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.photo{border-style:dashed}
+.photo img{width:40px;height:40px;object-fit:cover;border-radius:6px}
+
+/* Barre du bas et message */
+nav.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);padding-top:6px;padding-bottom:calc(6px + env(safe-area-inset-bottom,0px));padding-left:max(8px,env(safe-area-inset-left,0px));padding-right:max(8px,env(safe-area-inset-right,0px));z-index:4}
+nav.tabs div{max-width:480px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:4px}
+nav.tabs button{min-height:60px;border:none;border-radius:10px;background:transparent;color:var(--muted);font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px;padding:0}
+nav.tabs button.on{background:var(--accent-soft);color:var(--accent)}
+.cnt{display:inline-block;min-width:22px;padding:1px 6px;margin-left:2px;border-radius:999px;background:var(--surface-2);color:var(--fg);font-size:12px}
+nav.tabs button.on .cnt{background:var(--accent);color:var(--accent-fg)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));width:max-content;max-width:min(440px,calc(100% - 32px));padding:10px 14px;border-radius:10px;background:var(--head);color:var(--head-fg);font-size:14px;z-index:30}
+/* v19 : lisibilité sur petit téléphone, pour tous les âges */
+body{font-size:17px}
+.plate{font-size:21px}
+.row{padding:16px}
+.row .model,.model{font-size:17px}
+.spec{font-size:15.5px}
+.consigne{font-size:16.5px;font-weight:500}
+.pill{font-size:13.5px;padding:4px 10px}
+.pband h2{font-size:24px}
+.pband.ask h2{font-size:21px}
+.pband-n{font-size:15px}.pband-n b{font-size:21px}
+.pt{min-height:46px;font-size:14.5px}
+@media (max-width:400px){.pt{font-size:13px;padding:0 3px;letter-spacing:-.02em}.pts{gap:4px}}
+.day{min-width:62px;min-height:60px}
+.day small{font-size:13px}.day b{font-size:19px}
+.day.on{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}.day.on b{color:var(--accent-fg)}
+.tgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}
+.tgrid>span{display:flex;flex-direction:column;gap:1px;min-width:0}
+.tgrid small{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.tgrid b{font-size:19px;font-weight:700}
+.bar{display:flex;align-items:center;gap:8px;margin-top:6px;padding:8px 10px;border-radius:10px;font-size:15.5px;font-weight:600}
+.bar i{width:10px;height:10px;border-radius:50%;background:currentColor;flex:none}
+.bar.meca{background:var(--red-soft);color:var(--red)}
+.bar.normal{background:var(--yellow-soft);color:var(--yellow)}
+.bar span{font-weight:500}
+.mini{font-size:15px}
+.later{font-size:15.5px}
+.status{font-size:17px}
+.tile{font-size:17px;min-height:68px}
+.tile small{font-size:14px}
+.tt{font-size:24px}.td{font-size:14.5px}
+.mlabel{font-size:12px}
+.evl li{font-size:16px}.evl em{font-size:14px}
+.imp-h{font-size:12px}.imp-t{font-size:17px}.imp-p{font-size:15.5px}
+.source{font-size:13.5px}
+/* v20 : 7 jours visibles, aujourd'hui pile au milieu ; recherche et rappel en haut */
+.days .day{flex:0 0 calc((100% - 36px)/7);min-width:0;padding:4px 0}
+.day small{font-size:12.5px}
+.tools{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tool{min-height:58px;padding:6px 8px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:16px;font-weight:700;line-height:1.15;border-radius:14px;border:2px solid var(--line-strong);background:var(--surface);color:var(--fg);text-align:left}
+.tool svg{flex:none}
+.tool.rem{border-color:var(--red);color:var(--red)}
+/* v21 : recherche dans l'en-tête, page des rappels */
+.hsearch{margin-top:12px;width:100%;min-height:54px;display:flex;align-items:center;gap:10px;padding:0 14px;border-radius:12px;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.1);color:var(--head-fg);font-size:17px;font-weight:600;text-align:left}
+.hsearch span{opacity:.85}
+.who{display:inline-flex;align-items:center;gap:6px;font-size:16px;min-height:38px;padding:5px 14px 5px 10px}
+.who svg{flex:none;opacity:.9}
+.askbtn{width:100%;min-height:62px;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:0 12px 0 16px;border-radius:14px;border:none;background:var(--red);color:var(--surface);font-size:19px;font-weight:700;text-align:left}
+.askbtn .askn{display:flex;align-items:center;gap:4px;font-size:15px;font-weight:600}
+.askbtn .askn b{font-size:22px}
+.askbtn.none{background:var(--surface);color:var(--fg);border:1px solid var(--line-strong)}
+.askbtn.none .askn{color:var(--muted)}
+.picker .lnk2{display:block;padding:10px 4px 2px;font-size:14px;font-weight:600;color:var(--muted);text-decoration:underline;cursor:pointer}
+nav.tabs button{font-size:16px}
+.cnt{font-size:14px}
+.toast{font-size:16px}
+.photos{display:flex;gap:10px;flex-wrap:wrap}
+.ph{position:relative;width:84px;height:84px;border-radius:12px;overflow:hidden;border:1px solid var(--line)}
+.ph img{width:100%;height:100%;object-fit:cover;display:block}
+.ph .ph-x{position:absolute;top:4px;right:4px;width:32px;height:32px;border-radius:50%;border:none;background:rgba(0,0,0,.65);color:#fff;font-size:18px;font-weight:700;line-height:32px;padding:0}
+/* v22 : deux boutons secondaires côte à côte ; sur écran bas, les boutons suivent la fiche au lieu de la cacher */
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.duo .btn{min-height:56px;padding:6px 8px;font-size:15.5px;line-height:1.2;display:flex;align-items:center;justify-content:center;gap:6px;text-align:center}
+@media (max-height:700px){.sh-foot{position:static}}
+/* v23 : longs textes coupés sur les cartes (la fiche montre tout) */
+.bar{flex-wrap:wrap;align-items:flex-start}.bar i{margin-top:7px}
+.bar .bl{font-weight:600;flex:1;min-width:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.bar .bd{flex-basis:100%;padding-left:18px;font-weight:500}
+.row .consigne{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.psec>.row,.list>.row{content-visibility:auto;contain-intrinsic-size:auto 150px}
+.ph.demo{display:flex;align-items:center;justify-content:center;background:var(--surface-2);font-size:13px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top pad">
+    <div class="brand"><b>City Drop · Runners</b><span id="whoSlot"></span></div>
+    <h1 id="title">Véhicules à voir</h1>
+    <div class="sub" id="sub"></div>
+    <div class="source" id="source"></div>
+    <div id="hsSlot"></div>
+  </header>
+  <main class="pad" id="view"></main>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+<nav class="tabs" id="nav" aria-label="Navigation"><div id="tabs"></div></nav>
+<div id="sheet" role="dialog" aria-modal="true" hidden></div>
+<input type="file" id="csvFile" accept=".csv,text/csv" hidden>
+
+<script src="config.js"></script>
+<script>
+(function(){
+'use strict';
+
+/* ---------- Réglages ---------- */
+const API=String((window.CONFIG&&window.CONFIG.api)||'').trim();
+const DEMO=!API;
+const STORE=DEMO?'appli-runners-v21-demo':'appli-runners-v21';
+const MAX_PHOTOS=3;
+const DAYS_BACK=3,DAYS_AHEAD=10,HISTORY_DAYS=7;
+const RUNNERS=['Anis','Philippe','Kamel','Tarek','Fahem'];
+/* Points City Drop d'Île-de-France (La Def : adresse à Nanterre) et noms courts des boutons */
+const LOCAL=['La Def','Saint-Cloud','Aulnay','Paris-Centre','Coignières'];
+const SHORT={'Saint-Cloud':'St-Cloud','Paris-Centre':'Paris'};
+const FULL={'La Def':'La Défense','Aulnay':'Aulnay-sous-Bois'};
+/* Autres écritures possibles dans l'export, ramenées au nom du point */
+const ALIAS={'nanterre':'La Def','la def':'La Def','la defense':'La Def','paris la defense':'La Def','saint cloud':'Saint-Cloud','st cloud':'Saint-Cloud','aulnay':'Aulnay','aulnay sous bois':'Aulnay','paris centre':'Paris-Centre','coignieres':'Coignières'};
+const DAMAGES=['Impact pare-brise','Pare-brise fissuré','Pneu avant à changer','Pneu arrière à changer','Rétroviseur endommagé','Choc carrosserie','Feu cassé','Voyant au tableau de bord'];
+const OTHER='Autre problème';
+const REFRESH_MS=5*60*1000;
+
+/* ---------- Icônes ---------- */
+const svg=(d,w,sw)=>`<svg width="${w||22}" height="${w||22}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw||2}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const I={
+  todo:svg('<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/>'),
+  done:svg('<path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/>'),
+  tick:svg('<path d="M5 12l5 5L20 7"/>',20,3),
+  chev:svg('<path d="M9 6l6 6-6 6"/>',22,2.5),
+  back:svg('<path d="M15 6l-6 6 6 6"/>',20,2.5),
+  camera:svg('<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>',20),
+  clock:svg('<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>',14,2.5),
+  user:svg('<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/>',18,2.2),
+  clockL:svg('<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>',24,2.5),
+  search:svg('<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>',24,2.5)
+};
+
+/* ---------- Dates ---------- */
+function iso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function dayOffset(n){const d=new Date();d.setDate(d.getDate()+n);return iso(d)}
+const TODAY=dayOffset(0);
+function hm(d){return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}
+function nowStr(){const d=new Date();return iso(d)+' '+hm(d)}
+const DOW=['Dim.','Lun.','Mar.','Mer.','Jeu.','Ven.','Sam.'];const MON=['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+function dLabel(isoD){const [y,m,d]=isoD.split('-').map(Number);const x=new Date(y,m-1,d);return {dow:DOW[x.getDay()],num:d+' '+MON[m-1]}}
+function dayDiff(d){const [y,m,j]=d.split('-').map(Number);const [a,b,c]=TODAY.split('-').map(Number);return Math.round((new Date(y,m-1,j)-new Date(a,b-1,c))/864e5)}
+/* « aujourd'hui 15h30 », « demain 17h30 », « hier 18h00 » ou « sam. 17 oct. 9h00 » */
+function when(t){if(!t)return '';const [d,h]=t.split(' ');const n=dayDiff(d);
+  const day=n===0?"aujourd'hui":n===1?'demain':n===-1?'hier':(l=>l.dow.toLowerCase()+' '+l.num)(dLabel(d));const [hh,mm]=h.split(':');return day+' à '+Number(hh)+'h'+(mm==='00'?'':mm)}
+
+/* ---------- Lecture de l'export (CSV chargé à la main ou tableau envoyé par Google) ---------- */
+const COLS={
+  plaque:['plaque','immat','immatriculation'],categorie:['categorie','catégorie'],modele:['modele','modèle','marque_modele','marque modèle','marque_modele_annee','vehicule','véhicule'],km:['km','kilometrage','kilométrage'],
+  villeDep:['ville_depart','ville départ'],dateDep:['date_depart','date départ','date'],heureDep:['heure_depart','heure départ'],
+  villeArr:['ville_arrivee','ville arrivée'],dateArr:['date_arrivee','date arrivée'],heureArr:['heure_arrivee','heure arrivée'],
+  events:['evenements_bo','événements bo','evenements bo','evenements'],
+  impro:['impro_type','improductif','impro'],improDeb:['impro_debut','impro début'],improFin:['impro_fin'],improLib:['impro_libelle','impro_libellé','impro libellé']
+};
+function city(s){s=String(s||'').trim();const k=s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[-_]/g,' ').replace(/\s+/g,' ');return ALIAS[k]||s}
+function normDate(s){
+  s=String(s||'').trim();let m;
+  if((m=s.match(/^(\d{4})-(\d{2})-(\d{2})/)))return m[1]+'-'+m[2]+'-'+m[3];
+  if((m=s.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})/)))return m[1]+'-'+m[2].padStart(2,'0')+'-'+m[3].padStart(2,'0');
+  if((m=s.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2}|\d{4})(?!\d)/)))return (m[3].length===2?'20'+m[3]:m[3])+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0');
+  /* Formats de Metabase : « October 15, 2026 », « Oct 15, 2026 », « 15 octobre 2026 », « jeu. 15 oct. 2026 » */
+  const t=s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  const mo=k=>{const F=['janv','fevr','mars','avr','mai','juin','juil','aout','sept','oct','nov','dec'];
+    for(let i=0;i<12;i++)if(k.indexOf(F[i])===0)return i+1;
+    const en={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};return en[k.slice(0,3)]||0};
+  if((m=t.match(/^(?:[a-z]+\.?,?\s+)?([a-z]+)\.?\s+(\d{1,2}),?\s+(\d{4})/))&&mo(m[1]))return m[3]+'-'+String(mo(m[1])).padStart(2,'0')+'-'+m[2].padStart(2,'0');
+  if((m=t.match(/^(?:[a-z]+\.?,?\s+)?(\d{1,2})(?:er)?\s+([a-z]+)\.?,?\s+(\d{4})/))&&mo(m[2]))return m[3]+'-'+String(mo(m[2])).padStart(2,'0')+'-'+m[1].padStart(2,'0');
+  return '';
+}
+function normTime(s){s=String(s||'');const m=s.match(/(\d{1,2})[:hH](\d{2})?/);if(!m)return '00:00';let h=+m[1];if(/pm/i.test(s)&&h<12)h+=12;if(/am/i.test(s)&&h===12)h=0;return String(h).padStart(2,'0')+':'+(m[2]||'00')}
+/* « 15/10/2026 16:00 », « 2026-10-15T16:00:00 » ou date et heure séparées → « 2026-10-15 16:00 » */
+function dt(dateStr,timeStr){const d=normDate(dateStr);if(!d)return '';
+  const t=timeStr&&String(timeStr).trim()?timeStr:String(dateStr).trim().split(/[ T,]+/).slice(1).join(' ');return d+' '+normTime(t)}
+function normImpro(s){s=String(s||'').trim().toLowerCase();if(!s||s==='non'||s==='0')return '';return /m[ée]ca/.test(s)?'meca':'normal'}
+function parseEvents(s){
+  return String(s||'').split('|').map(x=>x.trim()).filter(Boolean).map(x=>{const m=x.match(/^(.*?)\s*\(([^)]*)\)\s*$/);return m?{label:m[1],status:m[2]}:{label:x,status:''}});
+}
+function parseTable(head,rows){
+  head=(head||[]).map(h=>String(h).trim().toLowerCase());
+  if(!head.length)return {loc:[],impros:[]};
+  const idx={};for(const k in COLS)idx[k]=head.findIndex(h=>COLS[k].includes(h));
+  const missing=['plaque','dateDep','villeDep','villeArr'].filter(k=>idx[k]<0);
+  if(missing.length)throw new Error('Colonnes manquantes : '+missing.map(k=>COLS[k][0]).join(', ')+'.');
+  const loc=[],impros=[];
+  rows.forEach(c=>{
+    const g=k=>idx[k]>=0?String(c[idx[k]]==null?'':c[idx[k]]).trim():'';
+    const plaque=g('plaque').toUpperCase();if(!plaque)return;
+    const type=normImpro(g('impro'));
+    if(type){const debut=dt(g('improDeb')),fin=dt(g('improFin'));if(debut)impros.push({plaque,type,debut,fin,libelle:g('improLib')});return}
+    const dep=dt(g('dateDep'),g('heureDep'));if(!dep)return;
+    const arr=dt(g('dateArr')||g('dateDep'),g('heureArr'));
+    const km=parseInt(g('km').replace(/\D/g,''),10);
+    loc.push({plaque,modele:g('modele'),categorie:g('categorie'),km:isNaN(km)?null:km,villeDep:city(g('villeDep')),dep,villeArr:city(g('villeArr')),arr,events:parseEvents(g('events'))});
+  });
+  return {loc,impros};
+}
+function splitLine(line,sep){
+  const out=[];let cur='',q=false;
+  for(let i=0;i<line.length;i++){const c=line[i];
+    if(q){if(c==='"'){if(line[i+1]==='"'){cur+='"';i++}else q=false}else cur+=c}
+    else if(c==='"')q=true;else if(c===sep){out.push(cur);cur=''}else cur+=c}
+  out.push(cur);return out;
+}
+/* Planning reçu de Google : déjà préparé par le script v6 (rapide), sinon tableau brut de l'export */
+function readPlan(pl){
+  if(pl&&pl.erreur)throw new Error(pl.erreur);
+  if(pl&&pl.v===2)return {
+    loc:pl.loc.map(a=>({plaque:a[0],modele:a[1],categorie:a[2],km:a[3]===''||a[3]==null?null:+a[3],villeDep:a[4],dep:a[5],villeArr:a[6],arr:a[7],events:a[8]?parseEvents(a[8]):[]})),
+    impros:pl.impros.map(a=>({plaque:a[0],type:a[1],debut:a[2],fin:a[3],libelle:a[4]}))};
+  return parseTable(pl.entetes,pl.lignes);
+}
+function parseCsv(text){
+  const lines=text.replace(/^﻿/,'').split(/\r?\n/).filter(l=>l.trim());
+  if(lines.length<2)throw new Error('Le fichier est vide.');
+  const sep=lines[0].split(';').length>=lines[0].split(',').length?';':',';
+  const t=parseTable(splitLine(lines[0],sep),lines.slice(1).map(l=>splitLine(l,sep)));
+  if(!t.loc.length&&!t.impros.length)throw new Error('Aucune ligne lisible dans le fichier.');
+  return t;
+}
+
+/* ---------- Données de démonstration (fictives) ---------- */
+const MODELS={'AA-101-CD':'Opel Movano 2023','AA-102-CD':'Iveco Daily 2025','AA-103-CD':'Iveco Daily 2024','AA-104-CD':'Opel Movano 2024','AA-105-CD':'Opel Movano 2023','AA-106-CD':'MAN TGE 2024','AA-107-CD':'Opel Movano 2025','AA-108-CD':'Iveco Daily 2025','AA-109-CD':'Opel Movano 2024','AA-110-CD':'MAN TGE 2023','AA-111-CD':'Opel Movano 2025','AA-112-CD':'Iveco Daily 2024','AA-113-CD':'MAN TGE 2025','AA-114-CD':'Iveco Daily 2023','AA-115-CD':'Opel Movano 2024','AA-116-CD':'MAN TGE 2024'};
+function demoState(){
+  const D=dayOffset;
+  /* plaque, catégorie, km, ville départ, jour, heure, ville arrivée, jour, heure, événements BO */
+  const loc=[
+    ['AA-101-CD','12 m³',57330,'Orléans',D(0),'13:00','La Def',D(0),'15:30',''],
+    ['AA-101-CD','12 m³',57330,'La Def',D(1),'17:30','Lille',D(1),'21:00',''],
+    ['AA-102-CD','20 m³',61875,'Rennes',D(-1),'13:00','La Def',D(-1),'18:00','Bruit au freinage (Ouvert)'],
+    ['AA-102-CD','20 m³',61875,'La Def',D(0),'08:30','Lille',D(0),'12:15','Bruit au freinage (Ouvert)'],
+    ['AA-103-CD','20 m³',54300,'Lyon',D(0),'06:45','Saint-Cloud',D(0),'12:30','Pneu arrière usé (En attente garage)'],
+    ['AA-103-CD','20 m³',54300,'Saint-Cloud',D(2),'09:00','Bordeaux',D(2),'15:30',''],
+    ['AA-104-CD','12 m³',48210,'Strasbourg',D(0),'08:00','Aulnay',D(0),'13:20','Voyant moteur (Ouvert) | Rétroviseur droit (Ouvert)'],
+    ['AA-105-CD','12 m³',80310,'Caen',D(-2),'10:00','La Def',D(-2),'16:00','Embrayage qui patine (En attente garage)'],
+    ['AA-105-CD','12 m³',80310,'La Def',D(1),'14:00','Tours',D(1),'17:15',''],
+    ['AA-106-CD','20 m³',72090,'Reims',D(-1),'08:00','Aulnay',D(-1),'11:00',''],
+    ['AA-106-CD','20 m³',72090,'Aulnay',D(0),'13:00','Nantes',D(0),'17:45',''],
+    ['AA-107-CD','12 m³',35615,'Dijon',D(0),'14:30','Saint-Cloud',D(0),'19:00',''],
+    ['AA-107-CD','12 m³',35615,'Saint-Cloud',D(1),'06:30','Toulouse',D(1),'14:15',''],
+    ['AA-108-CD','20 m³',19980,'Caen',D(1),'09:15','La Def',D(1),'12:00','Voyant moteur (Ouvert)'],
+    ['AA-108-CD','20 m³',19980,'La Def',D(2),'10:00','Rouen',D(2),'11:40',''],
+    ['AA-109-CD','12 m³',41020,'Lille',D(-1),'13:00','Aulnay',D(-1),'17:00',''],
+    ['AA-109-CD','12 m³',41020,'Aulnay',D(2),'08:00','Dijon',D(2),'11:30',''],
+    ['AA-111-CD','12 m³',30760,'Dijon',D(-1),'09:00','Paris-Centre',D(-1),'14:00',''],
+    ['AA-111-CD','12 m³',30760,'Paris-Centre',D(0),'16:00','Nantes',D(0),'20:30',''],
+    ['AA-112-CD','20 m³',12540,'Rouen',D(0),'08:30','Coignières',D(0),'10:45',''],
+    ['AA-113-CD','12 m³',38120,'Rouen',D(-1),'20:00','La Def',D(-1),'23:00',''],
+    ['AA-113-CD','12 m³',38120,'La Def',D(0),'11:00','Reims',D(0),'13:30',''],
+    ['AA-114-CD','20 m³',51700,'Lyon',D(-1),'11:00','La Def',D(-1),'18:00',''],
+    ['AA-114-CD','20 m³',51700,'La Def',D(0),'15:00','Orléans',D(0),'17:00',''],
+    ['AA-115-CD','12 m³',24890,'Tours',D(-1),'07:00','La Def',D(-1),'10:00','Feu arrière gauche (Ouvert)'],
+    ['AA-115-CD','12 m³',24890,'La Def',D(1),'09:00','Lille',D(1),'12:30',''],
+    ['AA-116-CD','20 m³',63400,'Nantes',D(0),'02:30','La Def',D(0),'07:30',''],
+    ['AA-110-CD','20 m³',88450,'Reims',D(2),'11:00','Saint-Cloud',D(2),'13:10','Choc carrosserie (Ouvert)']
+  ].map(r=>({plaque:r[0],modele:MODELS[r[0]]||'',categorie:r[1],km:r[2],villeDep:r[3],dep:r[4]+' '+r[5],villeArr:r[6],arr:r[7]+' '+r[8],events:parseEvents(r[9])}));
+  const impros=[
+    {plaque:'AA-101-CD',type:'normal',debut:D(0)+' 16:00',fin:D(1)+' 16:00',libelle:'Passage Kamel : vérification pneu arrière'},
+    {plaque:'AA-105-CD',type:'meca',debut:D(0)+' 09:00',fin:D(1)+' 12:00',libelle:''},
+    {plaque:'AA-109-CD',type:'normal',debut:D(0)+' 10:00',fin:D(0)+' 12:00',libelle:'Lavage intérieur avant le prochain départ'}
+  ];
+  const passages=[
+    {at:D(-1)+' 17:40',by:'Kamel',plaque:'AA-109-CD',point:'Aulnay',cle:'AA-109-CD|'+D(-1)+' 17:00|Aulnay',pb:[],comment:'',photo:false,demande:''},
+    {at:D(-1)+' 11:30',by:'Anis',plaque:'AA-106-CD',point:'Aulnay',cle:'AA-106-CD|'+D(-1)+' 11:00|Aulnay',pb:[],comment:'',photo:false,demande:''},
+    {at:D(-2)+' 09:10',by:'Anis',plaque:'AA-110-CD',point:'Hors liste',cle:'manual|'+D(-2)+'|AA-110-CD',pb:['Choc carrosserie'],comment:'porte latérale',photo:true,demande:''},
+    {at:D(0)+' 07:50',by:'Anis',plaque:'AA-102-CD',point:'La Def',cle:'AA-102-CD|'+D(-1)+' 18:00|La Def',pb:[],comment:'',photo:false,demande:''}
+  ];
+  const demandes=[{id:'D-demo1',date:D(0),runner:'Tous',plaque:'AA-110-CD',point:'La Def',consigne:'Rentré hors planning : faire le tour du véhicule et une photo du compteur.',auteur:'Service parc'},
+    {id:'R-demo2',date:D(3),runner:'Anis',plaque:'AA-115-CD',point:'La Def',consigne:'Revoir le rétroviseur gauche',auteur:'Anis'}];
+  return {loc,impros,passages,demandes,who:'Anis',myPoints:['La Def','Saint-Cloud','Aulnay'],sourceLabel:'Démonstration · données fictives'};
+}
+
+/* ---------- État ---------- */
+/* loc, impros : planning ; passages : enregistrés (Google ou démo) ; queue : en attente d'envoi */
+function load(){try{return JSON.parse(localStorage.getItem(STORE))||null}catch(e){return null}}
+/* Le planning (gros) est rangé à part, dans la base du téléphone, et seulement quand il change (2 fois par jour).
+   La sauvegarde de chaque action ne contient que le petit état : envois en attente, passages, rappels. */
+const IDB={db:null,
+  open(){if(this.p)return this.p;return this.p=new Promise(ok=>{try{const r=indexedDB.open('runners',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>ok(this.db=r.result);r.onerror=()=>ok(null)}catch(e){ok(null)}})},
+  get(k){return this.open().then(db=>db?new Promise(ok=>{try{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>ok(q.result||null);q.onerror=()=>ok(null)}catch(e){ok(null)}}):null)},
+  set(k,v){return this.open().then(db=>{try{if(db)db.transaction('kv','readwrite').objectStore('kv').put(v,k)}catch(e){}})}};
+function savePlan(plan){IDB.set(STORE+'-plan',plan)}
+function savePassages(){IDB.set(STORE+'-pas',S.passages)}
+/* Si la mémoire du téléphone est pleine, on garde d'abord les envois en attente */
+function save(){try{localStorage.setItem(STORE,JSON.stringify(DEMO?S:Object.assign({},S,{loc:[],impros:[],plan:null},IDB.db?{passages:[]}:{})))}catch(e){
+  try{localStorage.setItem(STORE,JSON.stringify(Object.assign({},S,{loc:[],impros:[],plan:null,passages:[]})))}catch(e2){if(!save._w){save._w=1;toast('Mémoire du téléphone pleine : trouvez du réseau pour envoyer les photos.')}}}}
+let CODE='';
+try{CODE=new URLSearchParams(location.search).get('c')||'';if(CODE)localStorage.setItem('runners-code',CODE);else CODE=localStorage.getItem('runners-code')||''}catch(e){}
+let S=load();
+if(S&&DEMO&&S.day!==TODAY)S=null;
+if(!S)S=Object.assign({day:TODAY,loc:[],impros:[],passages:[],demandes:[],queue:[],who:'',myPoints:[],ptsSet:false,screen:'home',misAJour:'',synced:'',offline:false,blocked:''},DEMO?demoState():{});
+S.day=TODAY;S.queue=S.queue||[];
+/* Ancienne version (planning dans la petite sauvegarde) : relu puis déplacé dans la base du téléphone */
+if(S.plan){try{const t=readPlan(S.plan);S.loc=t.loc;S.impros=t.impros;savePlan(S.plan);savePassages()}catch(e){S.plan=null;S.misAJour=''}}
+let ready=DEMO||!!S.plan;
+let sheet=null;            /* {plaque, step:'fiche'|'probleme'} ou {search:true} */
+let showReport=false,picker=false,query='';
+let draft={types:[],photos:[],comment:''};
+let rdraft={date:'',note:'',other:false,point:''};
+function newRemind(p){const st=stayFor(p,DAY)||stayFor(p);return {date:'',note:'',other:false,point:st?st.point:(S.myPoints[0]||LOCAL[0])}}
+let DAY=TODAY;
+
+/* ---------- Outils ---------- */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const norm=s=>String(s||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+const fmtKm=n=>n==null?'':String(n).replace(/\B(?=(\d{3})+(?!\d))/g,' ')+' km';
+const plural=(n,w)=>n+' '+w+(n>1?'s':'');
+function toast(msg){const t=$('#toast');t.textContent=msg;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>{t.hidden=true},3000)}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+/* Résultats recalculés seulement quand le planning ou les points changent */
+function memo(fn){const c=new Map();let src;return function(day){const a=S.loc,b=S.myPoints.join('|')+'|'+S.impros.length+'|'+(day||'');if(a!==src){src=a;c.clear()}if(!c.has(b))c.set(b,fn(day));return c.get(b)}}
+
+/* ---------- Planning ---------- */
+const vehicles=memo(()=>{const m=new Map();S.loc.forEach(r=>{const v=m.get(r.plaque);if(!v)m.set(r.plaque,{plaque:r.plaque,modele:r.modele||'',categorie:r.categorie,km:r.km,events:r.events.slice()});else r.events.forEach(e=>{if(!v.events.some(x=>x.label===e.label))v.events.push(e)})});return m});
+function vehicle(p){return vehicles().get(p)||null}
+function allPoints(){const s=new Set();S.loc.forEach(r=>{s.add(r.villeDep);s.add(r.villeArr)});return [...s].filter(Boolean)}
+/* Séjour d'un véhicule sur un de mes points : de son arrivée à son départ suivant */
+const stays=memo(()=>{
+  const by={};S.loc.forEach(r=>{(by[r.plaque]=by[r.plaque]||[]).push(r)});
+  const out=[];
+  Object.keys(by).forEach(p=>{
+    const rs=by[p].slice().sort((a,b)=>a.dep.localeCompare(b.dep));
+    rs.forEach((r,i)=>{
+      if(S.myPoints.includes(r.villeArr)){const nx=rs[i+1];const leaves=nx&&nx.villeDep===r.villeArr?nx:null;
+        out.push({plaque:p,point:r.villeArr,from:r.arr,fromCity:r.villeDep,to:leaves?leaves.dep:'',toCity:leaves?leaves.villeArr:''})}
+      if(S.myPoints.includes(r.villeDep)){const pv=rs[i-1];if(!(pv&&pv.villeArr===r.villeDep))out.push({plaque:p,point:r.villeDep,from:'',fromCity:'',to:r.dep,toCity:r.villeArr})}
+    });
+  });
+  return out;
+});
+/* Véhicules présents un jour donné, le départ le plus proche en premier */
+const staysOn=memo(day=>{
+  const a=day+' 00:00',b=day+' 23:59';const seen=new Set();
+  return stays().filter(s=>(!s.from||s.from<=b)&&(!s.to||s.to>=a)).map(s=>{
+    const arrives=s.from&&s.from.slice(0,10)===day,leaves=s.to&&s.to.slice(0,10)===day;
+    return Object.assign({},s,{arrives,leaves,impros:improsFor(s.plaque,s.from,s.to)});
+  }).sort((x,y)=>(x.to||'9999').localeCompare(y.to||'9999')||(x.from||'').localeCompare(y.from||'')||x.plaque.localeCompare(y.plaque))
+    .filter(s=>!seen.has(s.plaque)&&seen.add(s.plaque));
+});
+function improsFor(p,from,to){return S.impros.filter(i=>i.plaque===p&&(!to||i.debut<=to)&&(!from||!i.fin||i.fin>=from)).sort((a,b)=>a.debut.localeCompare(b.debut))}
+function staysToday(){return staysOn(TODAY)}
+function stayFor(p,day){return staysOn(day||TODAY).find(s=>s.plaque===p)||null}
+/* Un passage reste valable tant que le véhicule n'a pas quitté le point */
+function sid(s){return s.plaque+'|'+(s.from||'')+'|'+s.point}
+function keyFor(p){const s=stayFor(p);return s?sid(s):'manual|'+TODAY+'|'+p}
+
+/* ---------- Passages ---------- */
+function fromQueue(q){return {at:q.at,by:q.by,plaque:q.plaque,point:q.point,cle:q.cle,pb:q.problemes||[],comment:q.commentaire||'',photo:!!(q.photos&&q.photos.length),demande:q.demande_id||'',pending:true}}
+function fromServer(x){return {at:String(x.horodatage||'').replace('T',' ').slice(0,16),by:x.runner,plaque:String(x.plaque||'').toUpperCase(),point:x.point,cle:x.cle,pb:x.problemes?String(x.problemes).split(', ').filter(Boolean):[],comment:x.commentaire||'',photo:!!x.photo,demande:x.demande_id||''}}
+function removeLast(list,cle,plaque){for(let i=list.length-1;i>=0;i--)if(list[i].cle===cle&&list[i].plaque===plaque){list.splice(i,1);return true}return false}
+/* Passages enregistrés + ceux pas encore envoyés */
+function allPassages(){
+  const list=S.passages.slice();
+  S.queue.forEach(q=>{if(q.action==='passage')list.push(fromQueue(q));else if(q.action==='annuler')removeLast(list,q.cle,q.plaque)});
+  return list;
+}
+let P={},PL=[];
+function index(){PL=allPassages();P={};PL.forEach(x=>{P[x.cle]=x})}
+function passageOf(p){return P[keyFor(p)]||null}
+/* Demandes du bureau et rappels du runner, y compris ceux pas encore envoyés */
+function allAsks(){
+  const list=S.demandes.map(d=>Object.assign({},d));
+  S.queue.forEach(q=>{if(q.action==='rappel')list.push({id:q.id,date:q.date,runner:S.who,plaque:q.plaque,point:q.point,consigne:q.consigne,statut:'à faire',auteur:S.who,pending:true});
+    else if(q.action==='rappel_suppr'){const d=list.find(x=>x.id===q.id);if(d)d.statut='supprimée'}});
+  return list.filter(d=>d.statut!=='supprimée'&&!PL.some(x=>String(x.demande).split(',').includes(d.id)));
+}
+/* Aujourd'hui : ceux du jour et ceux oubliés les jours d'avant ; autre jour : ceux de ce jour-là */
+function openAsks(day){day=day||TODAY;return allAsks().filter(d=>day===TODAY?d.date<=TODAY:d.date===day).sort((a,b)=>a.date.localeCompare(b.date))}
+function askFor(p){return openAsks().find(d=>d.plaque===p)||null}
+function asksFor(p){return openAsks().filter(d=>d.plaque===p)}
+function myReminders(p){return allAsks().filter(d=>d.plaque===p&&d.auteur===S.who)}
+function todo(day){day=day||TODAY;const asks=new Set(openAsks(day).map(d=>d.plaque));return staysOn(day).filter(s=>!P[sid(s)]&&!asks.has(s.plaque))}
+function doneOn(day){return Object.values(P).filter(x=>x.at.slice(0,10)===day&&x.by===S.who).sort((a,b)=>b.at.localeCompare(a.at))}
+function doneToday(){return doneOn(TODAY)}
+let DONE_DAY=TODAY;
+
+function record(p,types,comment,photos){
+  const st=stayFor(p),ask=askFor(p);
+  const q={id:uid(),action:'passage',cle:keyFor(p),plaque:p,point:st?st.point:(ask&&ask.point)||'Hors liste',problemes:types,commentaire:comment,photos:(photos||[]).slice(0,MAX_PHOTOS),demande_id:asksFor(p).map(d=>d.id).join(','),at:nowStr(),by:S.who};
+  if(DEMO){const x=fromQueue(q);delete x.pending;S.passages.push(x)}else S.queue.push(q);
+  save();run();
+}
+function undo(p){
+  const k=keyFor(p);
+  if(DEMO){removeLast(S.passages,k,p)}
+  else{let i=-1;S.queue.forEach((q,j)=>{if(q.action==='passage'&&q.cle===k)i=j});
+    if(i>=0)S.queue.splice(i,1);else S.queue.push({id:uid(),action:'annuler',cle:k,plaque:p})}
+  save();run();
+}
+
+function remind(p,date,note,point){
+  const st=stayFor(p,date)||stayFor(p);
+  const q={id:'r'+uid(),action:'rappel',plaque:p,date,consigne:note,point:point||(st?st.point:'')};q.id='R'+q.id.slice(1);
+  if(DEMO)S.demandes.push({id:q.id,date,runner:S.who,plaque:p,point:q.point,consigne:note,statut:'à faire',auteur:S.who});else S.queue.push(q);
+  save();run();
+}
+function unremind(id){
+  if(DEMO){const d=S.demandes.find(x=>x.id===id);if(d)d.statut='supprimée'}
+  else{const i=S.queue.findIndex(q=>q.action==='rappel'&&q.id===id);if(i>=0)S.queue.splice(i,1);else S.queue.push({id,action:'rappel_suppr'})}
+  save();run();
+}
+
+/* ---------- Échanges avec Google ---------- */
+function call(params,body,ms){
+  const ctl=new AbortController();const t=setTimeout(()=>ctl.abort(),ms||20000);
+  const url=params?API+'?'+new URLSearchParams(params):API;
+  const opt=body?{method:'POST',body:JSON.stringify(body),signal:ctl.signal}:{signal:ctl.signal,cache:'no-store'};
+  return fetch(url,opt).then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}).finally(()=>clearTimeout(t));
+}
+let busy=false;
+/* Envoie ce qui attend, puis recharge le planning. Sans réseau, tout reste en attente sur le téléphone. */
+async function run(){
+  /* Appli restée ouverte après minuit : on repart sur le nouveau jour (rien n'est perdu, tout est enregistré) */
+  if(dayOffset(0)!==TODAY){save();location.reload();return}
+  render(true);
+  if(DEMO||!CODE||busy)return;
+  busy=true;
+  try{
+    while(S.queue.length){
+      const q=S.queue[0];const body={code:CODE};
+      ['action','id','cle','plaque','point','problemes','commentaire','photos','demande_id','date','consigne'].forEach(k=>{if(q[k]!==undefined)body[k]=q[k]});
+      let r;try{r=await call(null,body,q.photos&&q.photos.length?90000:20000)}catch(e){S.offline=true;break}
+      S.offline=false;S.queue.shift();
+      if(r&&r.erreur){toast('Envoi refusé : '+r.erreur)}
+      else if(q.action==='passage'){const x=fromQueue(q);delete x.pending;S.passages.push(x)}
+      else if(q.action==='annuler')removeLast(S.passages,q.cle,q.plaque);
+      else if(q.action==='rappel')S.demandes.push({id:r.id||q.id,date:q.date,runner:S.who,plaque:q.plaque,point:q.point,consigne:q.consigne,statut:'à faire',auteur:S.who});
+      else if(q.action==='rappel_suppr'){const d=S.demandes.find(x=>x.id===q.id);if(d)d.statut='supprimée'}
+      save();savePassages();render(true);
+    }
+    if(!S.offline){
+      const r=await call(Object.assign({action:'donnees',code:CODE},S.loc.length&&S.misAJour?{version:S.misAJour}:{}));
+      if(r.erreur){S.blocked=r.erreur}
+      else{
+        S.blocked='';
+        /* Planning absent de la réponse = inchangé : on garde celui du téléphone */
+        if(r.planning){let t={loc:[],impros:[]};try{t=readPlan(r.planning)}catch(e){toast('Planning illisible : '+e.message)}
+          S.loc=t.loc;S.impros=t.impros;S.plan=r.planning;savePlan(r.planning)}
+        S.passages=(r.passages||[]).map(fromServer).sort((a,b)=>a.at.localeCompare(b.at));savePassages();
+        S.demandes=(r.demandes||[]).map(d=>({id:d.id,date:String(d.date).slice(0,10),runner:d.runner,plaque:String(d.plaque||'').toUpperCase(),point:d.point,consigne:d.consigne,statut:d.statut,auteur:d.auteur||'Service parc'}));
+        S.who=r.runner.prenom;
+        if(!S.ptsSet){S.myPoints=(r.runner.points||[]).map(city).filter(Boolean);S.ptsSet=true}
+        S.misAJour=r.misAJour||'';S.synced=nowStr();
+      }
+      save();
+    }
+  }catch(e){S.offline=true}
+  finally{busy=false;render(true)}
+}
+
+/* ---------- Écrans ---------- */
+function improBlock(i){
+  return i.type==='meca'
+    ?`<div class="imp meca"><div class="imp-h"><i></i>RDV méca prévu</div><div class="imp-p">${esc(when(i.debut))} <span>jusqu'à</span> ${esc(when(i.fin))}</div></div>`
+    :`<div class="imp normal"><div class="imp-h"><i></i>Improductif</div><div class="imp-t">${esc(i.libelle||'Sans intitulé')}</div><div class="imp-p">${esc(when(i.debut))} <span>jusqu'à</span> ${esc(when(i.fin))}</div></div>`;
+}
+function askBlock(d){
+  const mine=d.auteur===S.who;const late=d.date<TODAY?' · prévu '+dayWord(d.date):d.date!==TODAY?' · '+dayWord(d.date):'';
+  return `<div class="imp ${mine?'mine':'info'}"><div class="imp-h"><i></i>${mine?'Mon rappel':'Demandé par le service parc'}${esc(late)}</div><div class="imp-t">${esc(d.consigne||'Passer voir ce véhicule.')}</div>${!mine&&d.point?`<div class="imp-p">${esc(d.point)}</div>`:''}${mine?`<button type="button" class="lnk" data-unremind="${esc(d.id)}">Supprimer ce rappel</button>`:''}</div>`;
+}
+/* « aujourd'hui », « demain », « hier » ou « jeu. 22 oct. » */
+function dayWord(d){const n=dayDiff(d);return n===0?"aujourd'hui":n===1?'demain':n===-1?'hier':(l=>l.dow.toLowerCase()+' '+l.num)(dLabel(d))}
+/* « de demain », « d'hier », « du sam. 17 » */
+function duWord(d){const w=dayWord(d).replace(/\.$/,'');const n=dayDiff(d);return n===1?'de '+w:n===-1?"d'"+w:'du '+w}
+function leWord(d){const w=dayWord(d).replace(/\.$/,'');const n=dayDiff(d);return Math.abs(n)===1?w:'le '+w}
+function plusDays(n){return dayOffset(n)}
+function timeCell(label,t,city,fallback){
+  if(!t)return `<div class="tc"><div class="mlabel">${label}</div><div class="tt muted">-</div><div class="td">${fallback}</div></div>`;
+  const [d,h]=t.split(' ');const n=dayDiff(d);
+  const day=n===0?"Aujourd'hui":n===1?'Demain':n===-1?'Hier':(l=>l.dow+' '+l.num)(dLabel(d));
+  return `<div class="tc"><div class="mlabel">${label}</div><div class="tt">${Number(h.slice(0,2))+'h'+(h.slice(3)==='00'?'':h.slice(3))}</div><div class="td">${day}${city?' · '+esc(city):''}</div></div>`;
+}
+function full(p){return FULL[p]||p}
+/* Arrivée et départ sur deux lignes, avec le jour */
+/* Court : « Auj. 11h », « Dem. 17h30 », « Hier 23h », « Sam. 17 9h » */
+function short(t){if(!t)return '';const [d,h]=t.split(' ');const n=dayDiff(d);const l=dLabel(d);const day=n===0?'Auj.':n===1?'Dem.':n===-1?'Hier':l.dow+' '+l.num+' à';const [hh,mm]=h.split(':');return day+' '+Number(hh)+'h'+(mm==='00'?'':mm)}
+function timesHtml(s){return `<span class="tgrid"><span><small>Arrivée</small><b>${s.from?esc(short(s.from)):'Sur place'}</b></span><span><small>Départ</small><b>${s.to?esc(short(s.to)):'Pas prévu'}</b></span></span>`}
+/* Texte d'improductif limité à 2 lignes sur la carte ; en entier dans la fiche */
+function improMini(i){return `<span class="bar ${i.type}"><i></i><span class="bl">${i.type==='meca'?'RDV méca':esc(i.libelle||'Improductif')}</span><span class="bd">${esc(short(i.debut))}${i.fin?' → '+esc(short(i.fin)):''}</span></span>`}
+function dayChip(d,i,attr,sel){const l=dLabel(d);const n=dayDiff(d);const on=d===sel;return `<button type="button" class="day ${on?'on':''}" ${attr}="${d}" aria-pressed="${on}" aria-label="${esc(l.dow+' '+l.num)}"><small>${n===0?'Auj.':n===1?'Dem.':n===-1?'Hier':l.dow}</small><b>${Number(d.slice(8))}</b></button>`}
+function rowHtml(p,inner,cls){return `<button type="button" class="row ${cls||''}" data-open="${esc(p)}"><span class="row-b">${inner}</span><span class="chev">${I.chev}</span></button>`}
+function gate(title,text,btn){return `<div class="gate"><b>${title}</b><p>${text}</p>${btn||''}</div>`}
+
+function vHome(){
+  const pts=LOCAL.concat(allPoints().filter(p=>S.myPoints.includes(p)&&!LOCAL.includes(p)));
+  const order=S.myPoints.slice().sort((a,b)=>pts.indexOf(a)-pts.indexOf(b));
+  const now=DAY===TODAY,past=DAY<TODAY;const list=past?staysOn(DAY):todo(DAY),asks=openAsks(DAY);
+  const days=[];for(let i=-DAYS_BACK;i<=DAYS_AHEAD;i++)days.push(plusDays(i));
+  return `
+  <div class="days" role="group" aria-label="Jour">${days.map((d,i)=>dayChip(d,i,'data-day',DAY)).join('')}</div>
+  <div class="pts" role="group" aria-label="Mes points">${pts.map(p=>{const on=S.myPoints.includes(p);return `<button type="button" class="pt ${on?'on':''}" data-point="${esc(p)}" aria-pressed="${on}" title="${esc(p)}">${esc(SHORT[p]||p)}</button>`}).join('')}</div>
+  <button type="button" class="askbtn ${asks.length?'':'none'}" id="openAsks"><span>Rappels et demandes</span><span class="askn">${asks.length?`<b>${asks.length}</b>`:'aucun'}${I.chev}</span></button>
+  ${now?'':`<div class="later">${past?'Journée':'Planning'} ${esc(duWord(DAY))} : à consulter seulement. Les véhicules se valident le jour même.</div>`}
+  ${!order.length?'<div class="empty"><b>Choisissez votre point</b><span>Touchez un point ci-dessus.</span></div>':''}
+  ${order.map(p=>{const pa=asks.filter((d,i,a)=>askPt(d)===p&&a.findIndex(x=>x.plaque===d.plaque)===i);const l=list.filter(s=>s.point===p&&!pa.some(d=>d.plaque===s.plaque));return `
+  <section class="psec">
+    <div class="pband"><h2>${esc(full(p))}</h2><div class="pband-n"><b>${l.length+pa.length}</b> ${now?'à voir':'sur place'}</div></div>
+    ${pa.map(d=>askCard(d,staysOn(DAY).find(s=>s.plaque===d.plaque&&s.point===p))).join('')}
+    ${l.length||pa.length?l.map(s=>{const v=vehicle(s.plaque)||{};const imp=s.impros[0];return rowHtml(s.plaque,`
+        <span class="row-t"><span class="plate">${esc(s.plaque)}</span>${past?(P[sid(s)]?'<span class="pill seen">Vu</span>':'<span class="pill unseen">Pas vu</span>'):s.leaves?`<span class="pill dep">${now?'Part aujourd\'hui':'Part ce jour-là'}</span>`:s.arrives?'<span class="pill arr">Arrive</span>':''}</span>
+        <span class="model">${esc(v.modele||'')}</span>
+        ${timesHtml(s)}
+        ${s.impros.map(improMini).join('')}`)}).join(''):`<div class="empty small"><b>${now?'Tout est fait sur ce point':'Aucun véhicule prévu sur ce point'}</b></div>`}
+  </section>`}).join('')}`;
+}
+
+/* Point d'un rappel : celui choisi, sinon celui du planning ce jour-là */
+function askPt(d){return d.point||((stayFor(d.plaque,DAY)||{}).point)||''}
+function askPill(d){return d.date<TODAY?`<span class="pill late">Prévu ${esc(dayWord(d.date))}</span>`:d.auteur===S.who?'<span class="pill mine">Mon rappel</span>':'<span class="pill ask">Service parc</span>'}
+/* Rappel ou demande dans la liste du point, même si le planning ne met pas le véhicule ici */
+function askCard(d,s){const v=vehicle(d.plaque)||{};return rowHtml(d.plaque,`<span class="row-t"><span class="plate">${esc(d.plaque)}</span>${askPill(d)}</span>${v.modele?`<span class="model">${esc(v.modele)}</span>`:''}<span class="consigne">${esc(d.consigne||'Passer voir ce véhicule.')}</span>${s?timesHtml(s)+s.impros.map(improMini).join(''):'<span class="spec">Pas prévu ici dans le planning</span>'}`,'ask')}
+function cap(t){return t.charAt(0).toUpperCase()+t.slice(1)}
+function vAsks(){
+  const now=DAY===TODAY,cur=openAsks(DAY),from=DAY>TODAY?DAY:TODAY;
+  const later=allAsks().filter(d=>d.date>from).sort((a,b)=>a.date.localeCompare(b.date));
+  const row=d=>{const v=vehicle(d.plaque)||{};const pt=d.point||((stayFor(d.plaque,d.date)||{}).point)||'';return rowHtml(d.plaque,`<span class="row-t"><span class="plate">${esc(d.plaque)}</span>${d.auteur===S.who?'<span class="pill mine">Mon rappel</span>':'<span class="pill ask">Service parc</span>'}</span>${v.modele?`<span class="model">${esc(v.modele)}</span>`:''}<span class="consigne">${esc(d.consigne||'Passer voir ce véhicule.')}</span><span class="spec">${esc((d.date<TODAY?'Prévu '+dayWord(d.date):cap(dayWord(d.date)))+(pt?' · '+full(pt):''))}</span>`,'ask')};
+  return `<div class="sh-top pad"><button type="button" class="back" id="closeSheet">${I.back}Retour</button></div>
+  <div class="sh-body pad">
+    <div class="q">Rappels et demandes</div>
+    <button type="button" class="btn big primary" id="openRemind">${I.clockL}Ajouter un rappel</button>
+    <div class="mlabel">${now?"Aujourd'hui":esc(cap(dayWord(DAY)))}</div>
+    ${cur.length?cur.map(row).join(''):'<div class="empty small"><b>Aucun rappel ni demande</b></div>'}
+    ${later.length?`<div class="mlabel">Prochains jours</div>${later.map(row).join('')}`:''}
+  </div>`;
+}
+
+function vDone(){
+  const d=doneOn(DONE_DAY);const pb=d.filter(x=>x.pb.length).length;const today=DONE_DAY===TODAY;
+  const hist=[];for(let i=-(HISTORY_DAYS-1);i<=0;i++)hist.push(plusDays(i));
+  if(showReport)return `
+  <div><button type="button" class="back" id="closeReport">${I.back}Retour</button></div>
+  <div class="mlabel">Message pour le service parc</div>
+  <pre class="report" id="reportText">${esc(report())}</pre>
+  ${DEMO?`<button type="button" class="btn big primary" id="copy">Copier le message</button>
+  <div class="meta">Démonstration : le message se copie. Dans la version reliée, il part tout seul.</div>`
+  :`<button type="button" class="btn big primary" id="send">Envoyer au service parc</button>`}`;
+  return `
+  <div class="days" role="group" aria-label="Jour de la tournée">${hist.map((x,i)=>dayChip(x,i,'data-doneday',DONE_DAY)).join('')}</div>
+  <div class="prog"><div class="prog-h"><span class="mlabel">${today?'Aujourd\'hui':esc(dayWord(DONE_DAY))}</span><b>${d.length}<span> véhicule${d.length>1?'s':''} fait${d.length>1?'s':''}</span></b></div>${pb?`<div class="spec">dont ${pb} avec un problème signalé</div>`:''}</div>
+  ${d.length?`<div class="list">${d.map(x=>{const v=vehicle(x.plaque)||{};return `
+    <button type="button" class="row" data-open="${esc(x.plaque)}">
+      <span class="okdot ${x.pending?'wait':x.pb.length?'ko':''}" aria-hidden="true">${x.pending?I.clock:x.pb.length?'!':I.tick}</span>
+      <span class="row-b"><span class="plate">${esc(x.plaque)}</span><span class="model">${esc(v.modele||'')}</span>
+      <span class="spec">${esc(x.point)} · ${esc(x.at.slice(11).replace(':','h'))}${x.pending?' · pas encore envoyé':''}</span>
+      ${x.pb.length?`<span class="mini dmg"><i></i>${esc(x.pb.join(', '))}</span>`:'<span class="mini ok"><i></i>Tout est OK</span>'}</span>
+      <span class="chev">${I.chev}</span>
+    </button>`}).join('')}</div>
+  ${today?'<button type="button" class="btn big primary" id="finish">Terminer ma tournée</button>':''}`
+  :today?'<div class="empty"><b>Rien pour l\'instant</b><span>Les véhicules que vous validez apparaissent ici.</span></div>':'<div class="empty"><b>Aucun véhicule ce jour-là</b></div>'}`;
+}
+
+function searchResults(){
+  const q=norm(query);const res=q.length>=2?[...vehicles().values()].filter(v=>norm(v.plaque).includes(q)).slice(0,8):[];
+  const raw=query.trim().toUpperCase();
+  return `${res.map(v=>rowHtml(v.plaque,`<span class="plate">${esc(v.plaque)}</span><span class="model">${esc(v.modele||'')}</span>`)).join('')}
+    ${q.length>=2&&!res.length?'<div class="meta">Aucun véhicule de la flotte ne correspond.</div>':''}
+    ${raw.length>=7&&!vehicles().has(raw)?`<button type="button" class="btn wide" data-open="${esc(raw)}">Continuer avec ${esc(raw)}</button>`:''}`;
+}
+function vSearch(){
+  return `<div class="sh-top pad"><button type="button" class="back" id="closeSheet">${I.back}Retour</button></div>
+  <div class="sh-body pad">
+    <label class="mlabel" for="q">${sheet.remind?'Rappel pour quel véhicule ? Tapez la plaque':'Plaque du véhicule'}</label>
+    <input type="search" id="q" class="plateinput" placeholder="AA-123-CD" value="${esc(query)}" autocomplete="off" autocapitalize="characters" spellcheck="false">
+    <div id="qres" style="display:flex;flex-direction:column;gap:12px">${searchResults()}</div>
+  </div>`;
+}
+function vSheet(){
+  if(sheet.search)return vSearch();
+  if(sheet.asks)return vAsks();
+  const p=sheet.plaque;const v=vehicle(p)||{plaque:p,events:[]};const now=DAY===TODAY;const st=stayFor(p,DAY);
+  const done=passageOf(p);const mine=done&&done.by===S.who;
+  const asks=allAsks().filter(d=>d.plaque===p).sort((a,b)=>a.date.localeCompare(b.date));
+  const top=`<div class="sh-top pad"><button type="button" class="back" id="${sheet.step==='fiche'?'closeSheet':'backFiche'}">${I.back}Retour</button></div>
+    <div class="sh-id pad"><span class="plate xl">${esc(p)}</span><span class="model">${esc(v.modele||'Véhicule hors liste')}</span>${v.categorie||v.km!=null?`<span class="spec">${esc([v.categorie,fmtKm(v.km)].filter(Boolean).join(' · '))}</span>`:''}</div>`;
+  if(sheet.step==='rappel'){
+    const opts=[['Demain',1],['Après-demain',2],['Dans 1 semaine',7],['Dans 2 semaines',14]];
+    return top+`
+    <div class="sh-body pad">
+      <div class="q">Me le rappeler quand ?</div>
+      <div class="tiles">${opts.map(([t,n])=>{const d=plusDays(n);const on=!rdraft.other&&rdraft.date===d;const l=dLabel(d);return `<button type="button" class="tile pick ${on?'on':''}" data-rdate="${d}" aria-pressed="${on}">${t}<br><small>${esc(l.dow.toLowerCase()+' '+l.num)}</small></button>`}).join('')}
+        <button type="button" class="tile pick ${rdraft.other?'on':''}" data-rother="1" aria-pressed="${rdraft.other}">Autre date</button></div>
+      ${rdraft.other?`<label class="mlabel" for="rDate">Date du rappel</label><input type="date" id="rDate" class="dateinput" min="${plusDays(1)}" max="${plusDays(90)}" value="${esc(rdraft.date)}">`:''}
+      <div class="q">Sur quel point ?</div>
+      <div class="tiles">${LOCAL.map(pt=>{const on=rdraft.point===pt;return `<button type="button" class="tile pick ${on?'on':''}" data-rpoint="${esc(pt)}" aria-pressed="${on}">${esc(full(pt))}</button>`}).join('')}</div>
+      <textarea id="rNote" placeholder="Pourquoi ? (facultatif)" maxlength="200">${esc(rdraft.note)}</textarea>
+      <div class="meta">Ce jour-là, le véhicule apparaît en rouge dans la liste de ce point. Vous seul le voyez, et le service parc.</div>
+    </div>
+    <div class="sh-foot pad"><button type="button" class="btn big primary" id="saveRem" ${rdraft.date?'':'disabled'}>Enregistrer le rappel</button></div>`;
+  }
+  if(sheet.step==='probleme')return top+`
+    <div class="sh-body pad">
+      <div class="q">Quel problème ?</div>
+      <div class="tiles">${DAMAGES.concat(OTHER).map(d=>`<button type="button" class="tile ${draft.types.includes(d)?'on':''}" data-dmg="${esc(d)}" aria-pressed="${draft.types.includes(d)}">${esc(d)}</button>`).join('')}</div>
+      ${draft.photos.length?`<div class="photos">${draft.photos.map((u,i)=>`<div class="ph ${u.indexOf('data:')===0?'':'demo'}">${u.indexOf('data:')===0?`<img src="${u}" alt="Photo ${i+1}">`:'Photo '+(i+1)}<button type="button" class="ph-x" data-rmphoto="${i}" aria-label="Retirer la photo ${i+1}">×</button></div>`).join('')}</div>`:''}
+      ${draft.photos.length<MAX_PHOTOS?`<label class="btn wide photo" for="photo">${I.camera}<span id="photoName">${draft.photos.length?'Ajouter une photo ('+draft.photos.length+'/'+MAX_PHOTOS+')':'Prendre une photo (facultatif)'}</span></label>
+      <input type="file" id="photo" accept="image/*" capture="environment" hidden>`:`<div class="meta">${MAX_PHOTOS} photos maximum.</div>`}
+      <textarea id="comment" placeholder="Un mot à ajouter ? (facultatif)">${esc(draft.comment)}</textarea>
+    </div>
+    <div class="sh-foot pad"><button type="button" class="btn big warn" id="saveDmg" ${draft.types.length?'':'disabled'}>Valider le problème</button></div>`;
+  const ev=v.events||[];
+  return top+`
+    <div class="sh-body pad">
+      ${done?`<div class="status ${done.pb.length?'ko':'ok'}">${done.pb.length?'Problème signalé : '+esc(done.pb.join(', ')):'Validé'}${mine?'':' par '+esc(done.by)} · ${esc(when(done.at))}</div>`:''}
+      ${now?'':`<div class="later">Vous regardez ${esc(leWord(DAY))}. La validation se fait le jour même.</div>`}
+      ${asks.map(askBlock).join('')}
+      ${st?`<div class="card0 times">${timeCell('Arrivée',st.from,st.fromCity?'de '+st.fromCity:'','Déjà sur place')}<div class="sep" aria-hidden="true"></div>${timeCell('Départ',st.to,st.toCity?'vers '+st.toCity:'','Non planifié')}</div>`:''}
+      ${st?st.impros.map(improBlock).join(''):''}
+      ${ev.length?`<div class="card0"><div class="sec"><div class="mlabel">Déjà signalé dans le BO</div><ul class="evl">${ev.map(e=>`<li><span>${esc(e.label)}</span>${e.status?`<em>${esc(e.status)}</em>`:''}</li>`).join('')}</ul></div></div>`:''}
+    </div>
+    <div class="sh-foot pad">
+      ${now?`<button type="button" class="btn big primary" id="okBtn">${I.tick}Tout est OK</button>
+      <button type="button" class="btn big warn-o" id="pbBtn">Signaler un problème</button>
+      <div class="duo"><button type="button" class="btn" id="absentBtn">Véhicule pas sur place</button>
+      <button type="button" class="btn" id="remBtn">${I.clock}Me le rappeler</button></div>`:`<button type="button" class="btn wide" id="remBtn">${I.clock}Me le rappeler</button>`}
+      ${now&&mine?'<button type="button" class="btn wide ghosttxt" id="undo">Annuler la validation</button>':''}
+    </div>`;
+}
+
+/* « Vendredi 16 octobre » */
+function fullDay(isoD){const [y,m,d]=isoD.split('-').map(Number);return ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'][new Date(y,m-1,d).getDay()]+' '+(d===1?'1er':d)+' '+['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'][m-1]}
+function report(){
+  const d=doneToday().slice().reverse();const l=dLabel(TODAY);const lines=[];
+  lines.push('*'+fullDay(TODAY)+'*');
+  lines.push(plural(d.length,'véhicule')+' vu'+(d.length>1?'s':''));
+  [...new Set(d.map(x=>x.point))].forEach(p=>{lines.push('');lines.push('*'+p+'*');
+    d.filter(x=>x.point===p).forEach(x=>lines.push(x.plaque+(x.pb.length?' · Problème : '+x.pb.join(', ')+(x.comment?' ('+x.comment+')':'')+(x.photo?' · photo':''):'')))});
+  const left=todo();if(left.length){lines.push('');lines.push('*Pas vus*');left.forEach(s=>lines.push(s.plaque))}
+  return lines.join('\n');
+}
+
+function sourceLine(){
+  if(DEMO)return `<span>${esc(S.sourceLabel||'Démonstration')}</span><label for="csvFile">Charger un export</label>`;
+  const wait=S.queue.length?' · '+plural(S.queue.length,'envoi')+' en attente':'';
+  let txt;
+  if(S.misAJour){const d=new Date(S.misAJour);txt=isNaN(d)?'Planning reçu':'Planning du '+dLabel(iso(d)).num+' à '+hm(d).replace(':','h')}
+  else txt=S.synced?'Planning pas encore reçu':'Chargement…';
+  if(S.offline)txt='Pas de réseau'+(S.synced?' · données de '+S.synced.slice(11).replace(':','h'):'');
+  return `<span>${esc(txt+wait)}</span><button type="button" id="refresh">Actualiser</button>`;
+}
+let lastCk='';
+/* Ne touche l'écran que si son contenu change : ouvrir une fiche ne redessine pas la liste derrière */
+function put(el,html){if(el._h!==html){el._h=html;el.innerHTML=html}}
+function render(bg){
+  index();
+  const sc=S.screen==='done'?'done':'home';const l=dLabel(TODAY);
+  const ws=$('#whoSlot');
+  if(DEMO){put(ws,`<button type="button" id="who" class="who" aria-haspopup="true" aria-expanded="${picker}">${I.user}${esc(S.who)} <span aria-hidden="true">&#9662;</span></button>`)}
+  else put(ws,S.who?`<span class="who">${I.user}${esc(S.who)}</span>`:'');
+  const dl=dLabel(DAY);let up='';if(!DEMO&&S.misAJour){const m=new Date(S.misAJour);if(!isNaN(m))up=' · planning de '+hm(m).replace(':','h').replace(/h00$/,'h')}
+  $('#sub').textContent=dl.dow+' '+dl.num+up;
+  /* La ligne d'état ne s'affiche qu'en cas de souci (pas de réseau, envois en attente, pas de planning) */
+  const alert=!DEMO&&(S.offline||S.queue.length>0||(S.synced&&!S.misAJour));
+  const src=$('#source');put(src,sourceLine());src.classList.toggle('alert',alert);
+  let blocked='';
+  if(!DEMO&&!CODE)blocked=gate('Ce téléphone n\'est pas encore relié','Demandez au service parc de vous installer l\'appli avec votre lien personnel.');
+  else if(!DEMO&&S.blocked)blocked=gate('Lien non reconnu',esc(S.blocked));
+  else if(!DEMO&&!ready)blocked=gate('Chargement…','Ouverture de votre planning.');
+  else if(!DEMO&&!S.synced)blocked=S.offline?gate('Pas de réseau','L\'appli a besoin d\'internet la première fois.','<button type="button" class="btn wide primary" id="refresh">Réessayer</button>'):gate('Chargement…','Récupération de votre planning.');
+  $('#title').textContent=blocked?'Runners':sc==='done'?'Ma tournée':DAY===TODAY?'Véhicules à voir':'Planning à venir';
+  $('#nav').hidden=!!blocked;
+  put($('#hsSlot'),blocked?'':`<button type="button" class="hsearch" id="openSearch">${I.search}<span>Chercher une plaque</span></button>`);
+  if(blocked){$('#source').hidden=!!(DEMO||!CODE||S.blocked);put($('#view'),blocked);sheet=null}
+  else{
+    $('#source').hidden=!alert;
+    put($('#view'),(picker?`<div class="picker" role="group" aria-label="Choisir le runner"><div class="mlabel">Qui fait la tournée ?</div><div class="choice">${RUNNERS.map(r=>`<button type="button" class="opt-row ${r===S.who?'on':''}" data-runner="${esc(r)}" aria-pressed="${r===S.who}"><span class="box">${r===S.who?I.tick:''}</span>${esc(r)}</button>`).join('')}</div><label for="csvFile" class="lnk2">Démonstration : charger un export Metabase</label></div>`:'')+(sc==='done'?vDone:vHome)());
+    const ck=sc+DAY+DONE_DAY;if(ck!==lastCk){lastCk=ck;centerDays()}
+    const n=todo().length+openAsks().length,dn=doneToday().length;
+    put($('#tabs'),[['home','À faire',I.todo,n],['done','Ma tournée',I.done,dn]].map(([k,t,ic,c])=>`<button type="button" class="${k===sc?'on':''}" data-tab="${k}" aria-current="${k===sc?'page':'false'}">${ic}<span>${t} <b class="cnt">${c}</b></span></button>`).join(''));
+  }
+  /* Une mise à jour en arrière-plan ne redessine pas la fiche ouverte (on ne perd pas la saisie) */
+  if(bg&&sheet)return;
+  const sh=$('#sheet');
+  if(sheet){sh.innerHTML=vSheet();sh.hidden=false;document.body.classList.add('noscroll')}else{sh.hidden=true;sh.innerHTML='';document.body.classList.remove('noscroll')}
+}
+function openSheet(p){query='';const x=passageOf(p);draft=x&&x.by===S.who&&x.pb.length?{types:x.pb.slice(),photos:[],comment:x.comment}:{types:[],photos:[],comment:''};sheet={plaque:p,step:'fiche'};render();$('#sheet').scrollTop=0}
+function closeSheet(msg){sheet=sheet&&!sheet.asks&&sheet.back==='asks'?{asks:true}:null;render();if(msg)toast(msg)}
+function set(patch){Object.assign(S,patch);save();render()}
+
+/* Photo réduite à 1280 px pour un envoi rapide */
+function compress(file){
+  return new Promise((ok,ko)=>{const url=URL.createObjectURL(file);const img=new Image();
+    img.onload=()=>{const s=Math.min(1,1280/Math.max(img.width,img.height));const c=document.createElement('canvas');c.width=Math.round(img.width*s);c.height=Math.round(img.height*s);
+      c.getContext('2d').drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(url);ok(c.toDataURL('image/jpeg',.72))};
+    img.onerror=()=>{URL.revokeObjectURL(url);ko(new Error('photo'))};img.src=url});
+}
+
+/* ---------- Événements ---------- */
+document.addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  const d=b.dataset;
+  if(b.id==='who'){picker=!picker;render();return}
+  if(d.runner){picker=false;set({who:d.runner});toast('Tournée de '+d.runner+'.');return}
+  if(d.tab){showReport=false;if(d.tab==='done'){DAY=TODAY;DONE_DAY=TODAY}set({screen:d.tab});window.scrollTo(0,0);return}
+  if(d.day){if(dragged)return;DAY=d.day;render();window.scrollTo(0,0);return}
+  if(d.doneday){if(dragged)return;DONE_DAY=d.doneday;showReport=false;render();return}
+  if(b.id==='remBtn'){rdraft=newRemind(sheet.plaque);sheet.step='rappel';render();$('#sheet').scrollTop=0;return}
+  if(d.rdate){rdraft.date=d.rdate;rdraft.other=false;render();return}
+  if(d.rother){rdraft.other=true;rdraft.date='';render();return}
+  if(b.id==='saveRem'){const p=sheet.plaque,dt0=rdraft.date;remind(p,dt0,rdraft.note.trim(),rdraft.point);closeSheet('Rappel enregistré pour '+dayWord(dt0).replace(/\.$/,'')+'.');return}
+  if(d.unremind){unremind(d.unremind);render();toast('Rappel supprimé.');return}
+  if(d.point){const p=d.point;set({myPoints:S.myPoints.includes(p)?S.myPoints.filter(x=>x!==p):S.myPoints.concat(p),ptsSet:true});return}
+  if(d.open){const rem=sheet&&sheet.remind,back=sheet&&(sheet.asks||sheet.back==='asks')?'asks':'';openSheet(d.open);if(back)sheet.back=back;if(rem){rdraft=newRemind(d.open);sheet.step='rappel'}render();return}
+  if(d.rpoint){rdraft.point=d.rpoint;render();return}
+  if(b.id==='openAsks'){sheet={asks:true};render();$('#sheet').scrollTop=0;return}
+  if(b.id==='absentBtn'){const p=sheet.plaque;record(p,['Pas trouvé sur place'],'',[]);closeSheet(p+' signalé pas sur place. Le service parc sera prévenu.');return}
+  if(b.id==='refresh'){S.offline=false;run();return}
+  if(b.id==='openSearch'){query='';sheet={search:true};render();$('#q').focus();return}
+  if(b.id==='openRemind'){query='';sheet={search:true,remind:true,back:sheet&&sheet.asks?'asks':''};render();$('#q').focus();return}
+  if(b.id==='closeSheet'){closeSheet();return}
+  if(b.id==='backFiche'){sheet.step='fiche';render();return}
+  if(b.id==='okBtn'){const p=sheet.plaque;record(p,[],'','');closeSheet(p+' validé. Tout est OK.');return}
+  if(b.id==='pbBtn'){sheet.step='probleme';render();$('#sheet').scrollTop=0;return}
+  if(d.rmphoto){draft.photos.splice(+d.rmphoto,1);render();return}
+  if(d.dmg){const i=draft.types.indexOf(d.dmg);i<0?draft.types.push(d.dmg):draft.types.splice(i,1);render();return}
+  if(b.id==='saveDmg'){const p=sheet.plaque;record(p,draft.types.slice(),draft.comment.trim(),draft.photos.slice());closeSheet(p+' validé avec un problème. Le service parc sera prévenu.');return}
+  if(b.id==='undo'){const p=sheet.plaque;undo(p);closeSheet('Validation annulée pour '+p+'.');return}
+  if(b.id==='finish'){showReport=true;render();window.scrollTo(0,0);return}
+  if(b.id==='closeReport'){showReport=false;render();return}
+  if(b.id==='copy'){const txt=report();try{navigator.clipboard.writeText(txt).then(()=>toast('Message copié.'),selectReport)}catch(err){selectReport()}return}
+  if(b.id==='send'){b.disabled=true;b.textContent='Envoi…';
+    call(null,{code:CODE,action:'rapport',texte:report()}).then(r=>{if(r.erreur)throw new Error(r.erreur);showReport=false;render();toast(r.slack?'Tournée envoyée au service parc.':'Tournée enregistrée. Le service parc la voit sur sa page.')})
+      .catch(()=>{b.disabled=false;b.textContent='Envoyer au service parc';toast('Pas de réseau. Réessayez dans un moment.')});return}
+});
+function selectReport(){const r=document.createRange();r.selectNodeContents($('#reportText'));const s=getSelection();s.removeAllRanges();s.addRange(r);toast('Texte sélectionné : copiez-le avec un appui long.')}
+document.addEventListener('input',e=>{
+  if(e.target.id==='q'){query=e.target.value;const r=$('#qres');if(r)r.innerHTML=searchResults()}
+  if(e.target.id==='comment')draft.comment=e.target.value;
+  if(e.target.id==='rNote')rdraft.note=e.target.value;
+  if(e.target.id==='rDate'){rdraft.date=/^\d{4}-\d{2}-\d{2}$/.test(e.target.value)&&e.target.value>TODAY?e.target.value:'';const b=$('#saveRem');if(b)b.disabled=!rdraft.date}
+});
+document.addEventListener('change',e=>{
+  if(e.target.id==='rDate'){rdraft.date=/^\d{4}-\d{2}-\d{2}$/.test(e.target.value)&&e.target.value>TODAY?e.target.value:'';const b=$('#saveRem');if(b)b.disabled=!rdraft.date}
+  if(e.target.id==='photo'){const f=e.target.files[0];if(!f)return;$('#photoName').textContent='Préparation de la photo…';
+    compress(f).then(u=>{if(draft.photos.length<MAX_PHOTOS)draft.photos.push(DEMO?'photo':u);render()},()=>{render();toast('Photo illisible. Réessayez.')})}
+  if(e.target.id==='csvFile'){const f=e.target.files[0];if(!f)return;const r=new FileReader();
+    r.onload=()=>{try{const t=parseCsv(String(r.result));const m=new Date(f.lastModified||Date.now());
+      set({loc:t.loc,impros:t.impros,plan:null,sourceLabel:'Export du '+dLabel(iso(m)).num+' à '+hm(m).replace(':','h')});
+      toast('Export chargé : '+plural(t.loc.length,'location')+', '+plural(t.impros.length,'improductif')+'.')}catch(err){toast('Fichier non lu. '+err.message)}e.target.value=''};
+    r.readAsText(f,'utf-8')}
+});
+/* Rangée des jours : molette et glisser à la souris (au doigt, le défilement est natif) */
+let dragged=false,drag=null;
+document.addEventListener('wheel',e=>{const r=e.target.closest('.days');if(!r||Math.abs(e.deltaX)>Math.abs(e.deltaY))return;r.scrollLeft+=e.deltaY;e.preventDefault()},{passive:false});
+document.addEventListener('pointerdown',e=>{const r=e.target.closest('.days');dragged=false;if(r&&e.pointerType==='mouse')drag={r,x:e.clientX,l:r.scrollLeft}});
+document.addEventListener('pointermove',e=>{if(!drag)return;const dx=e.clientX-drag.x;if(Math.abs(dx)>5)dragged=true;drag.r.scrollLeft=drag.l-dx});
+document.addEventListener('pointerup',()=>{drag=null;setTimeout(()=>{dragged=false},0)});
+addEventListener('resize',()=>centerDays());addEventListener('load',()=>centerDays());
+function centerDays(){document.querySelectorAll('.days').forEach(r=>{const on=r.querySelector('.day.on');if(on)r.scrollLeft=on.offsetLeft-r.offsetLeft-(r.clientWidth-on.offsetWidth)/2})}
+window.addEventListener('online',()=>{S.offline=false;run()});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')run()});
+setInterval(()=>{if(document.visibilityState==='visible')run()},REFRESH_MS);
+if(!DEMO&&'serviceWorker' in navigator&&location.protocol==='https:'){try{navigator.serviceWorker.register('sw.js').catch(()=>{})}catch(e){}}
+if(ready)run();
+else{render(true);IDB.get(STORE+'-plan').then(pl=>{
+  if(pl&&(pl.lignes||pl.loc)){try{const t=readPlan(pl);S.loc=t.loc;S.impros=t.impros;S.plan=pl}catch(e){}}
+  if(!S.plan)S.misAJour='';
+  return IDB.get(STORE+'-pas')}).then(pa=>{if(Array.isArray(pa))S.passages=pa;else if(S.passages.length)savePassages()}).finally(()=>{ready=true;run()})}
+})();
+</script>
+</body>
+</html>
