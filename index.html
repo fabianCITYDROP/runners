@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Runners</title>
-<!-- Appli Runners City Drop, v22 : version reliée au Google Sheet (voir config.js) ; gros caractères, 3 photos, aujourd'hui au milieu, recherche en haut, page des rappels ; v22 : corrections après test complet ; v23 : planning compact (grosses flottes), dates avec le mois, longs textes coupés sur les cartes ; v24 : rapide sur téléphone lent avec une grosse flotte (planning préparé par Google et rangé à part, écran redessiné seulement s'il change) ; v25 : message de fin de tournée simplifié (date en entier, plaques les unes sous les autres, sans heure ni prénom) -->
+<!-- Appli Runners City Drop, v22 : version reliée au Google Sheet (voir config.js) ; gros caractères, 3 photos, aujourd'hui au milieu, recherche en haut, page des rappels ; v22 : corrections après test complet ; v23 : planning compact (grosses flottes), dates avec le mois, longs textes coupés sur les cartes ; v24 : rapide sur téléphone lent avec une grosse flotte (planning préparé par Google et rangé à part, écran redessiné seulement s'il change) ; v25 : message de fin de tournée simplifié (date en entier, plaques les unes sous les autres, sans heure ni prénom) ; v27 : une validation faite pendant la réception du planning part tout de suite après (avant : jusqu'à 5 min d'attente) ; envois sans photo passés par l'adresse (GET) car l'iPhone bloquait les envois classiques ; v28 : actualisation toutes les 30 s ; v29 : une validation part même si le runner ferme l'appli juste après ; v30 : signalement avec photos envoyé en deux temps (le passage d'abord, même appli fermée, les photos ensuite) ; attente plus longue et message « Google ne répond pas » au lieu d'un faux « Pas de réseau » -->
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
@@ -317,7 +317,7 @@ const FULL={'La Def':'La Défense','Aulnay':'Aulnay-sous-Bois'};
 const ALIAS={'nanterre':'La Def','la def':'La Def','la defense':'La Def','paris la defense':'La Def','saint cloud':'Saint-Cloud','st cloud':'Saint-Cloud','aulnay':'Aulnay','aulnay sous bois':'Aulnay','paris centre':'Paris-Centre','coignieres':'Coignières'};
 const DAMAGES=['Impact pare-brise','Pare-brise fissuré','Pneu avant à changer','Pneu arrière à changer','Rétroviseur endommagé','Choc carrosserie','Feu cassé','Voyant au tableau de bord'];
 const OTHER='Autre problème';
-const REFRESH_MS=5*60*1000;
+const REFRESH_MS=30*1000; /* v28 : toutes les 30 s (avant 5 min) pour voir vite les demandes du bureau ; le planning n'est renvoyé que s'il a changé */
 
 /* ---------- Icônes ---------- */
 const svg=(d,w,sw)=>`<svg width="${w||22}" height="${w||22}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw||2}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
@@ -605,25 +605,48 @@ function unremind(id){
 
 /* ---------- Échanges avec Google ---------- */
 function call(params,body,ms){
-  const ctl=new AbortController();const t=setTimeout(()=>ctl.abort(),ms||20000);
+  const ctl=new AbortController();const t=setTimeout(()=>ctl.abort(),ms||45000);
   const url=params?API+'?'+new URLSearchParams(params):API;
+  /* Envoi sans photo : passé dans l'adresse (GET), la porte qui marche partout. Avec photos : envoi classique (POST). */
+  if(body&&!(body.photos&&body.photos.length)){params={j:JSON.stringify(body),code:body.code||''};body=null}
+  const url2=params?API+'?'+new URLSearchParams(params):API;
   const opt=body?{method:'POST',body:JSON.stringify(body),signal:ctl.signal}:{signal:ctl.signal,cache:'no-store'};
-  return fetch(url,opt).then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}).finally(()=>clearTimeout(t));
+  return fetch(url2,opt).then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}).finally(()=>clearTimeout(t));
 }
-let busy=false;
+let busy=false,again=false,retryT=0;
+function baseOf(q){const b=bodyOf(q);delete b.photos;b.photos_attendues=q.photos.length;return b}
+function bodyOf(q){const body={code:CODE};['action','id','cle','plaque','point','problemes','commentaire','photos','demande_id','date','consigne'].forEach(k=>{if(q[k]!==undefined)body[k]=q[k]});return body}
+/* Le runner ferme l'appli juste après avoir validé : on confie les envois sans photo au téléphone (keepalive),
+   qui les termine même appli fermée. Ils restent aussi dans la file : au prochain envoi, Google reconnaît
+   un doublon (même identifiant) et ne l'enregistre pas deux fois. */
+function flushOnHide(){
+  if(DEMO||!CODE||!API)return;
+  S.queue.forEach(q=>{if(q.base)return;const b=q.photos&&q.photos.length?baseOf(q):bodyOf(q);
+    try{fetch(API+'?'+new URLSearchParams({j:JSON.stringify(b),code:CODE}),{keepalive:true,cache:'no-store'}).catch(()=>{})}catch(e){}})
+}
+window.addEventListener('pagehide',flushOnHide); /* again : une validation est arrivée pendant un échange, on relance juste après */
 /* Envoie ce qui attend, puis recharge le planning. Sans réseau, tout reste en attente sur le téléphone. */
 async function run(){
   /* Appli restée ouverte après minuit : on repart sur le nouveau jour (rien n'est perdu, tout est enregistré) */
   if(dayOffset(0)!==TODAY){save();location.reload();return}
   render(true);
-  if(DEMO||!CODE||busy)return;
-  busy=true;
+  if(DEMO||!CODE)return;
+  if(busy){again=true;return}
+  busy=true;again=false;
   try{
     while(S.queue.length){
-      const q=S.queue[0];const body={code:CODE};
-      ['action','id','cle','plaque','point','problemes','commentaire','photos','demande_id','date','consigne'].forEach(k=>{if(q[k]!==undefined)body[k]=q[k]});
-      let r;try{r=await call(null,body,q.photos&&q.photos.length?90000:20000)}catch(e){S.offline=true;break}
-      S.offline=false;S.queue.shift();
+      const q=S.queue[0];const body=bodyOf(q);
+      /* Signalement avec photos : d'abord le passage seul (léger, part tout de suite), puis les photos */
+      if(q.action==='passage'&&q.photos&&q.photos.length&&!q.base){
+        const b=baseOf(q);let r0;try{r0=await call(null,b,60000)}catch(e){S.offline=true;break}
+        if(!r0||(!r0.ok&&!r0.erreur)){S.offline=true;S.oldScript=true;break}
+        if(r0.erreur){S.queue.shift();toast('Envoi refusé : '+r0.erreur);save();render(true);continue}
+        q.base=true;save();continue}
+      if(q.base)body.action='photos';
+      let r;try{r=await call(null,body,q.photos&&q.photos.length?120000:60000)}catch(e){S.offline=true;break}
+      /* Ni « ok » ni « erreur » : le script Google n'est pas à jour (v8), on garde l'envoi pour plus tard */
+      if(!r||(!r.ok&&!r.erreur&&!r.id)){S.offline=true;S.oldScript=true;break}
+      S.offline=false;S.oldScript=false;S.queue.shift();
       if(r&&r.erreur){toast('Envoi refusé : '+r.erreur)}
       else if(q.action==='passage'){const x=fromQueue(q);delete x.pending;S.passages.push(x)}
       else if(q.action==='annuler')removeLast(S.passages,q.cle,q.plaque);
@@ -648,7 +671,9 @@ async function run(){
       save();
     }
   }catch(e){S.offline=true}
-  finally{busy=false;render(true)}
+  finally{busy=false;render(true);if(again&&!S.offline){again=false;run()}
+    /* Échec alors que le téléphone a du réseau : on réessaie seul dans 30 s */
+    else if(S.offline&&navigator.onLine!==false&&!retryT)retryT=setTimeout(()=>{retryT=0;S.offline=false;run()},30000)}
 }
 
 /* ---------- Écrans ---------- */
@@ -837,7 +862,8 @@ function sourceLine(){
   let txt;
   if(S.misAJour){const d=new Date(S.misAJour);txt=isNaN(d)?'Planning reçu':'Planning du '+dLabel(iso(d)).num+' à '+hm(d).replace(':','h')}
   else txt=S.synced?'Planning pas encore reçu':'Chargement…';
-  if(S.offline)txt='Pas de réseau'+(S.synced?' · données de '+S.synced.slice(11).replace(':','h'):'');
+  if(S.offline&&S.oldScript)txt='Envois en attente : script Google à mettre à jour';
+  else if(S.offline)txt=(navigator.onLine===false?'Pas de réseau':'Google ne répond pas, nouvel essai automatique')+(S.synced?' · données de '+S.synced.slice(11).replace(':','h'):'');
   return `<span>${esc(txt+wait)}</span><button type="button" id="refresh">Actualiser</button>`;
 }
 let lastCk='';
@@ -858,7 +884,7 @@ function render(bg){
   if(!DEMO&&!CODE)blocked=gate('Ce téléphone n\'est pas encore relié','Demandez au service parc de vous installer l\'appli avec votre lien personnel.');
   else if(!DEMO&&S.blocked)blocked=gate('Lien non reconnu',esc(S.blocked));
   else if(!DEMO&&!ready)blocked=gate('Chargement…','Ouverture de votre planning.');
-  else if(!DEMO&&!S.synced)blocked=S.offline?gate('Pas de réseau','L\'appli a besoin d\'internet la première fois.','<button type="button" class="btn wide primary" id="refresh">Réessayer</button>'):gate('Chargement…','Récupération de votre planning.');
+  else if(!DEMO&&!S.synced)blocked=S.offline?gate(navigator.onLine===false?'Pas de réseau':'Google ne répond pas','L\'appli a besoin d\'internet la première fois. Nouvel essai automatique dans 30 secondes.','<button type="button" class="btn wide primary" id="refresh">Réessayer</button>'):gate('Chargement…','Récupération de votre planning.');
   $('#title').textContent=blocked?'Runners':sc==='done'?'Ma tournée':DAY===TODAY?'Véhicules à voir':'Planning à venir';
   $('#nav').hidden=!!blocked;
   put($('#hsSlot'),blocked?'':`<button type="button" class="hsearch" id="openSearch">${I.search}<span>Chercher une plaque</span></button>`);
@@ -950,7 +976,7 @@ document.addEventListener('pointerup',()=>{drag=null;setTimeout(()=>{dragged=fal
 addEventListener('resize',()=>centerDays());addEventListener('load',()=>centerDays());
 function centerDays(){document.querySelectorAll('.days').forEach(r=>{const on=r.querySelector('.day.on');if(on)r.scrollLeft=on.offsetLeft-r.offsetLeft-(r.clientWidth-on.offsetWidth)/2})}
 window.addEventListener('online',()=>{S.offline=false;run()});
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')run()});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')run();else flushOnHide()});
 setInterval(()=>{if(document.visibilityState==='visible')run()},REFRESH_MS);
 if(!DEMO&&'serviceWorker' in navigator&&location.protocol==='https:'){try{navigator.serviceWorker.register('sw.js').catch(()=>{})}catch(e){}}
 if(ready)run();
