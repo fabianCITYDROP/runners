@@ -1,10 +1,11 @@
-/* Appli Runners : garde une copie de l'appli pour qu'elle s'ouvre même sans réseau (v3).
+/* Appli Runners : garde une copie de l'appli pour qu'elle s'ouvre même sans réseau (v4, appli v39).
    Toujours la version en ligne d'abord ; la copie ne sert qu'en cas de coupure.
    Les données (Google) ne passent jamais par ici. */
-const CACHE = 'runners-v38';
+const CACHE = 'runners-v39';
 const FICHIERS = ['./', './index.html', './bureau.html', './config.js', './manifest.json', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(FICHIERS)).then(() => self.skipWaiting()));
+  /* v39 : copie prise directement en ligne (pas d'ancienne copie du navigateur) */
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(FICHIERS.map(f => new Request(f, { cache: 'reload' })))).then(() => self.skipWaiting()));
 });
 /* v38 : la mise à jour de l'appli garde « runners-cfg » (adresse et code pour les alertes appli fermée) */
 self.addEventListener('activate', e => {
@@ -14,7 +15,8 @@ self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
   if (e.request.method !== 'GET' || url.origin !== location.origin) return;
   e.respondWith(
-    fetch(e.request).then(r => {
+    /* v39 : toujours demander au serveur si le fichier a changé, pour que la nouvelle version arrive tout de suite */
+    fetch(e.request, { cache: 'no-cache' }).then(r => {
       if (r.ok) { const copie = r.clone(); caches.open(CACHE).then(c => c.put(url.pathname, copie)); }
       return r;
     }).catch(() => caches.match(url.pathname, { ignoreSearch: true }).then(r => r || caches.match('./index.html')))

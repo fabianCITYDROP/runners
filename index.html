@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Runners</title>
-<!-- Appli Runners City Drop, v22 : version reliée au Google Sheet (voir config.js) ; gros caractères, 3 photos, aujourd'hui au milieu, recherche en haut, page des rappels ; v22 : corrections après test complet ; v23 : planning compact (grosses flottes), dates avec le mois, longs textes coupés sur les cartes ; v24 : rapide sur téléphone lent avec une grosse flotte (planning préparé par Google et rangé à part, écran redessiné seulement s'il change) ; v25 : message de fin de tournée simplifié (date en entier, plaques les unes sous les autres, sans heure ni prénom) ; v27 : une validation faite pendant la réception du planning part tout de suite après (avant : jusqu'à 5 min d'attente) ; envois sans photo passés par l'adresse (GET) car l'iPhone bloquait les envois classiques ; v28 : actualisation toutes les 30 s ; v29 : une validation part même si le runner ferme l'appli juste après ; v30 : signalement avec photos envoyé en deux temps (le passage d'abord, même appli fermée, les photos ensuite) ; attente plus longue et message « Google ne répond pas » au lieu d'un faux « Pas de réseau » ; v31 : photo allégée envoyée même appli fermée (la vraie suit à la réouverture) ; un envoi n'est plus jeté quand Google est seulement occupé ; annuler un passage déjà parti l'annule aussi chez Google ; v32 : un lien désactivé ne jette plus les envois ; annulation sûre même quand les envois arrivent dans le désordre ; photos gardées tant que le téléphone n'a pas confirmé les avoir rangées ; un véhicule envoyé ne réapparaît plus si l'appli est tuée juste après ; v33 : envois groupés en un seul appel (avec le script v12), moins de relectures chez Google, deux onglets ouverts sans perte, mémoire pleine sans blocage, une panne de Google n'affiche plus « Lien non reconnu » ; v34 : page bureau v10 (photos effacées au bout de 5 jours, avec le script v13) ; v35 : page bureau v11 plus rapide (avec le script v14) ; v36 : nouvelles demandes du bureau signalées (pastille « 1 nouvelle », bandeau, vibration, chiffre sur l'icône, notification si autorisée) ; v37 : vraies notifications des nouvelles demandes, même écran verrouillé (avec le script v15) ; v38 : les alertes gardent leur détail après une mise à jour de l'appli -->
+<!-- Appli Runners City Drop, v22 : version reliée au Google Sheet (voir config.js) ; gros caractères, 3 photos, aujourd'hui au milieu, recherche en haut, page des rappels ; v22 : corrections après test complet ; v23 : planning compact (grosses flottes), dates avec le mois, longs textes coupés sur les cartes ; v24 : rapide sur téléphone lent avec une grosse flotte (planning préparé par Google et rangé à part, écran redessiné seulement s'il change) ; v25 : message de fin de tournée simplifié (date en entier, plaques les unes sous les autres, sans heure ni prénom) ; v27 : une validation faite pendant la réception du planning part tout de suite après (avant : jusqu'à 5 min d'attente) ; envois sans photo passés par l'adresse (GET) car l'iPhone bloquait les envois classiques ; v28 : actualisation toutes les 30 s ; v29 : une validation part même si le runner ferme l'appli juste après ; v30 : signalement avec photos envoyé en deux temps (le passage d'abord, même appli fermée, les photos ensuite) ; attente plus longue et message « Google ne répond pas » au lieu d'un faux « Pas de réseau » ; v31 : photo allégée envoyée même appli fermée (la vraie suit à la réouverture) ; un envoi n'est plus jeté quand Google est seulement occupé ; annuler un passage déjà parti l'annule aussi chez Google ; v32 : un lien désactivé ne jette plus les envois ; annulation sûre même quand les envois arrivent dans le désordre ; photos gardées tant que le téléphone n'a pas confirmé les avoir rangées ; un véhicule envoyé ne réapparaît plus si l'appli est tuée juste après ; v33 : envois groupés en un seul appel (avec le script v12), moins de relectures chez Google, deux onglets ouverts sans perte, mémoire pleine sans blocage, une panne de Google n'affiche plus « Lien non reconnu » ; v34 : page bureau v10 (photos effacées au bout de 5 jours, avec le script v13) ; v35 : page bureau v11 plus rapide (avec le script v14) ; v36 : nouvelles demandes du bureau signalées (pastille « 1 nouvelle », bandeau, vibration, chiffre sur l'icône, notification si autorisée) ; v37 : vraies notifications des nouvelles demandes, même écran verrouillé (avec le script v15) ; v38 : les alertes gardent leur détail après une mise à jour de l'appli ; v39 : mise à jour automatique sans fermer l'appli -->
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
@@ -1148,10 +1148,30 @@ document.addEventListener('pointerup',()=>{drag=null;setTimeout(()=>{dragged=fal
 addEventListener('resize',()=>centerDays());addEventListener('load',()=>centerDays());
 function centerDays(){document.querySelectorAll('.days').forEach(r=>{const on=r.querySelector('.day.on');if(on)r.scrollLeft=on.offsetLeft-r.offsetLeft-(r.clientWidth-on.offsetWidth)/2})}
 window.addEventListener('online',()=>{S.offline=false;run(true)});
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')run(true);else flushOnHide()});
-setInterval(()=>{if(document.visibilityState==='visible')run(true)},REFRESH_MS);
+/* v39 : mise à jour sans fermer l'appli. Elle regarde s'il y a une nouvelle version quand elle revient à l'écran
+   (et toutes les 5 min) ; la nouvelle version s'installe en fond, puis l'appli se recharge seule quand c'est sans
+   risque : en revenant à l'écran, ou après 2 min sans toucher l'écran, jamais avec une fiche, une recherche ou un
+   envoi en cours. Les envois en attente sont sauvegardés avant. */
+let swReg=null,majPrete=false,majVue=0,dernierGeste=0,revenuA=Date.now();
+const AVAIT_SW=!!('serviceWorker' in navigator&&navigator.serviceWorker.controller); /* premier lancement : rien à recharger */
+['pointerdown','keydown','input'].forEach(t=>document.addEventListener(t,()=>{dernierGeste=Date.now()},true));
+function chercherMaj(){if(swReg&&Date.now()-majVue>60000){majVue=Date.now();try{swReg.update().catch(()=>{})}catch(e){}}}
+function majSansRisque(revient){const a=document.activeElement;
+  return !sheet&&!picker&&!showReport&&!busy&&!(a&&a.matches&&a.matches('input,textarea,select'))&&(revient||Date.now()-dernierGeste>120000
+    /* nouvelle version arrivée juste après l'ouverture, avant tout geste : comme au retour à l'écran */
+    ||(Date.now()-revenuA<20000&&dernierGeste<revenuA))}
+function appliquerMaj(revient){
+  if(!majPrete||document.visibilityState!=='visible'||!majSansRisque(revient))return;
+  /* Garde-fou : jamais deux rechargements de suite */
+  try{const t=+sessionStorage.getItem('runners-maj')||0;if(Date.now()-t<60000)return;sessionStorage.setItem('runners-maj',String(Date.now()))}catch(e){}
+  majPrete=false;save();location.reload()}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){revenuA=Date.now();appliquerMaj(true);chercherMaj();run(true)}else flushOnHide()});
+setInterval(()=>{if(document.visibilityState==='visible'){appliquerMaj(false);run(true)}},REFRESH_MS); /* avant run : un envoi en cours bloquerait la mise à jour */
+setInterval(()=>{if(document.visibilityState==='visible')chercherMaj()},5*60*1000);
 cfgSw();
-if(!DEMO&&'serviceWorker' in navigator&&(location.protocol==='https:'||(location.hostname==='localhost'&&(()=>{try{return localStorage.getItem('runners-test-sw')==='1'}catch(e){return false}})()))){try{navigator.serviceWorker.register('sw.js').catch(()=>{})}catch(e){}}
+if(!DEMO&&'serviceWorker' in navigator&&(location.protocol==='https:'||(location.hostname==='localhost'&&(()=>{try{return localStorage.getItem('runners-test-sw')==='1'}catch(e){return false}})()))){try{
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{if(AVAIT_SW){majPrete=true;appliquerMaj(false)}});
+  navigator.serviceWorker.register('sw.js').then(r=>{swReg=r}).catch(()=>{})}catch(e){}}
 if(ready)run();
 else{render(true);IDB.get(STORE+'-plan').then(pl=>{
   if(pl&&(pl.lignes||pl.loc)){try{const t=readPlan(pl);S.loc=t.loc;S.impros=t.impros;S.plan=pl}catch(e){}}

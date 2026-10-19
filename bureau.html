@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Runners · Bureau</title>
-<!-- Page bureau de l'appli Runners, v4 : liens des runners, demandes à n'importe quelle date, rappels des runners, passages du jour ; v4 : actualisation automatique, un passage peut clore plusieurs demandes ; v6 (suite de la v4, la v5 est la version pro à part) : envois passés dans l'adresse (GET) car certains appareils bloquaient les envois classiques ; v7 : un véhicule ajouté s'affiche tout de suite (envoi en arrière-plan) ; v8 : « Photos en cours d'envoi » quand les photos suivent le passage ; v9 : « aperçu » tant que seule la photo allégée est arrivée ; v10 : photo effacée au bout de 5 jours indiquée ; v11 : plus rapide (planning retéléchargé seulement s'il a changé), actualisée toutes les 30 secondes ; v12 : indique combien de téléphones ont reçu l'alerte d'une nouvelle demande -->
+<!-- Page bureau de l'appli Runners, v4 : liens des runners, demandes à n'importe quelle date, rappels des runners, passages du jour ; v4 : actualisation automatique, un passage peut clore plusieurs demandes ; v6 (suite de la v4, la v5 est la version pro à part) : envois passés dans l'adresse (GET) car certains appareils bloquaient les envois classiques ; v7 : un véhicule ajouté s'affiche tout de suite (envoi en arrière-plan) ; v8 : « Photos en cours d'envoi » quand les photos suivent le passage ; v9 : « aperçu » tant que seule la photo allégée est arrivée ; v10 : photo effacée au bout de 5 jours indiquée ; v11 : plus rapide (planning retéléchargé seulement s'il a changé), actualisée toutes les 30 secondes ; v12 : indique combien de téléphones ont reçu l'alerte d'une nouvelle demande ; v13 : mise à jour automatique sans recharger à la main -->
 <link rel="icon" type="image/png" href="icon-192.png">
 <meta name="robots" content="noindex">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
@@ -145,6 +145,8 @@ try{CODE=new URLSearchParams(location.search).get('b')||'';if(CODE)localStorage.
 
 /* ---------- Données ---------- */
 let D=null,err='',tab='demandes',confirmCode='',loading=false;
+/* v13 : après une mise à jour automatique, on revient sur le même onglet */
+try{const t=sessionStorage.getItem('bureau-onglet');if(t){sessionStorage.removeItem('bureau-onglet');if(/^(demandes|passages|runners)$/.test(t))tab=t}}catch(e){}
 function demo(){
   const pl=['AA-101-CD','AA-102-CD','AA-103-CD','AA-104-CD','AA-105-CD','AA-106-CD','AA-107-CD','AA-108-CD','AA-109-CD','AA-110-CD','AA-111-CD','AA-112-CD','AA-113-CD','AA-114-CD','AA-115-CD','AA-116-CD'];
   const md=['Opel Movano 2023','Iveco Daily 2025','Iveco Daily 2024','Opel Movano 2024','Opel Movano 2023','MAN TGE 2024','Opel Movano 2025','Iveco Daily 2025','Opel Movano 2024','MAN TGE 2023','Opel Movano 2025','Iveco Daily 2024','MAN TGE 2025','Iveco Daily 2023','Opel Movano 2024','MAN TGE 2024'];
@@ -326,6 +328,20 @@ document.addEventListener('submit',async e=>{
 /* v11 : pas d'actualisation pendant qu'on écrit dans un champ (le texte tapé serait effacé) */
 setInterval(()=>{const a=document.activeElement;if(!DEMO&&CODE&&D&&document.visibilityState==='visible'&&!(a&&a.matches&&a.matches('input,textarea,select')))load()},30000);
 document.addEventListener('visibilitychange',()=>{if(!DEMO&&CODE&&D&&document.visibilityState==='visible'&&tab!=='demandes')load()});
+/* v13 : mise à jour sans fermer la page. Toutes les 5 min, on regarde le numéro de version publié (dans sw.js) ;
+   s'il a changé, la page se recharge seule, mais jamais pendant qu'on écrit ou avec une demande à moitié remplie. */
+let VERSION='',majPrete=false;
+function versionEnLigne(){return fetch('sw.js',{cache:'no-store'}).then(r=>r.ok?r.text():'').then(t=>(t.match(/runners-v\d+/)||[''])[0]).catch(()=>'')}
+function majSansRisque(){const a=document.activeElement;
+  return !confirmCode&&!(a&&a.matches&&a.matches('input,textarea,select'))&&!['dPlate','dText','rName','bCode'].some(id=>$('#'+id)&&$('#'+id).value.trim())}
+function appliquerMaj(){if(!majPrete||document.visibilityState!=='visible'||!majSansRisque())return;
+  try{const t=+sessionStorage.getItem('bureau-maj')||0;if(Date.now()-t<60000)return;sessionStorage.setItem('bureau-maj',String(Date.now()));sessionStorage.setItem('bureau-onglet',tab)}catch(e){}
+  location.reload()}
+function chercherMaj(){if(DEMO||majPrete)return appliquerMaj();versionEnLigne().then(v=>{if(!v)return;if(!VERSION)VERSION=v;else if(v!==VERSION){majPrete=true;appliquerMaj()}})}
+chercherMaj();
+setInterval(()=>{if(document.visibilityState==='visible')chercherMaj()},5*60*1000);
+setInterval(appliquerMaj,30000);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')chercherMaj()});
 load();
 })();
 </script>
