@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Runners · Bureau</title>
-<!-- Page bureau de l'appli Runners, v4 : liens des runners, demandes à n'importe quelle date, rappels des runners, passages du jour ; v4 : actualisation automatique, un passage peut clore plusieurs demandes ; v6 (suite de la v4, la v5 est la version pro à part) : envois passés dans l'adresse (GET) car certains appareils bloquaient les envois classiques ; v7 : un véhicule ajouté s'affiche tout de suite (envoi en arrière-plan) ; v8 : « Photos en cours d'envoi » quand les photos suivent le passage -->
+<!-- Page bureau de l'appli Runners, v4 : liens des runners, demandes à n'importe quelle date, rappels des runners, passages du jour ; v4 : actualisation automatique, un passage peut clore plusieurs demandes ; v6 (suite de la v4, la v5 est la version pro à part) : envois passés dans l'adresse (GET) car certains appareils bloquaient les envois classiques ; v7 : un véhicule ajouté s'affiche tout de suite (envoi en arrière-plan) ; v8 : « Photos en cours d'envoi » quand les photos suivent le passage ; v9 : « aperçu » tant que seule la photo allégée est arrivée ; v10 : photo effacée au bout de 5 jours indiquée ; v11 : plus rapide (planning retéléchargé seulement s'il a changé), actualisée toutes les 30 secondes ; v12 : indique combien de téléphones ont reçu l'alerte d'une nouvelle demande -->
 <link rel="icon" type="image/png" href="icon-192.png">
 <meta name="robots" content="noindex">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
@@ -184,7 +184,8 @@ async function load(){
   if(DEMO){D=D||demo();render();return}
   if(!CODE){render();return}
   loading=true;render();
-  try{const r=await call({bureau:CODE,action:'donnees'});if(r.erreur){err=r.erreur;D=null}else{err='';D=r}}
+  /* v11 : le planning n'est retéléchargé que s'il a changé */
+  try{const r=await call(Object.assign({bureau:CODE,action:'donnees'},D&&D.planning&&D.misAJour?{version:D.misAJour}:{}));if(r.erreur){err=r.erreur;D=null}else{err='';if(!r.planning&&D&&D.planning)r.planning=D.planning;D=r}}
   catch(e){err=D?'':'Pas de réseau. Réessayez.';if(D)toast('Pas de réseau : données non actualisées.')}
   loading=false;render();
 }
@@ -234,7 +235,7 @@ function vPassages(){
     <div><span class="plate-t">${esc(x.plaque)}</span> <span class="pill ${x.resultat==='Problème'?'ko':'ok'}">${x.resultat==='Problème'?'Problème':'OK'}</span></div>
     <div class="meta">${esc(String(x.horodatage).slice(11,16).replace(':','h'))} · ${esc(x.runner)} · ${esc(x.point||'Hors liste')}</div>
     ${x.problemes?`<div><b>${esc(x.problemes)}</b>${x.commentaire?' · '+esc(x.commentaire):''}</div>`:x.commentaire?`<div>${esc(x.commentaire)}</div>`:''}
-    ${x.photo&&/^https:\/\//.test(x.photo)?`<div>${String(x.photo).split(' ').filter(Boolean).map((l,i)=>`<a href="${esc(l)}" target="_blank" rel="noopener">Photo ${i+1}</a>`).join(' · ')}</div>`:x.photo==='en attente'?'<div class="meta">Photos en cours d\'envoi</div>':x.photo?'<div class="meta">Photo jointe (démonstration)</div>':''}
+    ${x.photo&&/^https:\/\//.test(x.photo)?`<div>${String(x.photo).split(' ').filter(Boolean).map((l,i)=>`<a href="${esc(l)}" target="_blank" rel="noopener">Photo ${i+1}</a>`).join(' · ')}${x.apercu?' <span class="meta">(aperçu, la photo nette arrive)</span>':''}</div>`:x.photo==='en attente'?'<div class="meta">Photos en cours d\'envoi</div>':x.photo==='photo effacée'?'<div class="meta">Photo effacée (gardée 5 jours)</div>':x.photo?'<div class="meta">Photo jointe (démonstration)</div>':''}
   </div></div>`;
   return `<div class="grid two">
   <section class="card"><div class="card-h"><h2>Problèmes signalés</h2><span class="meta">${pb.length}</span></div>${pb.length?pb.map(row).join(''):'<div class="empty">Aucun problème signalé aujourd\'hui.</div>'}</section>
@@ -312,7 +313,9 @@ document.addEventListener('submit',async e=>{
     if(!DEMO&&D){D.demandes=(D.demandes||[]).concat([Object.assign({id:tmp,statut:'à faire'},champs)])}
     ['dPlate','dText'].forEach(id=>{if($('#'+id))$('#'+id).value=''});plateHint();render();
     toast(plaque+' ajouté pour '+dayName(date).toLowerCase().replace(/\.$/,'')+'. Le runner le verra ce jour-là.');
-    act('demande',champs).then(r=>{if(r.erreur&&D){D.demandes=(D.demandes||[]).filter(x=>x.id!==tmp);render();toast(plaque+' non enregistré : '+(r.erreur==='réseau'?'pas de réseau':r.erreur)+'. Réessayez.')}});
+    act('demande',champs).then(r=>{if(r.erreur&&D){D.demandes=(D.demandes||[]).filter(x=>x.id!==tmp);render();toast(plaque+' non enregistré : '+(r.erreur==='réseau'?'pas de réseau':r.erreur)+'. Réessayez.')}
+      /* v12 : avec le script v15, nombre de téléphones prévenus par une alerte */
+      else if(r.prevenus>0)toast(plaque+' : alerte envoyée sur '+r.prevenus+' téléphone'+(r.prevenus>1?'s':'')+'.')});
     return}
   if(f.id==='fRunner'){
     const prenom=$('#rName').value.trim();if(!prenom)return;
@@ -320,7 +323,8 @@ document.addEventListener('submit',async e=>{
     const r=await act('runner_ajout',{prenom,points});if(!r.erreur)toast('Lien créé pour '+prenom+'.');return}
 });
 /* Actualisation toute seule toutes les 3 minutes (sauf pendant la saisie d'une demande) */
-setInterval(()=>{if(!DEMO&&CODE&&D&&document.visibilityState==='visible'&&tab!=='demandes')load()},180000);
+/* v11 : pas d'actualisation pendant qu'on écrit dans un champ (le texte tapé serait effacé) */
+setInterval(()=>{const a=document.activeElement;if(!DEMO&&CODE&&D&&document.visibilityState==='visible'&&!(a&&a.matches&&a.matches('input,textarea,select')))load()},30000);
 document.addEventListener('visibilitychange',()=>{if(!DEMO&&CODE&&D&&document.visibilityState==='visible'&&tab!=='demandes')load()});
 load();
 })();
