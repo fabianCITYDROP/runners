@@ -1,7 +1,7 @@
-/* Appli Runners : garde une copie de l'appli pour qu'elle s'ouvre même sans réseau (v4, appli v39).
+/* Appli Runners : garde une copie de l'appli pour qu'elle s'ouvre même sans réseau (v4, appli v40).
    Toujours la version en ligne d'abord ; la copie ne sert qu'en cas de coupure.
    Les données (Google) ne passent jamais par ici. */
-const CACHE = 'runners-v39';
+const CACHE = 'runners-v40';
 const FICHIERS = ['./', './index.html', './bureau.html', './config.js', './manifest.json', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 self.addEventListener('install', e => {
   /* v39 : copie prise directement en ligne (pas d'ancienne copie du navigateur) */

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Runners</title>
-<!-- Appli Runners City Drop, v22 : version reliée au Google Sheet (voir config.js) ; gros caractères, 3 photos, aujourd'hui au milieu, recherche en haut, page des rappels ; v22 : corrections après test complet ; v23 : planning compact (grosses flottes), dates avec le mois, longs textes coupés sur les cartes ; v24 : rapide sur téléphone lent avec une grosse flotte (planning préparé par Google et rangé à part, écran redessiné seulement s'il change) ; v25 : message de fin de tournée simplifié (date en entier, plaques les unes sous les autres, sans heure ni prénom) ; v27 : une validation faite pendant la réception du planning part tout de suite après (avant : jusqu'à 5 min d'attente) ; envois sans photo passés par l'adresse (GET) car l'iPhone bloquait les envois classiques ; v28 : actualisation toutes les 30 s ; v29 : une validation part même si le runner ferme l'appli juste après ; v30 : signalement avec photos envoyé en deux temps (le passage d'abord, même appli fermée, les photos ensuite) ; attente plus longue et message « Google ne répond pas » au lieu d'un faux « Pas de réseau » ; v31 : photo allégée envoyée même appli fermée (la vraie suit à la réouverture) ; un envoi n'est plus jeté quand Google est seulement occupé ; annuler un passage déjà parti l'annule aussi chez Google ; v32 : un lien désactivé ne jette plus les envois ; annulation sûre même quand les envois arrivent dans le désordre ; photos gardées tant que le téléphone n'a pas confirmé les avoir rangées ; un véhicule envoyé ne réapparaît plus si l'appli est tuée juste après ; v33 : envois groupés en un seul appel (avec le script v12), moins de relectures chez Google, deux onglets ouverts sans perte, mémoire pleine sans blocage, une panne de Google n'affiche plus « Lien non reconnu » ; v34 : page bureau v10 (photos effacées au bout de 5 jours, avec le script v13) ; v35 : page bureau v11 plus rapide (avec le script v14) ; v36 : nouvelles demandes du bureau signalées (pastille « 1 nouvelle », bandeau, vibration, chiffre sur l'icône, notification si autorisée) ; v37 : vraies notifications des nouvelles demandes, même écran verrouillé (avec le script v15) ; v38 : les alertes gardent leur détail après une mise à jour de l'appli ; v39 : mise à jour automatique sans fermer l'appli -->
+<!-- Appli Runners City Drop, v22 : version reliée au Google Sheet (voir config.js) ; gros caractères, 3 photos, aujourd'hui au milieu, recherche en haut, page des rappels ; v22 : corrections après test complet ; v23 : planning compact (grosses flottes), dates avec le mois, longs textes coupés sur les cartes ; v24 : rapide sur téléphone lent avec une grosse flotte (planning préparé par Google et rangé à part, écran redessiné seulement s'il change) ; v25 : message de fin de tournée simplifié (date en entier, plaques les unes sous les autres, sans heure ni prénom) ; v27 : une validation faite pendant la réception du planning part tout de suite après (avant : jusqu'à 5 min d'attente) ; envois sans photo passés par l'adresse (GET) car l'iPhone bloquait les envois classiques ; v28 : actualisation toutes les 30 s ; v29 : une validation part même si le runner ferme l'appli juste après ; v30 : signalement avec photos envoyé en deux temps (le passage d'abord, même appli fermée, les photos ensuite) ; attente plus longue et message « Google ne répond pas » au lieu d'un faux « Pas de réseau » ; v31 : photo allégée envoyée même appli fermée (la vraie suit à la réouverture) ; un envoi n'est plus jeté quand Google est seulement occupé ; annuler un passage déjà parti l'annule aussi chez Google ; v32 : un lien désactivé ne jette plus les envois ; annulation sûre même quand les envois arrivent dans le désordre ; photos gardées tant que le téléphone n'a pas confirmé les avoir rangées ; un véhicule envoyé ne réapparaît plus si l'appli est tuée juste après ; v33 : envois groupés en un seul appel (avec le script v12), moins de relectures chez Google, deux onglets ouverts sans perte, mémoire pleine sans blocage, une panne de Google n'affiche plus « Lien non reconnu » ; v34 : page bureau v10 (photos effacées au bout de 5 jours, avec le script v13) ; v35 : page bureau v11 plus rapide (avec le script v14) ; v36 : nouvelles demandes du bureau signalées (pastille « 1 nouvelle », bandeau, vibration, chiffre sur l'icône, notification si autorisée) ; v37 : vraies notifications des nouvelles demandes, même écran verrouillé (avec le script v15) ; v38 : les alertes gardent leur détail après une mise à jour de l'appli ; v39 : mise à jour automatique sans fermer l'appli ; v40 : gros bouton ACTIVER LES NOTIFICATIONS en haut de l'accueil tant qu'elles ne sont pas actives -->
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
@@ -262,6 +262,10 @@ body{font-size:17px}
 .askbtn.none .askn{color:var(--muted)}
 .notifbtn{width:100%;margin-top:8px}
 .notifhint{margin-top:8px;font-size:14px;color:var(--muted)}
+.notifcard{margin:0 0 12px;padding:14px;border-radius:14px;border:2px solid var(--info);background:var(--info-soft);color:var(--fg)}
+.notifcard .nc-t{font-size:18px;font-weight:700;color:var(--info)}
+.notifcard .nc-x{margin-top:4px;font-size:15px;line-height:1.35}
+.btn.notifbig{margin-top:12px;min-height:64px;font-size:18px;letter-spacing:.02em;background:var(--info);border-color:var(--info);color:var(--surface)}
 .askbtn .newn{background:var(--surface);color:var(--red);border-radius:999px;padding:2px 8px;font-size:13px;font-weight:700;margin-right:4px}
 .pill.new{background:var(--red);color:var(--surface)}
 .picker .lnk2{display:block;padding:10px 4px 2px;font-size:14px;font-weight:600;color:var(--muted);text-decoration:underline;cursor:pointer}
@@ -639,18 +643,29 @@ async function abonner(){
     if(S.abonneRefus!==k&&(S.abonne!==k||Date.now()-(S.abonneAt||0)>7*864e5)){
       S.queue=S.queue.filter(q=>q.action!=='abonnement');
       S.queue.push({id:'a'+uid(),action:'abonnement',endpoint:sub.endpoint,cle:S.vapid});S.abonne=k;S.abonneAt=Date.now();save();setTimeout(()=>run(),0)}
-    return true}catch(e){S.pushErr=String(e&&e.message||e);return false}finally{abonnement=null}})();
+    return true}catch(e){S.pushErr=String(e&&e.message||e);
+    /* v40 : inscription perdue et impossible à refaire : le gros bouton revient */
+    if(S.abonne){S.abonne='';save();render(true)}return false}finally{abonnement=null}})();
   return abonnement;
 }
 /* L'adresse de Google et le code du runner, pour que sw.js puisse demander le détail d'une alerte appli fermée */
 function cfgSw(){if(DEMO||!CODE||!API||!('caches' in window))return;try{caches.open('runners-cfg').then(c=>c.put('./__cfg',new Response(JSON.stringify({api:API,code:CODE}),{headers:{'Content-Type':'application/json'}}))).catch(()=>{})}catch(e){}}
-function alertesHtml(){
+/* v40 : tant que les notifications ne sont pas en place, gros encadré tout en haut de l'accueil (juste sous la recherche),
+   avec un gros bouton ACTIVER LES NOTIFICATIONS ; il disparaît tout seul une fois les notifications actives.
+   big=false : version discrète (page des rappels). */
+function alertesHtml(big){
   if(DEMO)return '';
   const ios=/iPhone|iPad|iPod/.test(navigator.userAgent),pwa=window.navigator.standalone===true||matchMedia('(display-mode: standalone)').matches;
-  if(!pushOk()){return ios&&!pwa&&S.srv>=15?'<div class="notifhint">Pour recevoir les alertes du bureau, ouvrez l\'appli depuis son icône sur l\'écran d\'accueil.</div>':''}
-  if(Notification.permission==='denied')return '<div class="notifhint">Alertes du bureau bloquées sur ce téléphone (Réglages du téléphone, Notifications, Runners).</div>';
+  const carte=(titre,texte,bouton)=>`<div class="notifcard" role="region" aria-label="Notifications"><div class="nc-t">${titre}</div><div class="nc-x">${texte}</div>${bouton||''}</div>`;
+  if(!pushOk()){
+    if(!(ios&&!pwa&&S.srv>=15))return '';
+    return big?carte('Notifications impossibles ici','Pour être prévenu des demandes du bureau, même téléphone verrouillé : touchez le bouton Partager de Safari, puis « Sur l\'écran d\'accueil », et ouvrez l\'appli depuis son icône Runners.')
+      :'<div class="notifhint">Pour recevoir les alertes du bureau, ouvrez l\'appli depuis son icône sur l\'écran d\'accueil.</div>'}
+  if(Notification.permission==='denied')return big?carte('Notifications bloquées','Pour être prévenu des demandes du bureau : ouvrez Réglages, Notifications, Runners, puis activez « Autoriser les notifications ».')
+    :'<div class="notifhint">Alertes du bureau bloquées sur ce téléphone (Réglages du téléphone, Notifications, Runners).</div>';
   if(Notification.permission==='granted'&&S.abonne&&S.abonne.endsWith('|'+S.vapid))return '';
-  return '<button type="button" class="btn notifbtn" id="enableNotif">'+(Notification.permission==='granted'?'Réactiver les alertes du bureau':'Recevoir les alertes du bureau')+'</button>';
+  return big?carte('Notifications désactivées','Activez-les pour être prévenu des demandes du bureau, même téléphone verrouillé.','<button type="button" class="btn big notifbig" id="enableNotif">ACTIVER LES NOTIFICATIONS</button>')
+    :'<button type="button" class="btn notifbtn" id="enableNotif">'+(Notification.permission==='granted'?'Réactiver les alertes du bureau':'Recevoir les alertes du bureau')+'</button>';
 }
 function askFor(p){return openAsks().find(d=>d.plaque===p)||null}
 function asksFor(p){return openAsks().filter(d=>d.plaque===p)}
@@ -882,11 +897,10 @@ function vHome(){
   const order=S.myPoints.slice().sort((a,b)=>pts.indexOf(a)-pts.indexOf(b));
   const now=DAY===TODAY,past=DAY<TODAY;const list=past?staysOn(DAY):todo(DAY),asks=openAsks(DAY);
   const days=[];for(let i=-DAYS_BACK;i<=DAYS_AHEAD;i++)days.push(plusDays(i));
-  return `
+  return `${alertesHtml(true)}
   <div class="days" role="group" aria-label="Jour">${days.map((d,i)=>dayChip(d,i,'data-day',DAY)).join('')}</div>
   <div class="pts" role="group" aria-label="Mes points">${pts.map(p=>{const on=S.myPoints.includes(p);return `<button type="button" class="pt ${on?'on':''}" data-point="${esc(p)}" aria-pressed="${on}" title="${esc(p)}">${esc(SHORT[p]||p)}</button>`}).join('')}</div>
   <button type="button" class="askbtn ${asks.length?'':'none'}" id="openAsks"><span>Rappels et demandes</span><span class="askn">${(()=>{const n=DEMO?0:newAsks().length;return n?`<span class="newn">${n} nouvelle${n>1?'s':''}</span>`:''})()}${asks.length?`<b>${asks.length}</b>`:'aucun'}${I.chev}</span></button>
-  ${alertesHtml()}
   ${now?'':`<div class="later">${past?'Journée':'Planning'} ${esc(duWord(DAY))} : à consulter seulement. Les véhicules se valident le jour même.</div>`}
   ${!order.length?'<div class="empty"><b>Choisissez votre point</b><span>Touchez un point ci-dessus.</span></div>':''}
   ${order.map(p=>{const pa=asks.filter((d,i,a)=>askPt(d)===p&&a.findIndex(x=>x.plaque===d.plaque)===i);const l=list.filter(s=>s.point===p&&!pa.some(d=>d.plaque===s.plaque));return `
@@ -1168,6 +1182,8 @@ function appliquerMaj(revient){
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){revenuA=Date.now();appliquerMaj(true);chercherMaj();run(true)}else flushOnHide()});
 setInterval(()=>{if(document.visibilityState==='visible'){appliquerMaj(false);run(true)}},REFRESH_MS); /* avant run : un envoi en cours bloquerait la mise à jour */
 setInterval(()=>{if(document.visibilityState==='visible')chercherMaj()},5*60*1000);
+/* v40 : les notifications coupées dans les Réglages pendant que l'appli est ouverte : le bouton revient tout de suite */
+try{if(!DEMO&&navigator.permissions&&navigator.permissions.query)navigator.permissions.query({name:'notifications'}).then(st=>{st.onchange=()=>{render(true);if(st.state==='granted'&&S.vapid)abonner()}}).catch(()=>{})}catch(e){}
 cfgSw();
 if(!DEMO&&'serviceWorker' in navigator&&(location.protocol==='https:'||(location.hostname==='localhost'&&(()=>{try{return localStorage.getItem('runners-test-sw')==='1'}catch(e){return false}})()))){try{
   navigator.serviceWorker.addEventListener('controllerchange',()=>{if(AVAIT_SW){majPrete=true;appliquerMaj(false)}});
