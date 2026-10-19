@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Runners</title>
-<!-- Appli Runners City Drop, v22 : version reliée au Google Sheet (voir config.js) ; gros caractères, 3 photos, aujourd'hui au milieu, recherche en haut, page des rappels ; v22 : corrections après test complet ; v23 : planning compact (grosses flottes), dates avec le mois, longs textes coupés sur les cartes ; v24 : rapide sur téléphone lent avec une grosse flotte (planning préparé par Google et rangé à part, écran redessiné seulement s'il change) ; v25 : message de fin de tournée simplifié (date en entier, plaques les unes sous les autres, sans heure ni prénom) ; v27 : une validation faite pendant la réception du planning part tout de suite après (avant : jusqu'à 5 min d'attente) ; envois sans photo passés par l'adresse (GET) car l'iPhone bloquait les envois classiques ; v28 : actualisation toutes les 30 s ; v29 : une validation part même si le runner ferme l'appli juste après ; v30 : signalement avec photos envoyé en deux temps (le passage d'abord, même appli fermée, les photos ensuite) ; attente plus longue et message « Google ne répond pas » au lieu d'un faux « Pas de réseau » -->
+<!-- Appli Runners City Drop, v22 : version reliée au Google Sheet (voir config.js) ; gros caractères, 3 photos, aujourd'hui au milieu, recherche en haut, page des rappels ; v22 : corrections après test complet ; v23 : planning compact (grosses flottes), dates avec le mois, longs textes coupés sur les cartes ; v24 : rapide sur téléphone lent avec une grosse flotte (planning préparé par Google et rangé à part, écran redessiné seulement s'il change) ; v25 : message de fin de tournée simplifié (date en entier, plaques les unes sous les autres, sans heure ni prénom) ; v27 : une validation faite pendant la réception du planning part tout de suite après (avant : jusqu'à 5 min d'attente) ; envois sans photo passés par l'adresse (GET) car l'iPhone bloquait les envois classiques ; v28 : actualisation toutes les 30 s ; v29 : une validation part même si le runner ferme l'appli juste après ; v30 : signalement avec photos envoyé en deux temps (le passage d'abord, même appli fermée, les photos ensuite) ; attente plus longue et message « Google ne répond pas » au lieu d'un faux « Pas de réseau » ; v31 : photo allégée envoyée même appli fermée (la vraie suit à la réouverture) ; un envoi n'est plus jeté quand Google est seulement occupé ; annuler un passage déjà parti l'annule aussi chez Google ; v32 : un lien désactivé ne jette plus les envois ; annulation sûre même quand les envois arrivent dans le désordre ; photos gardées tant que le téléphone n'a pas confirmé les avoir rangées ; un véhicule envoyé ne réapparaît plus si l'appli est tuée juste après ; v33 : envois groupés en un seul appel (avec le script v12), moins de relectures chez Google, deux onglets ouverts sans perte, mémoire pleine sans blocage, une panne de Google n'affiche plus « Lien non reconnu » -->
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
@@ -480,12 +480,28 @@ function load(){try{return JSON.parse(localStorage.getItem(STORE))||null}catch(e
 const IDB={db:null,
   open(){if(this.p)return this.p;return this.p=new Promise(ok=>{try{const r=indexedDB.open('runners',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>ok(this.db=r.result);r.onerror=()=>ok(null)}catch(e){ok(null)}})},
   get(k){return this.open().then(db=>db?new Promise(ok=>{try{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>ok(q.result||null);q.onerror=()=>ok(null)}catch(e){ok(null)}}):null)},
-  set(k,v){return this.open().then(db=>{try{if(db)db.transaction('kv','readwrite').objectStore('kv').put(v,k)}catch(e){}})}};
+  set(k,v){return this.open().then(db=>new Promise(ok=>{try{if(!db)return ok(false);const t=db.transaction('kv','readwrite');t.objectStore('kv').put(v,k);t.oncomplete=()=>ok(true);t.onerror=t.onabort=()=>ok(false)}catch(e){ok(false)}}))},
+  del(k){return this.open().then(db=>{try{if(db)db.transaction('kv','readwrite').objectStore('kv').delete(k)}catch(e){}})}};
+/* v31 : photos d'un envoi en attente, rangées une seule fois à part (clé ph-<id>), effacées une fois envoyées */
+/* Les photos restent aussi dans la petite sauvegarde tant que la base du téléphone n'a pas confirmé les avoir rangées */
+function savePhotos(q){if(!DEMO&&q.photos&&q.photos.length)IDB.set(STORE+'-ph-'+q.id,{photos:q.photos,mini:q.mini||''}).then(ok=>{if(ok){q.phSaved=1;save()}})}
+function forgetPhotos(q){if(!DEMO&&(q.photos&&q.photos.length||q.phN))IDB.del(STORE+'-ph-'+q.id)}
 function savePlan(plan){IDB.set(STORE+'-plan',plan)}
 function savePassages(){IDB.set(STORE+'-pas',S.passages)}
-/* Si la mémoire du téléphone est pleine, on garde d'abord les envois en attente */
-function save(){try{localStorage.setItem(STORE,JSON.stringify(DEMO?S:Object.assign({},S,{loc:[],impros:[],plan:null},IDB.db?{passages:[]}:{})))}catch(e){
-  try{localStorage.setItem(STORE,JSON.stringify(Object.assign({},S,{loc:[],impros:[],plan:null,passages:[]})))}catch(e2){if(!save._w){save._w=1;toast('Mémoire du téléphone pleine : trouvez du réseau pour envoyer les photos.')}}}}
+/* Si la mémoire du téléphone est pleine, on garde d'abord les envois en attente.
+   v31 : les photos en attente sont rangées dans la base du téléphone (grande), la petite sauvegarde ne garde
+   que le texte : des dizaines de signalements avec photos hors réseau ne la remplissent plus. */
+var QREADY=false;
+function lightQueue(all){return S.queue.map(q=>q.photos&&q.photos.length&&(q.phSaved||all)?Object.assign({},q,{photos:[],mini:'',phN:q.photos.length}):q)}
+function save(){
+  const q=!DEMO&&IDB.db&&QREADY?{queue:lightQueue()}:{};
+  /* Les passages envoyés à l'instant restent aussi dans la petite sauvegarde : si l'appli est tuée avant que
+     la base du téléphone soit à jour, le véhicule ne réapparaît pas dans « À faire » */
+  try{localStorage.setItem(STORE,JSON.stringify(DEMO?S:Object.assign({},S,{loc:[],impros:[],plan:null},IDB.db?{passages:S.passages.filter(x=>x.local)}:{},q)))}catch(e){
+  try{localStorage.setItem(STORE,JSON.stringify(Object.assign({},S,{loc:[],impros:[],plan:null,passages:[]},q)))}catch(e2){
+  /* Dernier recours : le texte des envois sans les photos, pour ne jamais perdre un passage */
+  try{localStorage.setItem(STORE,JSON.stringify(Object.assign({},S,{loc:[],impros:[],plan:null,passages:[]},{queue:lightQueue(true)})))}catch(e3){}
+  if(!save._w){save._w=1;toast('Mémoire du téléphone pleine : trouvez du réseau pour envoyer les photos.')}}}}
 let CODE='';
 try{CODE=new URLSearchParams(location.search).get('c')||'';if(CODE)localStorage.setItem('runners-code',CODE);else CODE=localStorage.getItem('runners-code')||''}catch(e){}
 let S=load();
@@ -495,6 +511,17 @@ S.day=TODAY;S.queue=S.queue||[];
 /* Ancienne version (planning dans la petite sauvegarde) : relu puis déplacé dans la base du téléphone */
 if(S.plan){try{const t=readPlan(S.plan);S.loc=t.loc;S.impros=t.impros;savePlan(S.plan);savePassages()}catch(e){S.plan=null;S.misAJour=''}}
 let ready=DEMO||!!S.plan;
+/* v31 : photos des envois en attente, relues dans la base du téléphone avant d'envoyer */
+QREADY=DEMO;
+if(!DEMO)(async()=>{
+  for(const q of S.queue){
+    if(q.photos&&q.photos.length){if(await IDB.set(STORE+'-ph-'+q.id,{photos:q.photos,mini:q.mini||''}))q.phSaved=1;continue} /* sauvegarde complète */
+    if(!q.phN)continue;
+    /* Lecture ratée (téléphone occupé) : on réessaie avant de conclure que les photos sont perdues */
+    const base=await IDB.open();
+    for(let k=0;base&&k<4&&!(q.photos&&q.photos.length);k++){const f=await IDB.get(STORE+'-ph-'+q.id);if(f&&f.photos&&f.photos.length){q.photos=f.photos;q.mini=f.mini||''}else await new Promise(r=>setTimeout(r,300*(k+1)))}
+    if(!(q.photos&&q.photos.length))q.phLost=1;
+  }})().catch(()=>{}).finally(()=>{QREADY=!!IDB.db;save();run()});
 let sheet=null;            /* {plaque, step:'fiche'|'probleme'} ou {search:true} */
 let showReport=false,picker=false,query='';
 let draft={types:[],photos:[],comment:''};
@@ -548,8 +575,8 @@ function sid(s){return s.plaque+'|'+(s.from||'')+'|'+s.point}
 function keyFor(p){const s=stayFor(p);return s?sid(s):'manual|'+TODAY+'|'+p}
 
 /* ---------- Passages ---------- */
-function fromQueue(q){return {at:q.at,by:q.by,plaque:q.plaque,point:q.point,cle:q.cle,pb:q.problemes||[],comment:q.commentaire||'',photo:!!(q.photos&&q.photos.length),demande:q.demande_id||'',pending:true}}
-function fromServer(x){return {at:String(x.horodatage||'').replace('T',' ').slice(0,16),by:x.runner,plaque:String(x.plaque||'').toUpperCase(),point:x.point,cle:x.cle,pb:x.problemes?String(x.problemes).split(', ').filter(Boolean):[],comment:x.commentaire||'',photo:!!x.photo,demande:x.demande_id||''}}
+function fromQueue(q){return {at:q.at,by:q.by,plaque:q.plaque,point:q.point,cle:q.cle,pb:q.problemes||[],comment:q.commentaire||'',photo:!!(q.photos&&q.photos.length),demande:q.demande_id||'',id:q.id,pending:true}}
+function fromServer(x){return {at:String(x.horodatage||'').replace('T',' ').slice(0,16),by:x.runner,plaque:String(x.plaque||'').toUpperCase(),point:x.point,cle:x.cle,pb:x.problemes?String(x.problemes).split(', ').filter(Boolean):[],comment:x.commentaire||'',photo:!!x.photo,demande:x.demande_id||'',id:x.id||''}}
 function removeLast(list,cle,plaque){for(let i=list.length-1;i>=0;i--)if(list[i].cle===cle&&list[i].plaque===plaque){list.splice(i,1);return true}return false}
 /* Passages enregistrés + ceux pas encore envoyés */
 function allPassages(){
@@ -580,14 +607,20 @@ let DONE_DAY=TODAY;
 function record(p,types,comment,photos){
   const st=stayFor(p),ask=askFor(p);
   const q={id:uid(),action:'passage',cle:keyFor(p),plaque:p,point:st?st.point:(ask&&ask.point)||'Hors liste',problemes:types,commentaire:comment,photos:(photos||[]).slice(0,MAX_PHOTOS),demande_id:asksFor(p).map(d=>d.id).join(','),at:nowStr(),by:S.who};
-  if(DEMO){const x=fromQueue(q);delete x.pending;S.passages.push(x)}else S.queue.push(q);
+  if(q.photos.length&&MINI.get(q.photos[0]))q.mini=MINI.get(q.photos[0]);
+  if(DEMO){const x=fromQueue(q);delete x.pending;S.passages.push(x)}else{S.queue.push(q);savePhotos(q)}
   save();run();
 }
 function undo(p){
   const k=keyFor(p);
   if(DEMO){removeLast(S.passages,k,p)}
   else{let i=-1;S.queue.forEach((q,j)=>{if(q.action==='passage'&&q.cle===k)i=j});
-    if(i>=0)S.queue.splice(i,1);else S.queue.push({id:uid(),action:'annuler',cle:k,plaque:p})}
+    /* Déjà parti chez Google (en partie, ou à la fermeture de l'appli) : il faut aussi l'annuler là-bas */
+    const parti=i>=0&&(S.queue[i].base||S.queue[i].hid||S.queue[i].inflight||S.queue[i].tried);
+    /* v31 : l'annulation vise ce passage précis (son identifiant), quel que soit l'ordre d'arrivée chez Google */
+    let cible=parti?S.queue[i].id:undefined;
+    if(i<0){const mine=S.passages.filter(x=>x.cle===k&&x.by===S.who&&x.id);if(mine.length)cible=mine[mine.length-1].id}
+    if(i>=0)forgetPhotos(S.queue.splice(i,1)[0]);if(i<0||parti)S.queue.push({id:uid(),action:'annuler',cle:k,plaque:p,cible})}
   save();run();
 }
 
@@ -614,55 +647,129 @@ function call(params,body,ms){
   return fetch(url2,opt).then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}).finally(()=>clearTimeout(t));
 }
 let busy=false,again=false,retryT=0;
+function drop(q){const i=S.queue.indexOf(q);if(i>=0)S.queue.splice(i,1);forgetPhotos(q);SENT.add(q.id)}
+/* v32 : l'appli ouverte deux fois sur le même téléphone (deux onglets) : chaque copie reprend les envois de l'autre,
+   sinon la dernière sauvegarde effacerait ceux de l'autre. Un envoi en double est reconnu par Google. */
+const SENT=new Set();
+window.addEventListener('storage',e=>{
+  if(DEMO||e.key!==STORE||!e.newValue)return;
+  let o;try{o=JSON.parse(e.newValue)}catch(x){return}
+  let added=0;(o.queue||[]).forEach(q=>{if(q&&q.id&&!SENT.has(q.id)&&!S.queue.some(x=>x.id===q.id)){S.queue.push(q);added++;
+    if(q.phN&&!(q.photos&&q.photos.length))IDB.get(STORE+'-ph-'+q.id).then(f=>{if(f&&f.photos&&f.photos.length){q.photos=f.photos;q.mini=f.mini||''}else q.phLost=1})}});
+  if(added){render(true)}
+});
 function baseOf(q){const b=bodyOf(q);delete b.photos;b.photos_attendues=q.photos.length;return b}
-function bodyOf(q){const body={code:CODE};['action','id','cle','plaque','point','problemes','commentaire','photos','demande_id','date','consigne'].forEach(k=>{if(q[k]!==undefined)body[k]=q[k]});return body}
+function bodyOf(q){const body={code:CODE};['action','id','cle','plaque','point','problemes','commentaire','photos','demande_id','date','consigne','cible'].forEach(k=>{if(q[k]!==undefined)body[k]=q[k]});return body}
 /* Le runner ferme l'appli juste après avoir validé : on confie les envois sans photo au téléphone (keepalive),
    qui les termine même appli fermée. Ils restent aussi dans la file : au prochain envoi, Google reconnaît
    un doublon (même identifiant) et ne l'enregistre pas deux fois. */
 function flushOnHide(){
   if(DEMO||!CODE||!API)return;
-  S.queue.forEach(q=>{if(q.base)return;const b=q.photos&&q.photos.length?baseOf(q):bodyOf(q);
-    try{fetch(API+'?'+new URLSearchParams({j:JSON.stringify(b),code:CODE}),{keepalive:true,cache:'no-store'}).catch(()=>{})}catch(e){}})
+  let budget=60000; /* le téléphone n'accepte qu'environ 64 Ko d'envois en cours une fois l'appli fermée */
+  const now=Date.now(),lot=[];
+  S.queue.forEach((q,j)=>{
+    /* Une annulation suivie d'une nouvelle validation du même véhicule attend la réouverture (l'ordre compte) */
+    if(q.action==='annuler'&&!q.cible&&S.queue.slice(j+1).some(x=>x.action==='passage'&&x.cle===q.cle))return;
+    /* v32 : le téléphone signale la fermeture deux fois (écran caché, page quittée) : un seul envoi */
+    if(!q.base&&!(q.hidAt&&now-q.hidAt<10000)){const b=q.photos&&q.photos.length?baseOf(q):bodyOf(q);q.hid=true;q.hidAt=now;
+      if(S.srv>=12){delete b.code;lot.push(b)}
+      else try{fetch(API+'?'+new URLSearchParams({j:JSON.stringify(b),code:CODE}),{keepalive:true,cache:'no-store'}).catch(()=>{})}catch(e){}}
+    /* v31 : photo allégée (une seule, ~25 Ko) : le bureau la voit même si le runner ne rouvre pas l'appli */
+    if(q.mini&&!q.miniSent){const b=baseOf(q);b.action='photos';b.allegee=true;b.photos=[q.mini];const txt=JSON.stringify(b);
+      if(txt.length<budget){budget-=txt.length;q.miniSent=true;
+        try{fetch(API,{method:'POST',body:txt,keepalive:true,mode:'no-cors'}).catch(()=>{})}catch(e){}}}
+  });
+  /* Tous les envois sans photo regroupés en un seul appel à Google (par paquets qui tiennent dans l'adresse) */
+  for(const part of lots(lot))try{fetch(API+'?'+new URLSearchParams({j:JSON.stringify({code:CODE,action:'lot',envois:part}),code:CODE}),{keepalive:true,cache:'no-store'}).catch(()=>{})}catch(e){}
+  save();
+}
+function lots(list){const out=[];let cur=[],len=0;list.forEach(b=>{const l=encodeURIComponent(JSON.stringify(b)).length;if(cur.length&&(cur.length>=10||len+l>5500)){out.push(cur);cur=[];len=0}cur.push(b);len+=l});if(cur.length)out.push(cur);return out}
+/* Aperçus des photos prises (version allégée de chaque photo, pour l'envoi à la fermeture) */
+const MINI=new Map();
+function miniOf(u){
+  return new Promise(ok=>{const img=new Image();img.onload=()=>{const s=Math.min(1,480/Math.max(img.width,img.height));const c=document.createElement('canvas');c.width=Math.round(img.width*s);c.height=Math.round(img.height*s);
+    c.getContext('2d').drawImage(img,0,0,c.width,c.height);let m=c.toDataURL('image/jpeg',.5);if(m.length>45000)m=c.toDataURL('image/jpeg',.3);ok(m.length>45000?'':m)};img.onerror=()=>ok('');img.src=u});
 }
 window.addEventListener('pagehide',flushOnHide); /* again : une validation est arrivée pendant un échange, on relance juste après */
 /* Envoie ce qui attend, puis recharge le planning. Sans réseau, tout reste en attente sur le téléphone. */
-async function run(){
+/* Réponse de Google à un envoi : 'stop' (on garde la suite pour plus tard) ou 'suite' */
+function handled(q,r){
+  /* Ni « ok » ni « erreur » : le script Google n'est pas à jour (v8), on garde l'envoi pour plus tard */
+  if(!r||(!r.ok&&!r.erreur&&!r.id)){S.offline=true;S.oldScript=true;return 'stop'}
+  /* Google occupé ou panne passagère : l'envoi reste dans la file, nouvel essai un peu plus tard */
+  if(r.erreur&&r.reessayer){S.offline=true;return 'stop'}
+  /* Lien désactivé : on garde tout sur le téléphone (rien n'est jeté), le service parc donnera un nouveau lien */
+  if(r.erreur&&/^Lien inconnu/.test(r.erreur)){S.blocked=r.erreur;return 'stop'}
+  S.offline=false;S.oldScript=false;
+  /* Le runner a pu annuler pendant l'envoi : on retire cet envoi-là, pas le premier de la file */
+  const gone=!S.queue.includes(q);drop(q);if(gone)return 'suite';
+  if(r.erreur){toast('Envoi refusé : '+r.erreur)}
+  else if(q.action==='passage'){const x=fromQueue(q);delete x.pending;x.local=1;S.passages.push(x)}
+  else if(q.action==='annuler')removeLast(S.passages,q.cle,q.plaque);
+  else if(q.action==='rappel')S.demandes.push({id:r.id||q.id,date:q.date,runner:S.who,plaque:q.plaque,point:q.point,consigne:q.consigne,statut:'à faire',auteur:S.who});
+  else if(q.action==='rappel_suppr'){const d=S.demandes.find(x=>x.id===q.id);if(d)d.statut='supprimée'}
+  return 'suite';
+}
+let retryN=0,lastSync=0;
+async function run(force){
   /* Appli restée ouverte après minuit : on repart sur le nouveau jour (rien n'est perdu, tout est enregistré) */
   if(dayOffset(0)!==TODAY){save();location.reload();return}
   render(true);
   if(DEMO||!CODE)return;
-  if(busy){again=true;return}
+  if(busy){again=true;if(force)again='force';return}
   busy=true;again=false;
   try{
     while(S.queue.length){
-      const q=S.queue[0];const body=bodyOf(q);
+      const q=S.queue[0];
+      /* Photos pas encore relues : on attend ; introuvables : le passage part quand même, sans elles */
+      if(q.phN&&!(q.photos&&q.photos.length)){if(!q.phLost)break;delete q.phN;toast('Photos de '+q.plaque+' introuvables sur le téléphone : le signalement part sans elles.')}
+      const hasPh=q.photos&&q.photos.length;
+      /* v32 : plusieurs envois sans photo d'un coup, en un seul appel (Google met ~2 s par appel, pas par envoi) */
+      if(!hasPh&&S.srv>=12){
+        const grp=[];for(const x of S.queue){if((x.photos&&x.photos.length)||x.phN||grp.length>=10)break;grp.push(x)}
+        const part=lots(grp.map(x=>{const b=bodyOf(x);delete b.code;return b}))[0];const items=grp.slice(0,part.length);
+        let r;items.forEach(x=>{x.inflight=x.tried=true});
+        try{r=await call(null,{code:CODE,action:'lot',envois:part},60000)}catch(e){S.offline=true;break}finally{items.forEach(x=>{x.inflight=false})}
+        if(!r||!Array.isArray(r.resultats)){if(handled(items[0],r)==='stop')break;continue}
+        let stop=false;for(let i=0;i<items.length;i++){if(handled(items[i],r.resultats[i]||{erreur:'Pas de réponse',reessayer:true})==='stop'){stop=true;break}}
+        save();savePassages();render(true);if(stop)break;continue
+      }
+      const body=bodyOf(q);
       /* Signalement avec photos : d'abord le passage seul (léger, part tout de suite), puis les photos */
-      if(q.action==='passage'&&q.photos&&q.photos.length&&!q.base){
-        const b=baseOf(q);let r0;try{r0=await call(null,b,60000)}catch(e){S.offline=true;break}
+      if(q.action==='passage'&&hasPh&&!q.base){
+        const b=baseOf(q);let r0;q.inflight=q.tried=true;try{r0=await call(null,b,60000)}catch(e){S.offline=true;break}finally{q.inflight=false}
         if(!r0||(!r0.ok&&!r0.erreur)){S.offline=true;S.oldScript=true;break}
-        if(r0.erreur){S.queue.shift();toast('Envoi refusé : '+r0.erreur);save();render(true);continue}
+        if(r0.erreur&&r0.reessayer){S.offline=true;break}
+        if(r0.erreur&&/^Lien inconnu/.test(r0.erreur)){S.blocked=r0.erreur;break}
+        if(r0.erreur){drop(q);toast('Envoi refusé : '+r0.erreur);save();render(true);continue}
         q.base=true;save();continue}
       if(q.base)body.action='photos';
-      let r;try{r=await call(null,body,q.photos&&q.photos.length?120000:60000)}catch(e){S.offline=true;break}
-      /* Ni « ok » ni « erreur » : le script Google n'est pas à jour (v8), on garde l'envoi pour plus tard */
-      if(!r||(!r.ok&&!r.erreur&&!r.id)){S.offline=true;S.oldScript=true;break}
-      S.offline=false;S.oldScript=false;S.queue.shift();
-      if(r&&r.erreur){toast('Envoi refusé : '+r.erreur)}
-      else if(q.action==='passage'){const x=fromQueue(q);delete x.pending;S.passages.push(x)}
-      else if(q.action==='annuler')removeLast(S.passages,q.cle,q.plaque);
-      else if(q.action==='rappel')S.demandes.push({id:r.id||q.id,date:q.date,runner:S.who,plaque:q.plaque,point:q.point,consigne:q.consigne,statut:'à faire',auteur:S.who});
-      else if(q.action==='rappel_suppr'){const d=S.demandes.find(x=>x.id===q.id);if(d)d.statut='supprimée'}
+      let r;q.inflight=q.tried=true;try{r=await call(null,body,hasPh?120000:60000)}catch(e){S.offline=true;break}finally{q.inflight=false}
+      if(handled(q,r)==='stop')break;
       save();savePassages();render(true);
     }
-    if(!S.offline){
-      const r=await call(Object.assign({action:'donnees',code:CODE},S.loc.length&&S.misAJour?{version:S.misAJour}:{}));
-      if(r.erreur){S.blocked=r.erreur}
+    /* v32 : après un envoi, pas besoin de tout relire chez Google à chaque fois (l'actualisation régulière s'en charge) */
+    if(!S.offline&&(force||!lastSync||Date.now()-lastSync>20000)){
+      /* v31 : seulement les passages nouveaux depuis la dernière fois ; tout est relu toutes les 30 min */
+      const full=!S.depuis||!S.fullAt||Date.now()-S.fullAt>30*60e3;
+      const r=await call(Object.assign({action:'donnees',code:CODE},S.loc.length&&S.misAJour?{version:S.misAJour}:{},full?{}:{depuis:S.depuis,vp:S.vp}));
+      /* v33 : seul un lien inconnu bloque l'appli ; une panne de Google garde le planning du téléphone et réessaie */
+      if(r.erreur){if(/^Lien inconnu/.test(r.erreur))S.blocked=r.erreur;else if(!S.synced&&!S.loc.length)S.syncErr=r.erreur;else toast('Google répond mal, nouvel essai dans un instant')}
       else{
-        S.blocked='';
+        S.blocked='';S.syncErr='';lastSync=Date.now();S.srv=r.serveur||0;
         /* Planning absent de la réponse = inchangé : on garde celui du téléphone */
         if(r.planning){let t={loc:[],impros:[]};try{t=readPlan(r.planning)}catch(e){toast('Planning illisible : '+e.message)}
           S.loc=t.loc;S.impros=t.impros;S.plan=r.planning;savePlan(r.planning)}
-        S.passages=(r.passages||[]).map(fromServer).sort((a,b)=>a.at.localeCompare(b.at));savePassages();
+        const got=r.passages||[];
+        if(r.partiel){const seen=new Set(S.passages.map(x=>x.at+'|'+x.by+'|'+x.cle));
+          /* La version de Google remplace celle gardée sur le téléphone après l'envoi (même runner, même séjour) */
+          got.map(fromServer).forEach(x=>{if(seen.has(x.at+'|'+x.by+'|'+x.cle))return;
+            S.passages=S.passages.filter(y=>!(y.local&&y.by===x.by&&y.cle===x.cle&&y.plaque===x.plaque));S.passages.push(x)});S.passages.sort((a,b)=>a.at.localeCompare(b.at))}
+        else{S.passages=got.map(fromServer).sort((a,b)=>a.at.localeCompare(b.at));S.fullAt=Date.now()}
+        got.forEach(x=>{const h=String(x.horodatage||'');if(!S.depuis||h>S.depuis)S.depuis=h});
+        if(!r.partiel&&!got.length)S.depuis='';
+        if(r.vp===undefined)S.depuis='';S.vp=r.vp;
+        savePassages();
         S.demandes=(r.demandes||[]).map(d=>({id:d.id,date:String(d.date).slice(0,10),runner:d.runner,plaque:String(d.plaque||'').toUpperCase(),point:d.point,consigne:d.consigne,statut:d.statut,auteur:d.auteur||'Service parc'}));
         S.who=r.runner.prenom;
         if(!S.ptsSet){S.myPoints=(r.runner.points||[]).map(city).filter(Boolean);S.ptsSet=true}
@@ -671,9 +778,11 @@ async function run(){
       save();
     }
   }catch(e){S.offline=true}
-  finally{busy=false;render(true);if(again&&!S.offline){again=false;run()}
-    /* Échec alors que le téléphone a du réseau : on réessaie seul dans 30 s */
-    else if(S.offline&&navigator.onLine!==false&&!retryT)retryT=setTimeout(()=>{retryT=0;S.offline=false;run()},30000)}
+  finally{busy=false;render(true);
+    if(!S.offline)retryN=0;
+    if(again&&!S.offline){const f=again==='force';again=false;run(f)}
+    /* Échec alors que le téléphone a du réseau : nouvel essai seul dans 5 s, puis 10, 20, 30 s */
+    else if(S.offline&&navigator.onLine!==false&&!retryT){const d=[5000,10000,20000,30000][Math.min(retryN++,3)];retryT=setTimeout(()=>{retryT=0;S.offline=false;run()},d)}}
 }
 
 /* ---------- Écrans ---------- */
@@ -883,6 +992,7 @@ function render(bg){
   let blocked='';
   if(!DEMO&&!CODE)blocked=gate('Ce téléphone n\'est pas encore relié','Demandez au service parc de vous installer l\'appli avec votre lien personnel.');
   else if(!DEMO&&S.blocked)blocked=gate('Lien non reconnu',esc(S.blocked));
+  else if(!DEMO&&S.syncErr&&!S.loc.length)blocked=gate('Google ne répond pas','Le planning n\'a pas pu être chargé. Nouvel essai automatique dans un instant.');
   else if(!DEMO&&!ready)blocked=gate('Chargement…','Ouverture de votre planning.');
   else if(!DEMO&&!S.synced)blocked=S.offline?gate(navigator.onLine===false?'Pas de réseau':'Google ne répond pas','L\'appli a besoin d\'internet la première fois. Nouvel essai automatique dans 30 secondes.','<button type="button" class="btn wide primary" id="refresh">Réessayer</button>'):gate('Chargement…','Récupération de votre planning.');
   $('#title').textContent=blocked?'Runners':sc==='done'?'Ma tournée':DAY===TODAY?'Véhicules à voir':'Planning à venir';
@@ -932,7 +1042,7 @@ document.addEventListener('click',e=>{
   if(d.rpoint){rdraft.point=d.rpoint;render();return}
   if(b.id==='openAsks'){sheet={asks:true};render();$('#sheet').scrollTop=0;return}
   if(b.id==='absentBtn'){const p=sheet.plaque;record(p,['Pas trouvé sur place'],'',[]);closeSheet(p+' signalé pas sur place. Le service parc sera prévenu.');return}
-  if(b.id==='refresh'){S.offline=false;run();return}
+  if(b.id==='refresh'){S.offline=false;run(true);return}
   if(b.id==='openSearch'){query='';sheet={search:true};render();$('#q').focus();return}
   if(b.id==='openRemind'){query='';sheet={search:true,remind:true,back:sheet&&sheet.asks?'asks':''};render();$('#q').focus();return}
   if(b.id==='closeSheet'){closeSheet();return}
@@ -960,7 +1070,7 @@ document.addEventListener('input',e=>{
 document.addEventListener('change',e=>{
   if(e.target.id==='rDate'){rdraft.date=/^\d{4}-\d{2}-\d{2}$/.test(e.target.value)&&e.target.value>TODAY?e.target.value:'';const b=$('#saveRem');if(b)b.disabled=!rdraft.date}
   if(e.target.id==='photo'){const f=e.target.files[0];if(!f)return;$('#photoName').textContent='Préparation de la photo…';
-    compress(f).then(u=>{if(draft.photos.length<MAX_PHOTOS)draft.photos.push(DEMO?'photo':u);render()},()=>{render();toast('Photo illisible. Réessayez.')})}
+    compress(f).then(u=>{if(draft.photos.length<MAX_PHOTOS)draft.photos.push(DEMO?'photo':u);render();if(!DEMO)miniOf(u).then(m=>{if(m)MINI.set(u,m)})},()=>{render();toast('Photo illisible. Réessayez.')})}
   if(e.target.id==='csvFile'){const f=e.target.files[0];if(!f)return;const r=new FileReader();
     r.onload=()=>{try{const t=parseCsv(String(r.result));const m=new Date(f.lastModified||Date.now());
       set({loc:t.loc,impros:t.impros,plan:null,sourceLabel:'Export du '+dLabel(iso(m)).num+' à '+hm(m).replace(':','h')});
@@ -975,15 +1085,16 @@ document.addEventListener('pointermove',e=>{if(!drag)return;const dx=e.clientX-d
 document.addEventListener('pointerup',()=>{drag=null;setTimeout(()=>{dragged=false},0)});
 addEventListener('resize',()=>centerDays());addEventListener('load',()=>centerDays());
 function centerDays(){document.querySelectorAll('.days').forEach(r=>{const on=r.querySelector('.day.on');if(on)r.scrollLeft=on.offsetLeft-r.offsetLeft-(r.clientWidth-on.offsetWidth)/2})}
-window.addEventListener('online',()=>{S.offline=false;run()});
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')run();else flushOnHide()});
-setInterval(()=>{if(document.visibilityState==='visible')run()},REFRESH_MS);
+window.addEventListener('online',()=>{S.offline=false;run(true)});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')run(true);else flushOnHide()});
+setInterval(()=>{if(document.visibilityState==='visible')run(true)},REFRESH_MS);
 if(!DEMO&&'serviceWorker' in navigator&&location.protocol==='https:'){try{navigator.serviceWorker.register('sw.js').catch(()=>{})}catch(e){}}
 if(ready)run();
 else{render(true);IDB.get(STORE+'-plan').then(pl=>{
   if(pl&&(pl.lignes||pl.loc)){try{const t=readPlan(pl);S.loc=t.loc;S.impros=t.impros;S.plan=pl}catch(e){}}
   if(!S.plan)S.misAJour='';
-  return IDB.get(STORE+'-pas')}).then(pa=>{if(Array.isArray(pa))S.passages=pa;else if(S.passages.length)savePassages()}).finally(()=>{ready=true;run()})}
+  return IDB.get(STORE+'-pas')}).then(pa=>{if(Array.isArray(pa)){const loc=S.passages.filter(x=>x.local);S.passages=pa;
+    loc.forEach(x=>{if(!pa.some(y=>y.at===x.at&&y.by===x.by&&y.cle===x.cle))S.passages.push(x)})}else if(S.passages.length)savePassages()}).finally(()=>{ready=true;run()})}
 })();
 </script>
 </body>
