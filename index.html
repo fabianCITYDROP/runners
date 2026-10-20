@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Runners</title>
-<!-- Appli Runners City Drop, v22 : version reliée au Google Sheet (voir config.js) ; gros caractères, 3 photos, aujourd'hui au milieu, recherche en haut, page des rappels ; v22 : corrections après test complet ; v23 : planning compact (grosses flottes), dates avec le mois, longs textes coupés sur les cartes ; v24 : rapide sur téléphone lent avec une grosse flotte (planning préparé par Google et rangé à part, écran redessiné seulement s'il change) ; v25 : message de fin de tournée simplifié (date en entier, plaques les unes sous les autres, sans heure ni prénom) ; v27 : une validation faite pendant la réception du planning part tout de suite après (avant : jusqu'à 5 min d'attente) ; envois sans photo passés par l'adresse (GET) car l'iPhone bloquait les envois classiques ; v28 : actualisation toutes les 30 s ; v29 : une validation part même si le runner ferme l'appli juste après ; v30 : signalement avec photos envoyé en deux temps (le passage d'abord, même appli fermée, les photos ensuite) ; attente plus longue et message « Google ne répond pas » au lieu d'un faux « Pas de réseau » ; v31 : photo allégée envoyée même appli fermée (la vraie suit à la réouverture) ; un envoi n'est plus jeté quand Google est seulement occupé ; annuler un passage déjà parti l'annule aussi chez Google ; v32 : un lien désactivé ne jette plus les envois ; annulation sûre même quand les envois arrivent dans le désordre ; photos gardées tant que le téléphone n'a pas confirmé les avoir rangées ; un véhicule envoyé ne réapparaît plus si l'appli est tuée juste après ; v33 : envois groupés en un seul appel (avec le script v12), moins de relectures chez Google, deux onglets ouverts sans perte, mémoire pleine sans blocage, une panne de Google n'affiche plus « Lien non reconnu » ; v34 : page bureau v10 (photos effacées au bout de 5 jours, avec le script v13) ; v35 : page bureau v11 plus rapide (avec le script v14) ; v36 : nouvelles demandes du bureau signalées (pastille « 1 nouvelle », bandeau, vibration, chiffre sur l'icône, notification si autorisée) ; v37 : vraies notifications des nouvelles demandes, même écran verrouillé (avec le script v15) ; v38 : les alertes gardent leur détail après une mise à jour de l'appli ; v39 : mise à jour automatique sans fermer l'appli ; v40 : gros bouton ACTIVER LES NOTIFICATIONS en haut de l'accueil tant qu'elles ne sont pas actives -->
+<!-- Appli Runners City Drop, v22 : version reliée au Google Sheet (voir config.js) ; gros caractères, 3 photos, aujourd'hui au milieu, recherche en haut, page des rappels ; v22 : corrections après test complet ; v23 : planning compact (grosses flottes), dates avec le mois, longs textes coupés sur les cartes ; v24 : rapide sur téléphone lent avec une grosse flotte (planning préparé par Google et rangé à part, écran redessiné seulement s'il change) ; v25 : message de fin de tournée simplifié (date en entier, plaques les unes sous les autres, sans heure ni prénom) ; v27 : une validation faite pendant la réception du planning part tout de suite après (avant : jusqu'à 5 min d'attente) ; envois sans photo passés par l'adresse (GET) car l'iPhone bloquait les envois classiques ; v28 : actualisation toutes les 30 s ; v29 : une validation part même si le runner ferme l'appli juste après ; v30 : signalement avec photos envoyé en deux temps (le passage d'abord, même appli fermée, les photos ensuite) ; attente plus longue et message « Google ne répond pas » au lieu d'un faux « Pas de réseau » ; v31 : photo allégée envoyée même appli fermée (la vraie suit à la réouverture) ; un envoi n'est plus jeté quand Google est seulement occupé ; annuler un passage déjà parti l'annule aussi chez Google ; v32 : un lien désactivé ne jette plus les envois ; annulation sûre même quand les envois arrivent dans le désordre ; photos gardées tant que le téléphone n'a pas confirmé les avoir rangées ; un véhicule envoyé ne réapparaît plus si l'appli est tuée juste après ; v33 : envois groupés en un seul appel (avec le script v12), moins de relectures chez Google, deux onglets ouverts sans perte, mémoire pleine sans blocage, une panne de Google n'affiche plus « Lien non reconnu » ; v34 : page bureau v10 (photos effacées au bout de 5 jours, avec le script v13) ; v35 : page bureau v11 plus rapide (avec le script v14) ; v36 : nouvelles demandes du bureau signalées (pastille « 1 nouvelle », bandeau, vibration, chiffre sur l'icône, notification si autorisée) ; v37 : vraies notifications des nouvelles demandes, même écran verrouillé (avec le script v15) ; v38 : les alertes gardent leur détail après une mise à jour de l'appli ; v39 : mise à jour automatique sans fermer l'appli ; v40 : gros bouton ACTIVER LES NOTIFICATIONS en haut de l'accueil tant qu'elles ne sont pas actives ; v41 : encadré des notifications plus sobre, mise à jour repérée chaque minute et appliquée après 30 s sans geste ; v42 (revue de nuit) : ouverture immédiate sur réseau faible (copie du téléphone après 3 s, polices sans bloquer), fiche et « Tout est OK » 2 à 3 fois plus rapides, double appui sans effet sur l'écran suivant, véhicule parti le matin et revenu le soir affiché pour son retour, pas de rechargement à minuit pendant une saisie, panne de Google signalée sur la ligne d'état au lieu d'un message toutes les 30 s ; v43 : horaires d'arrivée et de départ sur chaque demande dans la page « Rappels et demandes », plaque jamais coupée sur deux lignes -->
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
@@ -14,7 +14,8 @@
 <meta name="apple-mobile-web-app-title" content="Runners">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="claude:viewport-fit-sides" content="cover">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<!-- v42 : polices chargées sans bloquer l'affichage (réseau faible : l'appli s'affiche tout de suite avec la police du téléphone) -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
 <style>
 /* Une colonne, en-tête sombre, deux onglets fixés en bas, fiche véhicule plein écran. */
 :root{
@@ -67,7 +68,7 @@ header h1{margin:0;font-size:20px;font-weight:700;letter-spacing:-.01em}
 /* Contenu */
 main{flex:1;padding-top:16px;padding-bottom:calc(96px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:16px}
 .mlabel{font-size:10.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
-.plate{font-family:var(--mono);font-size:17px;font-weight:600;letter-spacing:.03em}
+.plate{font-family:var(--mono);font-size:17px;font-weight:600;letter-spacing:.03em;white-space:nowrap}
 .model{font-size:15px;font-weight:600}
 .spec{font-size:14px;color:var(--muted)}
 .meta{font-size:13px;color:var(--muted)}
@@ -107,7 +108,7 @@ main{flex:1;padding-top:16px;padding-bottom:calc(96px + env(safe-area-inset-bott
 .times2 b{font-weight:600;color:var(--fg)}
 .days{cursor:grab;user-select:none}
 .row-b{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
-.row-t{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.row-t{display:flex;align-items:center;justify-content:space-between;gap:6px 8px;flex-wrap:wrap}
 .chev{color:var(--muted);flex:none}
 .pill{padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:600;white-space:nowrap}
 .pill.dep{background:var(--warn-soft);color:var(--warn)}
@@ -262,10 +263,12 @@ body{font-size:17px}
 .askbtn.none .askn{color:var(--muted)}
 .notifbtn{width:100%;margin-top:8px}
 .notifhint{margin-top:8px;font-size:14px;color:var(--muted)}
-.notifcard{margin:0 0 12px;padding:14px;border-radius:14px;border:2px solid var(--info);background:var(--info-soft);color:var(--fg)}
-.notifcard .nc-t{font-size:18px;font-weight:700;color:var(--info)}
-.notifcard .nc-x{margin-top:4px;font-size:15px;line-height:1.35}
-.btn.notifbig{margin-top:12px;min-height:64px;font-size:18px;letter-spacing:.02em;background:var(--info);border-color:var(--info);color:var(--surface)}
+.notifcard{display:grid;grid-template-columns:44px 1fr;column-gap:12px;row-gap:2px;align-items:center;margin:0 0 14px;padding:16px;border-radius:14px;background:var(--surface);border:1px solid var(--line);box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.notifcard .nc-i{grid-row:span 2;width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:var(--accent-soft);color:var(--accent)}
+.notifcard.off .nc-i{background:var(--warn-soft);color:var(--warn)}
+.notifcard .nc-t{align-self:end;font-size:17px;font-weight:600;color:var(--fg)}
+.notifcard .nc-x{align-self:start;font-size:14px;line-height:1.4;color:var(--muted)}
+.btn.notifbig{grid-column:1/-1;margin-top:14px;min-height:56px}
 .askbtn .newn{background:var(--surface);color:var(--red);border-radius:999px;padding:2px 8px;font-size:13px;font-weight:700;margin-right:4px}
 .pill.new{background:var(--red);color:var(--surface)}
 .picker .lnk2{display:block;padding:10px 4px 2px;font-size:14px;font-weight:600;color:var(--muted);text-decoration:underline;cursor:pointer}
@@ -339,7 +342,10 @@ const I={
   clock:svg('<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>',14,2.5),
   user:svg('<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/>',18,2.2),
   clockL:svg('<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>',24,2.5),
-  search:svg('<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>',24,2.5)
+  search:svg('<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>',24,2.5),
+  bell:svg('<path d="M6 10a6 6 0 0 1 12 0c0 5 2 6.5 2 6.5H4S6 15 6 10z"/><path d="M10 20a2 2 0 0 0 4 0"/>',22,2),
+  bellOff:svg('<path d="M6 10a6 6 0 0 1 12 0c0 5 2 6.5 2 6.5H4S6 15 6 10z"/><path d="M10 20a2 2 0 0 0 4 0"/><path d="M3 3l18 18"/>',22,2),
+  phone:svg('<rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18h2"/>',22,2)
 };
 
 /* ---------- Dates ---------- */
@@ -541,6 +547,8 @@ let draft={types:[],photos:[],comment:''};
 let rdraft={date:'',note:'',other:false,point:''};
 function newRemind(p){const st=stayFor(p,DAY)||stayFor(p);return {date:'',note:'',other:false,point:st?st.point:(S.myPoints[0]||LOCAL[0])}}
 let DAY=TODAY;
+/* v41 : après une mise à jour automatique, on revient sur le jour qui était affiché */
+try{const j=JSON.parse(sessionStorage.getItem('runners-jour')||'null');sessionStorage.removeItem('runners-jour');if(j&&Date.now()-j.t<60000&&/^\d{4}-\d\d-\d\d$/.test(j.d)&&j.d>=dayOffset(-DAYS_BACK)&&j.d<=dayOffset(DAYS_AHEAD))DAY=j.d}catch(e){}
 
 /* ---------- Outils ---------- */
 const $=s=>document.querySelector(s);
@@ -572,14 +580,26 @@ const stays=memo(()=>{
   return out;
 });
 /* Véhicules présents un jour donné, le départ le plus proche en premier */
-const staysOn=memo(day=>{
-  const a=day+' 00:00',b=day+' 23:59';const seen=new Set();
+const staysAll=memo(day=>{
+  const a=day+' 00:00',b=day+' 23:59';
   return stays().filter(s=>(!s.from||s.from<=b)&&(!s.to||s.to>=a)).map(s=>{
     const arrives=s.from&&s.from.slice(0,10)===day,leaves=s.to&&s.to.slice(0,10)===day;
     return Object.assign({},s,{arrives,leaves,impros:improsFor(s.plaque,s.from,s.to)});
-  }).sort((x,y)=>(x.to||'9999').localeCompare(y.to||'9999')||(x.from||'').localeCompare(y.from||'')||x.plaque.localeCompare(y.plaque))
-    .filter(s=>!seen.has(s.plaque)&&seen.add(s.plaque));
+  }).sort((x,y)=>(x.to||'9999').localeCompare(y.to||'9999')||(x.from||'').localeCompare(y.from||'')||x.plaque.localeCompare(y.plaque));
 });
+/* Un seul séjour par véhicule et par jour. v42 : aujourd'hui, c'est le séjour en cours ou le prochain (avant : toujours
+   le premier). Un véhicule parti à 6h30 et de retour à 18h restait affiché « Part aujourd'hui 6h30 » toute la journée,
+   et son retour du soir n'apparaissait jamais à voir. */
+const SEL=new Map();
+function staysOn(day){
+  const all=staysAll(day),now=day===TODAY?nowStr():'',k=day+'|'+now,c=SEL.get(k);
+  if(c&&c.src===all)return c.v;
+  const pick=new Map();
+  /* triés par heure de départ : on passe au séjour suivant tant que celui retenu est déjà terminé */
+  all.forEach(s=>{const p=pick.get(s.plaque);if(!p||(now&&p.to&&p.to<now))pick.set(s.plaque,s)});
+  const v=all.filter(s=>pick.get(s.plaque)===s);
+  if(SEL.size>30)SEL.clear();SEL.set(k,{src:all,v});return v;
+}
 function improsFor(p,from,to){return S.impros.filter(i=>i.plaque===p&&(!to||i.debut<=to)&&(!from||!i.fin||i.fin>=from)).sort((a,b)=>a.debut.localeCompare(b.debut))}
 function staysToday(){return staysOn(TODAY)}
 function stayFor(p,day){return staysOn(day||TODAY).find(s=>s.plaque===p)||null}
@@ -597,15 +617,17 @@ function allPassages(){
   S.queue.forEach(q=>{if(q.action==='passage')list.push(fromQueue(q));else if(q.action==='annuler')removeLast(list,q.cle,q.plaque)});
   return list;
 }
-let P={},PL=[];
-function index(){PL=allPassages();P={};PL.forEach(x=>{P[x.cle]=x})}
+/* v42 : FAITES = demandes déjà closes par un passage, calculé une fois ici (avant : relu pour chaque demande à chaque
+   affichage, plus d'une seconde de calcul sur un téléphone lent avec un mois de passages) */
+let P={},PL=[],FAITES=new Set();
+function index(){PL=allPassages();P={};FAITES=new Set();PL.forEach(x=>{P[x.cle]=x;if(x.demande)String(x.demande).split(',').forEach(id=>{if(id)FAITES.add(id)})})}
 function passageOf(p){return P[keyFor(p)]||null}
 /* Demandes du bureau et rappels du runner, y compris ceux pas encore envoyés */
 function allAsks(){
   const list=S.demandes.map(d=>Object.assign({},d));
   S.queue.forEach(q=>{if(q.action==='rappel')list.push({id:q.id,date:q.date,runner:S.who,plaque:q.plaque,point:q.point,consigne:q.consigne,statut:'à faire',auteur:S.who,pending:true});
     else if(q.action==='rappel_suppr'){const d=list.find(x=>x.id===q.id);if(d)d.statut='supprimée'}});
-  return list.filter(d=>d.statut!=='supprimée'&&!PL.some(x=>String(x.demande).split(',').includes(d.id)));
+  return list.filter(d=>d.statut!=='supprimée'&&!FAITES.has(d.id));
 }
 /* Aujourd'hui : ceux du jour et ceux oubliés les jours d'avant ; autre jour : ceux de ce jour-là */
 function openAsks(day){day=day||TODAY;return allAsks().filter(d=>day===TODAY?d.date<=TODAY:d.date===day).sort((a,b)=>a.date.localeCompare(b.date))}
@@ -656,15 +678,16 @@ function cfgSw(){if(DEMO||!CODE||!API||!('caches' in window))return;try{caches.o
 function alertesHtml(big){
   if(DEMO)return '';
   const ios=/iPhone|iPad|iPod/.test(navigator.userAgent),pwa=window.navigator.standalone===true||matchMedia('(display-mode: standalone)').matches;
-  const carte=(titre,texte,bouton)=>`<div class="notifcard" role="region" aria-label="Notifications"><div class="nc-t">${titre}</div><div class="nc-x">${texte}</div>${bouton||''}</div>`;
+  /* v41 : encadré sobre (icône, titre, texte gris, bouton vert de l'appli), même taille de bouton */
+  const carte=(ic,ton,titre,texte,bouton)=>`<div class="notifcard ${ton}" role="region" aria-label="Notifications"><span class="nc-i" aria-hidden="true">${ic}</span><div class="nc-t">${titre}</div><div class="nc-x">${texte}</div>${bouton||''}</div>`;
   if(!pushOk()){
     if(!(ios&&!pwa&&S.srv>=15))return '';
-    return big?carte('Notifications impossibles ici','Pour être prévenu des demandes du bureau, même téléphone verrouillé : touchez le bouton Partager de Safari, puis « Sur l\'écran d\'accueil », et ouvrez l\'appli depuis son icône Runners.')
+    return big?carte(I.phone,'','Alertes du bureau','Pour les recevoir, touchez Partager dans Safari, puis « Sur l\'écran d\'accueil », et ouvrez l\'appli depuis son icône.')
       :'<div class="notifhint">Pour recevoir les alertes du bureau, ouvrez l\'appli depuis son icône sur l\'écran d\'accueil.</div>'}
-  if(Notification.permission==='denied')return big?carte('Notifications bloquées','Pour être prévenu des demandes du bureau : ouvrez Réglages, Notifications, Runners, puis activez « Autoriser les notifications ».')
+  if(Notification.permission==='denied')return big?carte(I.bellOff,'off','Notifications bloquées','Pour être prévenu des demandes du bureau : Réglages, Notifications, Runners, puis « Autoriser les notifications ».')
     :'<div class="notifhint">Alertes du bureau bloquées sur ce téléphone (Réglages du téléphone, Notifications, Runners).</div>';
   if(Notification.permission==='granted'&&S.abonne&&S.abonne.endsWith('|'+S.vapid))return '';
-  return big?carte('Notifications désactivées','Activez-les pour être prévenu des demandes du bureau, même téléphone verrouillé.','<button type="button" class="btn big notifbig" id="enableNotif">ACTIVER LES NOTIFICATIONS</button>')
+  return big?carte(I.bell,'','Alertes du bureau','Soyez prévenu des nouvelles demandes, même téléphone verrouillé.','<button type="button" class="btn big primary notifbig" id="enableNotif">Activer les notifications</button>')
     :'<button type="button" class="btn notifbtn" id="enableNotif">'+(Notification.permission==='granted'?'Réactiver les alertes du bureau':'Recevoir les alertes du bureau')+'</button>';
 }
 function askFor(p){return openAsks().find(d=>d.plaque===p)||null}
@@ -710,7 +733,6 @@ function unremind(id){
 /* ---------- Échanges avec Google ---------- */
 function call(params,body,ms){
   const ctl=new AbortController();const t=setTimeout(()=>ctl.abort(),ms||45000);
-  const url=params?API+'?'+new URLSearchParams(params):API;
   /* Envoi sans photo : passé dans l'adresse (GET), la porte qui marche partout. Avec photos : envoi classique (POST). */
   if(body&&!(body.photos&&body.photos.length)){params={j:JSON.stringify(body),code:body.code||''};body=null}
   const url2=params?API+'?'+new URLSearchParams(params):API;
@@ -786,7 +808,8 @@ function handled(q,r){
 let retryN=0,lastSync=0;
 async function run(force){
   /* Appli restée ouverte après minuit : on repart sur le nouveau jour (rien n'est perdu, tout est enregistré) */
-  if(dayOffset(0)!==TODAY){save();location.reload();return}
+  /* v42 : jamais pendant une saisie (fiche, problème en cours avec photos, recherche) : on attend qu'elle soit fermée */
+  if(dayOffset(0)!==TODAY&&!sheet&&!picker&&!showReport){save();location.reload();return}
   render(true);
   if(DEMO||!CODE)return;
   if(busy){again=true;if(force)again='force';return}
@@ -827,7 +850,7 @@ async function run(force){
       const full=!S.depuis||!S.fullAt||Date.now()-S.fullAt>30*60e3;
       const r=await call(Object.assign({action:'donnees',code:CODE},S.loc.length&&S.misAJour?{version:S.misAJour}:{},full?{}:{depuis:S.depuis,vp:S.vp}));
       /* v33 : seul un lien inconnu bloque l'appli ; une panne de Google garde le planning du téléphone et réessaie */
-      if(r.erreur){if(/^Lien inconnu/.test(r.erreur))S.blocked=r.erreur;else if(!S.synced&&!S.loc.length)S.syncErr=r.erreur;else toast('Google répond mal, nouvel essai dans un instant')}
+      if(r.erreur){if(/^Lien inconnu/.test(r.erreur))S.blocked=r.erreur;else if(!S.synced&&!S.loc.length)S.syncErr=r.erreur;else S.offline=true} /* v42 : avant, un message toutes les 30 s ; maintenant la ligne d'état le dit et l'appli réessaie seule (5, 10, 20, 30 s) */
       else{
         S.blocked='';S.syncErr='';lastSync=Date.now();S.srv=r.serveur||0;
         /* Planning absent de la réponse = inchangé : on garde celui du téléphone */
@@ -924,7 +947,8 @@ function cap(t){return t.charAt(0).toUpperCase()+t.slice(1)}
 function vAsks(){
   const now=DAY===TODAY,cur=openAsks(DAY),from=DAY>TODAY?DAY:TODAY;
   const later=allAsks().filter(d=>d.date>from).sort((a,b)=>a.date.localeCompare(b.date));
-  const row=d=>{const v=vehicle(d.plaque)||{};const pt=d.point||((stayFor(d.plaque,d.date)||{}).point)||'';return rowHtml(d.plaque,`<span class="row-t"><span class="plate">${esc(d.plaque)}</span>${d.auteur===S.who?'<span class="pill mine">Mon rappel</span>':'<span class="pill ask">Service parc</span>'}${sheet&&sheet.nouv&&sheet.nouv.includes(d.id)?'<span class="pill new">Nouvelle</span>':''}</span>${v.modele?`<span class="model">${esc(v.modele)}</span>`:''}<span class="consigne">${esc(d.consigne||'Passer voir ce véhicule.')}</span><span class="spec">${esc((d.date<TODAY?'Prévu '+dayWord(d.date):cap(dayWord(d.date)))+(pt?' · '+full(pt):''))}</span>`,'ask')};
+  /* v43 : horaires d'arrivée et de départ (planning Metabase) sur chaque demande, comme dans la liste des véhicules */
+  const row=d=>{const v=vehicle(d.plaque)||{};const st=stayFor(d.plaque,d.date<TODAY?TODAY:d.date);const pt=d.point||(st||{}).point||'';return rowHtml(d.plaque,`<span class="row-t"><span class="plate">${esc(d.plaque)}</span>${d.auteur===S.who?'<span class="pill mine">Mon rappel</span>':'<span class="pill ask">Service parc</span>'}${sheet&&sheet.nouv&&sheet.nouv.includes(d.id)?'<span class="pill new">Nouvelle</span>':''}</span>${v.modele?`<span class="model">${esc(v.modele)}</span>`:''}<span class="consigne">${esc(d.consigne||'Passer voir ce véhicule.')}</span><span class="spec">${esc((d.date<TODAY?'Prévu '+dayWord(d.date):cap(dayWord(d.date)))+(pt?' · '+full(pt):''))}</span>${st?timesHtml(st)+st.impros.map(improMini).join(''):'<span class="spec">Pas dans le planning ce jour-là</span>'}`,'ask')};
   return `<div class="sh-top pad"><button type="button" class="back" id="closeSheet">${I.back}Retour</button></div>
   <div class="sh-body pad">
     <div class="q">Rappels et demandes</div>
@@ -1085,8 +1109,9 @@ function render(bg){
   if(bg&&sheet)return;
   const sh=$('#sheet');
   if(sheet){sh.innerHTML=vSheet();sh.hidden=false;document.body.classList.add('noscroll')}else{sh.hidden=true;sh.innerHTML='';document.body.classList.remove('noscroll')}
+  ecranChange();
 }
-function openSheet(p){query='';const x=passageOf(p);draft=x&&x.by===S.who&&x.pb.length?{types:x.pb.slice(),photos:[],comment:x.comment}:{types:[],photos:[],comment:''};sheet={plaque:p,step:'fiche'};render();$('#sheet').scrollTop=0}
+function openSheet(p){query='';MINI.clear(); /* v42 : aperçus des photos d'avant oubliés (gardés toute la journée avant) */const x=passageOf(p);draft=x&&x.by===S.who&&x.pb.length?{types:x.pb.slice(),photos:[],comment:x.comment}:{types:[],photos:[],comment:''};sheet={plaque:p,step:'fiche'};render();$('#sheet').scrollTop=0}
 function closeSheet(msg){sheet=sheet&&!sheet.asks&&sheet.back==='asks'?{asks:true}:null;render();if(msg)toast(msg)}
 function set(patch){Object.assign(S,patch);save();render()}
 
@@ -1099,7 +1124,16 @@ function compress(file){
 }
 
 /* ---------- Événements ---------- */
+/* v42 : un double appui (doigt qui tremble, gants) ne touche pas l'écran qui vient d'apparaître : avant, le deuxième appui
+   sur « Tout est OK » ouvrait la fiche du véhicule suivant (et un troisième pouvait le valider sans le voir) */
+let calme=0,ecranVu='',dernierAppui={x:-99,y:-99,t:0};
+function ecranChange(){const k=sheet?(sheet.search?'s':sheet.asks?'a':sheet.plaque+'|'+sheet.step):'l|'+S.screen+'|'+showReport;
+  if(k!==ecranVu){if(ecranVu&&Date.now()-dernierAppui.t<1000)calme=Date.now()+350;ecranVu=k}}
 document.addEventListener('click',e=>{
+  /* Seul un appui au même endroit, juste après le changement d'écran, est ignoré (un appui voulu ailleurs passe ;
+     « Retour » deux fois de suite reste permis) */
+  if(Date.now()<calme&&Math.abs(e.clientX-dernierAppui.x)<32&&Math.abs(e.clientY-dernierAppui.y)<32&&e.target.closest('button,label,input,a')&&!e.target.closest('.back')){e.preventDefault();e.stopPropagation();return}
+  dernierAppui={x:e.clientX,y:e.clientY,t:Date.now()};
   const b=e.target.closest('button');if(!b)return;
   const d=b.dataset;
   if(b.id==='who'){picker=!picker;render();return}
@@ -1133,7 +1167,7 @@ document.addEventListener('click',e=>{
   if(b.id==='closeReport'){showReport=false;render();return}
   if(b.id==='copy'){const txt=report();try{navigator.clipboard.writeText(txt).then(()=>toast('Message copié.'),selectReport)}catch(err){selectReport()}return}
   if(b.id==='send'){b.disabled=true;b.textContent='Envoi…';
-    call(null,{code:CODE,action:'rapport',texte:report()}).then(r=>{if(r.erreur)throw new Error(r.erreur);showReport=false;render();toast(r.slack?'Tournée envoyée au service parc.':'Tournée enregistrée. Le service parc la voit sur sa page.')})
+    call(null,{code:CODE,action:'rapport',texte:report().slice(0,2900)}) /* v42 : Google n'en garde que 2900 caractères ; l'adresse reste courte */.then(r=>{if(r.erreur)throw new Error(r.erreur);showReport=false;render();toast(r.slack?'Tournée envoyée au service parc.':'Tournée enregistrée. Le service parc la voit sur sa page.')})
       .catch(()=>{b.disabled=false;b.textContent='Envoyer au service parc';toast('Pas de réseau. Réessayez dans un moment.')});return}
 });
 function selectReport(){const r=document.createRange();r.selectNodeContents($('#reportText'));const s=getSelection();s.removeAllRanges();s.addRange(r);toast('Texte sélectionné : copiez-le avec un appui long.')}
@@ -1163,25 +1197,25 @@ addEventListener('resize',()=>centerDays());addEventListener('load',()=>centerDa
 function centerDays(){document.querySelectorAll('.days').forEach(r=>{const on=r.querySelector('.day.on');if(on)r.scrollLeft=on.offsetLeft-r.offsetLeft-(r.clientWidth-on.offsetWidth)/2})}
 window.addEventListener('online',()=>{S.offline=false;run(true)});
 /* v39 : mise à jour sans fermer l'appli. Elle regarde s'il y a une nouvelle version quand elle revient à l'écran
-   (et toutes les 5 min) ; la nouvelle version s'installe en fond, puis l'appli se recharge seule quand c'est sans
-   risque : en revenant à l'écran, ou après 2 min sans toucher l'écran, jamais avec une fiche, une recherche ou un
+   (et chaque minute depuis la v41) ; la nouvelle version s'installe en fond, puis l'appli se recharge seule quand c'est sans
+   risque : en revenant à l'écran, ou après 30 s sans toucher l'écran (2 min en v39-v40), jamais avec une fiche, une recherche ou un
    envoi en cours. Les envois en attente sont sauvegardés avant. */
 let swReg=null,majPrete=false,majVue=0,dernierGeste=0,revenuA=Date.now();
 const AVAIT_SW=!!('serviceWorker' in navigator&&navigator.serviceWorker.controller); /* premier lancement : rien à recharger */
 ['pointerdown','keydown','input'].forEach(t=>document.addEventListener(t,()=>{dernierGeste=Date.now()},true));
-function chercherMaj(){if(swReg&&Date.now()-majVue>60000){majVue=Date.now();try{swReg.update().catch(()=>{})}catch(e){}}}
+function chercherMaj(){if(swReg&&Date.now()-majVue>25000){majVue=Date.now();try{swReg.update().catch(()=>{})}catch(e){}}}
 function majSansRisque(revient){const a=document.activeElement;
-  return !sheet&&!picker&&!showReport&&!busy&&!(a&&a.matches&&a.matches('input,textarea,select'))&&(revient||Date.now()-dernierGeste>120000
+  return !sheet&&!picker&&!showReport&&!busy&&!(a&&a.matches&&a.matches('input,textarea,select'))&&(revient||Date.now()-dernierGeste>30000
     /* nouvelle version arrivée juste après l'ouverture, avant tout geste : comme au retour à l'écran */
     ||(Date.now()-revenuA<20000&&dernierGeste<revenuA))}
 function appliquerMaj(revient){
   if(!majPrete||document.visibilityState!=='visible'||!majSansRisque(revient))return;
   /* Garde-fou : jamais deux rechargements de suite */
   try{const t=+sessionStorage.getItem('runners-maj')||0;if(Date.now()-t<60000)return;sessionStorage.setItem('runners-maj',String(Date.now()))}catch(e){}
-  majPrete=false;save();location.reload()}
+  majPrete=false;save();try{sessionStorage.setItem('runners-jour',JSON.stringify({d:DAY,t:Date.now()}))}catch(e){}location.reload()}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){revenuA=Date.now();appliquerMaj(true);chercherMaj();run(true)}else flushOnHide()});
 setInterval(()=>{if(document.visibilityState==='visible'){appliquerMaj(false);run(true)}},REFRESH_MS); /* avant run : un envoi en cours bloquerait la mise à jour */
-setInterval(()=>{if(document.visibilityState==='visible')chercherMaj()},5*60*1000);
+setInterval(()=>{if(document.visibilityState==='visible')chercherMaj()},60*1000); /* v41 : chaque minute (petit fichier) */
 /* v40 : les notifications coupées dans les Réglages pendant que l'appli est ouverte : le bouton revient tout de suite */
 try{if(!DEMO&&navigator.permissions&&navigator.permissions.query)navigator.permissions.query({name:'notifications'}).then(st=>{st.onchange=()=>{render(true);if(st.state==='granted'&&S.vapid)abonner()}}).catch(()=>{})}catch(e){}
 cfgSw();
