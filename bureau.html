@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Runners · Bureau</title>
-<!-- Page bureau de l'appli Runners, v4 : liens des runners, demandes à n'importe quelle date, rappels des runners, passages du jour ; v4 : actualisation automatique, un passage peut clore plusieurs demandes ; v6 (suite de la v4, la v5 est la version pro à part) : envois passés dans l'adresse (GET) car certains appareils bloquaient les envois classiques ; v7 : un véhicule ajouté s'affiche tout de suite (envoi en arrière-plan) ; v8 : « Photos en cours d'envoi » quand les photos suivent le passage ; v9 : « aperçu » tant que seule la photo allégée est arrivée ; v10 : photo effacée au bout de 5 jours indiquée ; v11 : plus rapide (planning retéléchargé seulement s'il a changé), actualisée toutes les 30 secondes ; v12 : indique combien de téléphones ont reçu l'alerte d'une nouvelle demande ; v13 : mise à jour automatique sans recharger à la main ; v14 : page laissée ouverte la nuit remise au nouveau jour le matin, liens photo vérifiés, polices sans bloquer l'affichage -->
+<!-- Page bureau de l'appli Runners, v4 : liens des runners, demandes à n'importe quelle date, rappels des runners, passages du jour ; v4 : actualisation automatique, un passage peut clore plusieurs demandes ; v6 (suite de la v4, la v5 est la version pro à part) : envois passés dans l'adresse (GET) car certains appareils bloquaient les envois classiques ; v7 : un véhicule ajouté s'affiche tout de suite (envoi en arrière-plan) ; v8 : « Photos en cours d'envoi » quand les photos suivent le passage ; v9 : « aperçu » tant que seule la photo allégée est arrivée ; v10 : photo effacée au bout de 5 jours indiquée ; v11 : plus rapide (planning retéléchargé seulement s'il a changé), actualisée toutes les 30 secondes ; v12 : indique combien de téléphones ont reçu l'alerte d'une nouvelle demande ; v13 : mise à jour automatique sans recharger à la main ; v14 : page laissée ouverte la nuit remise au nouveau jour le matin, liens photo vérifiés, polices sans bloquer l'affichage ; v15 : demandes et rappels à faire modifiables (bouton Modifier, avec le script v20) -->
 <link rel="icon" type="image/png" href="icon-192.png">
 <meta name="robots" content="noindex">
 <!-- v42 : polices chargées sans bloquer l'affichage (réseau faible : l'appli s'affiche tout de suite avec la police du téléphone) -->
@@ -79,6 +79,9 @@ input.plate{font-family:var(--mono);text-transform:uppercase;font-size:17px;lett
 .li{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:12px 16px}
 .li+.li{border-top:1px solid var(--line)}
 .li-b{min-width:0;display:flex;flex-direction:column;gap:3px}
+.li-a{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.li.editing{background:var(--accent-soft,#e6f0ea)}
 .plate-t{font-family:var(--mono);font-weight:600;font-size:15px;letter-spacing:.03em}
 .meta{font-size:13px;color:var(--muted)}
 .pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
@@ -145,7 +148,7 @@ let CODE='';
 try{CODE=new URLSearchParams(location.search).get('b')||'';if(CODE)localStorage.setItem('runners-bureau',CODE);else CODE=localStorage.getItem('runners-bureau')||''}catch(e){}
 
 /* ---------- Données ---------- */
-let D=null,err='',tab='demandes',confirmCode='',loading=false;
+let D=null,err='',tab='demandes',confirmCode='',loading=false,edit='';
 /* v13 : après une mise à jour automatique, on revient sur le même onglet */
 try{const t=sessionStorage.getItem('bureau-onglet');if(t){sessionStorage.removeItem('bureau-onglet');if(/^(demandes|passages|runners)$/.test(t))tab=t}}catch(e){}
 function demo(){
@@ -174,12 +177,13 @@ function call(params,body){
 }
 async function act(action,fields){
   if(DEMO){demoAct(action,fields);render();return {ok:true}}
-  try{const r=await call(null,Object.assign({bureau:CODE,action},fields));if(r.erreur){toast(r.erreur);return r}if(!r.ok&&!r.id&&!r.code&&!r.lien){toast('Script Google à mettre à jour (v8) : rien n\'a été enregistré.');return {erreur:'script'}}await load();return r}
+  try{const r=await call(null,Object.assign({bureau:CODE,action},fields));if(r.erreur){toast(r.erreur==='Action inconnue'?'Script Google à mettre à jour (v20) : rien n\'a été enregistré.':r.erreur);return r}if(!r.ok&&!r.id&&!r.code&&!r.lien){toast('Script Google à mettre à jour (v8) : rien n\'a été enregistré.');return {erreur:'script'}}await load();return r}
   catch(e){toast('Pas de réseau. Réessayez.');return {erreur:'réseau'}}
 }
 function demoAct(action,f){
   if(action==='demande')D.demandes.push(Object.assign({id:'D-'+Date.now().toString(36),statut:'à faire'},f));
   if(action==='demande_suppr')D.demandes=D.demandes.filter(d=>d.id!==f.id);
+  if(action==='demande_modif'){const d=D.demandes.find(x=>x.id===f.id);if(d)Object.assign(d,f)}
   if(action==='runner_ajout')D.runners.push({prenom:f.prenom,code:f.prenom.toLowerCase()+'-demo'+Math.random().toString(36).slice(2,8),points:f.points,actif:'oui'});
   if(action==='runner_code'){const r=D.runners.find(x=>x.prenom===f.prenom);if(r)r.code=r.prenom.toLowerCase()+'-demo'+Math.random().toString(36).slice(2,8)}
 }
@@ -211,27 +215,29 @@ function vDemandes(){
   const runners=D.runners.filter(r=>String(r.actif).toLowerCase()!=='non');
   const list=D.demandes.filter(d=>d.statut!=='supprimée').sort((a,b)=>(a.date+a.id).localeCompare(b.date+b.id));
   const plates=[...fleet().keys()];
+  /* v15 : demande en cours de modification (même formulaire que l'ajout) */
+  const ed=edit?list.find(d=>d.id===edit&&d.statut==='à faire'):null;if(edit&&!ed)edit='';
   return `<div class="grid two">
   <section class="card" aria-labelledby="h-new">
-    <div class="card-h"><h2 id="h-new">Ajouter un véhicule à voir</h2></div>
+    <div class="card-h"><h2 id="h-new">${ed?'Modifier '+esc(ed.plaque):'Ajouter un véhicule à voir'}</h2></div>
     <form class="card-b" id="fDemande" autocomplete="off">
       <div class="field"><label for="dPlate">Plaque</label><input id="dPlate" class="plate" list="fleet" placeholder="AA-123-CD" required><datalist id="fleet">${plates.map(p=>`<option value="${esc(p)}">`).join('')}</datalist><div class="hint" id="dHint"></div></div>
       <div class="two-f">
-        <div class="field"><label for="dRunner">Runner</label><select id="dRunner"><option value="Tous">Tous</option>${runners.map(r=>`<option>${esc(r.prenom)}</option>`).join('')}</select></div>
+        <div class="field"><label for="dRunner">Runner</label><select id="dRunner"><option value="Tous">Tous</option>${runners.map(r=>r.prenom).concat(ed&&ed.runner!=='Tous'&&!runners.some(r=>r.prenom===ed.runner)?[ed.runner]:[]).map(p=>`<option>${esc(p)}</option>`).join('')}</select></div>
         <div class="field"><label for="dDate">Jour</label><input type="date" id="dDate" min="${TODAY}" max="${dayOffset(90)}" value="${TODAY}" required></div>
       </div>
       <div class="quick" role="group" aria-label="Raccourcis de date">${[["Aujourd'hui",0],['Demain',1],['Dans 1 semaine',7],['Dans 2 semaines',14]].map(([t,n])=>`<button type="button" data-quick="${dayOffset(n)}">${t}</button>`).join('')}</div>
-      <div class="field"><label for="dPoint">Point</label><select id="dPoint"><option value="">Non précisé</option>${POINTS.map(p=>`<option>${esc(p)}</option>`).join('')}</select></div>
+      <div class="field"><label for="dPoint">Point</label><select id="dPoint"><option value="">Non précisé</option>${POINTS.concat(ed&&ed.point&&!POINTS.includes(ed.point)?[ed.point]:[]).map(p=>`<option>${esc(p)}</option>`).join('')}</select></div>
       <div class="field"><label for="dText">Consigne pour le runner</label><textarea id="dText" placeholder="Exemple : faire le tour du véhicule et une photo du compteur." maxlength="200"></textarea></div>
-      <button type="submit" class="btn primary">Ajouter</button>
+      ${ed?'<div class="actions"><button type="submit" class="btn primary">Enregistrer</button><button type="button" class="btn" id="editCancel">Annuler</button></div>':'<button type="submit" class="btn primary">Ajouter</button>'}
       <div class="meta">Le jour venu, le véhicule apparaît en haut de l'appli du runner, avec le bandeau « Demandé par le service parc ».</div>
     </form>
   </section>
   <section class="card" aria-labelledby="h-list">
     <div class="card-h"><h2 id="h-list">Demandes et rappels à venir</h2><span class="meta">${list.length}</span></div>
-    ${list.length?list.map(d=>`<div class="li"><div class="li-b"><div><span class="plate-t">${esc(d.plaque)}</span> <span class="pill ${d.statut==='faite'?'ok':d.date<TODAY?'late':'wait'}">${d.statut==='faite'?'Faite':d.date<TODAY?'En retard':'À faire'}</span>${d.auteur&&d.auteur!=='Service parc'?` <span class="pill mine">Rappel de ${esc(d.auteur)}</span>`:''}</div>
+    ${list.length?list.map(d=>`<div class="li${d.id===edit?' editing':''}"><div class="li-b"><div><span class="plate-t">${esc(d.plaque)}</span> <span class="pill ${d.statut==='faite'?'ok':d.date<TODAY?'late':'wait'}">${d.statut==='faite'?'Faite':d.date<TODAY?'En retard':'À faire'}</span>${d.auteur&&d.auteur!=='Service parc'?` <span class="pill mine">Rappel de ${esc(d.auteur)}</span>`:''}</div>
       <div class="meta">${esc(dayName(d.date))} · ${esc(d.runner==='Tous'?'Tous les runners':d.runner)}${d.point?' · '+esc(d.point):''}</div>${d.consigne?`<div>${esc(d.consigne)}</div>`:''}</div>
-      ${d.statut==='faite'?'':`<button type="button" class="btn small danger" data-del="${esc(d.id)}">Retirer</button>`}</div>`).join('')
+      ${d.statut==='faite'?'':`<div class="li-a">${String(d.id).startsWith('envoi-')?'':`<button type="button" class="btn small" data-edit="${esc(d.id)}">Modifier</button>`}<button type="button" class="btn small danger" data-del="${esc(d.id)}">Retirer</button></div>`}</div>`).join('')
     :'<div class="empty">Aucune demande ni rappel à venir.</div>'}
   </section></div>`;
 }
@@ -303,7 +309,12 @@ document.addEventListener('click',async e=>{
   if(d.quick){$('#dDate').value=d.quick;return}
   if(b.id==='reload'){load();return}
   if(b.id==='print'){window.print();return}
-  if(d.del){b.disabled=true;await act('demande_suppr',{id:d.del});toast('Demande retirée.');return}
+  if(d.edit){const x=D.demandes.find(y=>y.id===d.edit);if(!x)return;edit=x.id;
+    ['dPlate','dText'].forEach(id=>{if($('#'+id))$('#'+id).value=''});render();
+    $('#dPlate').value=x.plaque||'';$('#dRunner').value=x.runner||'Tous';$('#dDate').value=x.date<TODAY?TODAY:x.date;$('#dPoint').value=x.point||'';$('#dText').value=x.consigne||'';plateHint();
+    try{$('#fDemande').scrollIntoView({block:'start',behavior:'smooth'})}catch(err){}$('#dText').focus();return}
+  if(b.id==='editCancel'){edit='';['dPlate','dText'].forEach(id=>{if($('#'+id))$('#'+id).value=''});$('#dPoint').value='';$('#dRunner').value='Tous';$('#dDate').value=TODAY;render();return}
+  if(d.del){if(d.del===edit)edit='';b.disabled=true;await act('demande_suppr',{id:d.del});toast('Demande retirée.');return}
   if(d.copy){try{await navigator.clipboard.writeText(d.copy);toast('Lien copié.')}catch(err){toast('Copie impossible : sélectionnez le lien à la main.')}return}
   if(d.ask){confirmCode=d.ask;render();return}
   if(d.cancel){confirmCode='';render();return}
@@ -316,6 +327,16 @@ document.addEventListener('submit',async e=>{
   if(f.id==='fDemande'){
     const plaque=$('#dPlate').value.trim().toUpperCase();if(norm(plaque).length<5){toast('Plaque incomplète.');return}
     const date=$('#dDate').value;if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||date<dayOffset(0)){toast('Choisissez un jour à partir d\'aujourd\'hui.');return}
+    if(edit){
+      /* v15 : modification d'une demande à faire (même identifiant, les téléphones la mettent à jour à l'actualisation suivante) */
+      const id=edit,champs={id,plaque,runner:$('#dRunner').value,date,point:$('#dPoint').value,consigne:$('#dText').value.trim()};
+      const x=D.demandes.find(y=>y.id===id),avant=x?Object.assign({},x):null;
+      if(x&&!DEMO)Object.assign(x,champs);
+      edit='';['dPlate','dText'].forEach(id=>{if($('#'+id))$('#'+id).value=''});$('#dPoint').value='';$('#dRunner').value='Tous';$('#dDate').value=TODAY;plateHint();render();
+      toast(plaque+' modifié.');
+      act('demande_modif',champs).then(r=>{if(r.erreur&&D){const y=D.demandes.find(z=>z.id===id);if(y&&avant)Object.assign(y,avant);render()}
+        else if(r.prevenus>0)toast(plaque+' : alerte envoyée sur '+r.prevenus+' téléphone'+(r.prevenus>1?'s':'')+'.')});
+      return}
     /* Affiché tout de suite, envoyé à Google en arrière-plan (Google met 2 à 4 secondes à répondre) */
     const champs={plaque,runner:$('#dRunner').value,date,point:$('#dPoint').value,consigne:$('#dText').value.trim(),auteur:'Service parc'};
     const tmp='envoi-'+Date.now().toString(36);
@@ -340,7 +361,7 @@ document.addEventListener('visibilitychange',()=>{if(!DEMO&&CODE&&D&&document.vi
 let VERSION='',majPrete=false;
 function versionEnLigne(){return fetch('sw.js',{cache:'no-store'}).then(r=>r.ok?r.text():'').then(t=>(t.match(/runners-v\d+/)||[''])[0]).catch(()=>'')}
 function majSansRisque(){const a=document.activeElement;
-  return !confirmCode&&!(a&&a.matches&&a.matches('input,textarea,select'))&&!['dPlate','dText','rName','bCode'].some(id=>$('#'+id)&&$('#'+id).value.trim())}
+  return !confirmCode&&!edit&&!(a&&a.matches&&a.matches('input,textarea,select'))&&!['dPlate','dText','rName','bCode'].some(id=>$('#'+id)&&$('#'+id).value.trim())}
 function appliquerMaj(){if(!majPrete||document.visibilityState!=='visible'||!majSansRisque())return;
   try{const t=+sessionStorage.getItem('bureau-maj')||0;if(Date.now()-t<60000)return;sessionStorage.setItem('bureau-maj',String(Date.now()));sessionStorage.setItem('bureau-onglet',tab)}catch(e){}
   location.reload()}
