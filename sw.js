@@ -1,8 +1,8 @@
-/* Appli Runners : garde une copie de l'appli pour qu'elle s'ouvre même sans réseau (v5, appli v42).
+/* Appli Runners : garde une copie de l'appli pour qu'elle s'ouvre même sans réseau (v6, appli v44 : toucher une alerte ouvre la demande).
    Toujours la version en ligne d'abord ; la copie sert en cas de coupure, et depuis la v42 aussi quand le réseau
    est trop lent (plus de 3 s) : l'appli s'ouvre tout de suite et la version en ligne est rangée pour la fois suivante.
    Les données (Google) ne passent jamais par ici. */
-const CACHE = 'runners-v43';
+const CACHE = 'runners-v44';
 const ATTENTE_MAX = 3000; /* v42 : au-delà, on ouvre la copie du téléphone (avant : jusqu'à 30 s d'écran blanc sur un réseau faible) */
 const FICHIERS = ['./', './index.html', './bureau.html', './config.js', './manifest.json', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 self.addEventListener('install', e => {
@@ -34,9 +34,13 @@ self.addEventListener('fetch', e => {
   e.waitUntil(reseau.then(() => range, () => {}));
 });
 /* v36 : toucher la notification d'une nouvelle demande ouvre l'appli */
+/* v44 (appli) : directement sur « Rappels et demandes », et l'appli va chercher la demande tout de suite */
 self.addEventListener('notificationclick', e => {
   e.notification.close();
-  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(l => l.length ? l[0].focus() : self.clients.openWindow('./')));
+  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(l => {
+    if (l.length) { l[0].postMessage({ type: 'demandes' }); return l[0].focus(); }
+    return self.clients.openWindow('./#demandes');
+  }));
 });
 /* v37 : alerte envoyée par le script Google (vide) : on demande le détail au script, puis on l'affiche.
    Une alerte est toujours affichée, même sans réseau (exigé par Apple). */
@@ -50,6 +54,8 @@ self.addEventListener('push', e => {
         try {
           const d = await (await fetch(cfg.api + '?' + new URLSearchParams({ action: 'notif', code: cfg.code }), { signal: ctl.signal, cache: 'no-store' })).json();
           if (d && d.titre) { titre = d.titre; texte = d.texte || texte; n = d.n || 0; }
+          /* v44 : gardé pour l'afficher dans l'appli pendant qu'elle recharge les demandes */
+          if (n) await (await caches.open('runners-cfg')).put('./__notif', new Response(JSON.stringify({ texte, at: Date.now() })));
         } finally { clearTimeout(tm); }
       }
     } catch (err) {}

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Runners</title>
-<!-- Appli Runners City Drop, v22 : version reliée au Google Sheet (voir config.js) ; gros caractères, 3 photos, aujourd'hui au milieu, recherche en haut, page des rappels ; v22 : corrections après test complet ; v23 : planning compact (grosses flottes), dates avec le mois, longs textes coupés sur les cartes ; v24 : rapide sur téléphone lent avec une grosse flotte (planning préparé par Google et rangé à part, écran redessiné seulement s'il change) ; v25 : message de fin de tournée simplifié (date en entier, plaques les unes sous les autres, sans heure ni prénom) ; v27 : une validation faite pendant la réception du planning part tout de suite après (avant : jusqu'à 5 min d'attente) ; envois sans photo passés par l'adresse (GET) car l'iPhone bloquait les envois classiques ; v28 : actualisation toutes les 30 s ; v29 : une validation part même si le runner ferme l'appli juste après ; v30 : signalement avec photos envoyé en deux temps (le passage d'abord, même appli fermée, les photos ensuite) ; attente plus longue et message « Google ne répond pas » au lieu d'un faux « Pas de réseau » ; v31 : photo allégée envoyée même appli fermée (la vraie suit à la réouverture) ; un envoi n'est plus jeté quand Google est seulement occupé ; annuler un passage déjà parti l'annule aussi chez Google ; v32 : un lien désactivé ne jette plus les envois ; annulation sûre même quand les envois arrivent dans le désordre ; photos gardées tant que le téléphone n'a pas confirmé les avoir rangées ; un véhicule envoyé ne réapparaît plus si l'appli est tuée juste après ; v33 : envois groupés en un seul appel (avec le script v12), moins de relectures chez Google, deux onglets ouverts sans perte, mémoire pleine sans blocage, une panne de Google n'affiche plus « Lien non reconnu » ; v34 : page bureau v10 (photos effacées au bout de 5 jours, avec le script v13) ; v35 : page bureau v11 plus rapide (avec le script v14) ; v36 : nouvelles demandes du bureau signalées (pastille « 1 nouvelle », bandeau, vibration, chiffre sur l'icône, notification si autorisée) ; v37 : vraies notifications des nouvelles demandes, même écran verrouillé (avec le script v15) ; v38 : les alertes gardent leur détail après une mise à jour de l'appli ; v39 : mise à jour automatique sans fermer l'appli ; v40 : gros bouton ACTIVER LES NOTIFICATIONS en haut de l'accueil tant qu'elles ne sont pas actives ; v41 : encadré des notifications plus sobre, mise à jour repérée chaque minute et appliquée après 30 s sans geste ; v42 (revue de nuit) : ouverture immédiate sur réseau faible (copie du téléphone après 3 s, polices sans bloquer), fiche et « Tout est OK » 2 à 3 fois plus rapides, double appui sans effet sur l'écran suivant, véhicule parti le matin et revenu le soir affiché pour son retour, pas de rechargement à minuit pendant une saisie, panne de Google signalée sur la ligne d'état au lieu d'un message toutes les 30 s ; v43 : horaires d'arrivée et de départ sur chaque demande dans la page « Rappels et demandes », plaque jamais coupée sur deux lignes -->
+<!-- Appli Runners City Drop, v22 : version reliée au Google Sheet (voir config.js) ; gros caractères, 3 photos, aujourd'hui au milieu, recherche en haut, page des rappels ; v22 : corrections après test complet ; v23 : planning compact (grosses flottes), dates avec le mois, longs textes coupés sur les cartes ; v24 : rapide sur téléphone lent avec une grosse flotte (planning préparé par Google et rangé à part, écran redessiné seulement s'il change) ; v25 : message de fin de tournée simplifié (date en entier, plaques les unes sous les autres, sans heure ni prénom) ; v27 : une validation faite pendant la réception du planning part tout de suite après (avant : jusqu'à 5 min d'attente) ; envois sans photo passés par l'adresse (GET) car l'iPhone bloquait les envois classiques ; v28 : actualisation toutes les 30 s ; v29 : une validation part même si le runner ferme l'appli juste après ; v30 : signalement avec photos envoyé en deux temps (le passage d'abord, même appli fermée, les photos ensuite) ; attente plus longue et message « Google ne répond pas » au lieu d'un faux « Pas de réseau » ; v31 : photo allégée envoyée même appli fermée (la vraie suit à la réouverture) ; un envoi n'est plus jeté quand Google est seulement occupé ; annuler un passage déjà parti l'annule aussi chez Google ; v32 : un lien désactivé ne jette plus les envois ; annulation sûre même quand les envois arrivent dans le désordre ; photos gardées tant que le téléphone n'a pas confirmé les avoir rangées ; un véhicule envoyé ne réapparaît plus si l'appli est tuée juste après ; v33 : envois groupés en un seul appel (avec le script v12), moins de relectures chez Google, deux onglets ouverts sans perte, mémoire pleine sans blocage, une panne de Google n'affiche plus « Lien non reconnu » ; v34 : page bureau v10 (photos effacées au bout de 5 jours, avec le script v13) ; v35 : page bureau v11 plus rapide (avec le script v14) ; v36 : nouvelles demandes du bureau signalées (pastille « 1 nouvelle », bandeau, vibration, chiffre sur l'icône, notification si autorisée) ; v37 : vraies notifications des nouvelles demandes, même écran verrouillé (avec le script v15) ; v38 : les alertes gardent leur détail après une mise à jour de l'appli ; v39 : mise à jour automatique sans fermer l'appli ; v40 : gros bouton ACTIVER LES NOTIFICATIONS en haut de l'accueil tant qu'elles ne sont pas actives ; v41 : encadré des notifications plus sobre, mise à jour repérée chaque minute et appliquée après 30 s sans geste ; v42 (revue de nuit) : ouverture immédiate sur réseau faible (copie du téléphone après 3 s, polices sans bloquer), fiche et « Tout est OK » 2 à 3 fois plus rapides, double appui sans effet sur l'écran suivant, véhicule parti le matin et revenu le soir affiché pour son retour, pas de rechargement à minuit pendant une saisie, panne de Google signalée sur la ligne d'état au lieu d'un message toutes les 30 s ; v43 : horaires d'arrivée et de départ sur chaque demande dans la page « Rappels et demandes », plaque jamais coupée sur deux lignes ; v44 : toucher la notification ouvre directement « Rappels et demandes » avec la demande (son texte s'affiche tout de suite, le détail arrive de Google juste après) -->
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
@@ -636,6 +636,17 @@ function openAsks(day){day=day||TODAY;return allAsks().filter(d=>day===TODAY?d.d
 function newAsks(){const vus=S.vus||[];return allAsks().filter(d=>d.auteur!==S.who&&!d.pending&&!vus.includes(d.id))}
 function badge(){const n=DEMO?0:newAsks().length;try{if(navigator.setAppBadge){if(n)navigator.setAppBadge(n);else navigator.clearAppBadge()}}catch(e){}return n}
 function markAsksSeen(){S.vus=allAsks().map(d=>d.id).concat(S.vus||[]).filter((x,i,a)=>a.indexOf(x)===i).slice(0,300);save();badge()}
+/* v44 : toucher la notification ouvre « Rappels et demandes » et va chercher la demande tout de suite ; en attendant
+   Google (2 à 10 s), le texte de la notification s'affiche en haut de la page. Jamais pendant une fiche ou une saisie. */
+let attDem=0,notifTxt='';
+function ouvrirDemandes(){
+  if(DEMO||!CODE){run();return}
+  if((!sheet||sheet.asks||sheet.search)&&!showReport){sheet={asks:true,nouv:newAsks().map(d=>d.id)};markAsksSeen();picker=false}
+  attDem=Date.now();notifTxt='';render();try{$('#sheet').scrollTop=0}catch(e){}
+  try{caches.open('runners-cfg').then(c=>c.match('./__notif')).then(r=>r?r.json():null).then(n=>{if(n&&attDem&&Date.now()-n.at<15*60e3){notifTxt=n.texte||'';render(true)}}).catch(()=>{})}catch(e){}
+  run(true);
+}
+function attenteHtml(){return attDem&&Date.now()-attDem<120000?`<div class="imp info"><div class="imp-h"><i></i>Nouvelle demande, chargement…</div>${notifTxt?`<div class="imp-t">${esc(notifTxt)}</div>`:''}</div>`:''}
 function alertAsks(first){
   const deja=S.alertes||[];const nw=newAsks().filter(d=>!deja.includes(d.id));
   if(!nw.length){badge();return}
@@ -870,6 +881,7 @@ async function run(force){
         S.who=r.runner.prenom;
         if(!S.ptsSet){S.myPoints=(r.runner.points||[]).map(city).filter(Boolean);S.ptsSet=true}
         const premiere=!S.synced;S.misAJour=r.misAJour||'';S.synced=nowStr();alertAsks(premiere);
+        if(attDem){attDem=0;notifTxt='';if(sheet&&sheet.asks){sheet.nouv=(sheet.nouv||[]).concat(newAsks().map(d=>d.id));markAsksSeen()}}
         S.vapid=r.vapid||'';if(S.vapid&&'Notification' in window&&Notification.permission==='granted')abonner();
       }
       save();
@@ -952,10 +964,11 @@ function vAsks(){
   return `<div class="sh-top pad"><button type="button" class="back" id="closeSheet">${I.back}Retour</button></div>
   <div class="sh-body pad">
     <div class="q">Rappels et demandes</div>
+    ${attenteHtml()}
     ${alertesHtml()}
     <button type="button" class="btn big primary" id="openRemind">${I.clockL}Ajouter un rappel</button>
     <div class="mlabel">${now?"Aujourd'hui":esc(cap(dayWord(DAY)))}</div>
-    ${cur.length?cur.map(row).join(''):'<div class="empty small"><b>Aucun rappel ni demande</b></div>'}
+    ${cur.length?cur.map(row).join(''):attenteHtml()?'':'<div class="empty small"><b>Aucun rappel ni demande</b></div>'}
     ${later.length?`<div class="mlabel">Prochains jours</div>${later.map(row).join('')}`:''}
   </div>`;
 }
@@ -1106,9 +1119,12 @@ function render(bg){
     put($('#tabs'),[['home','À faire',I.todo,n],['done','Ma tournée',I.done,dn]].map(([k,t,ic,c])=>`<button type="button" class="${k===sc?'on':''}" data-tab="${k}" aria-current="${k===sc?'page':'false'}">${ic}<span>${t} <b class="cnt">${c}</b></span></button>`).join(''));
   }
   /* Une mise à jour en arrière-plan ne redessine pas la fiche ouverte (on ne perd pas la saisie) */
-  if(bg&&sheet)return;
+  if(bg&&sheet){
+    /* v44 : la page « Rappels et demandes » (rien à saisir) se met à jour seule, sinon une demande arrivée pendant qu'elle est ouverte n'apparaissait qu'en la rouvrant */
+    if(sheet.asks)put($('#sheet'),vSheet());
+    return}
   const sh=$('#sheet');
-  if(sheet){sh.innerHTML=vSheet();sh.hidden=false;document.body.classList.add('noscroll')}else{sh.hidden=true;sh.innerHTML='';document.body.classList.remove('noscroll')}
+  if(sheet){sh.innerHTML=sh._h=vSheet();sh.hidden=false;document.body.classList.add('noscroll')}else{sh.hidden=true;sh.innerHTML=sh._h='';document.body.classList.remove('noscroll')}
   ecranChange();
 }
 function openSheet(p){query='';MINI.clear(); /* v42 : aperçus des photos d'avant oubliés (gardés toute la journée avant) */const x=passageOf(p);draft=x&&x.by===S.who&&x.pb.length?{types:x.pb.slice(),photos:[],comment:x.comment}:{types:[],photos:[],comment:''};sheet={plaque:p,step:'fiche'};render();$('#sheet').scrollTop=0}
@@ -1219,15 +1235,17 @@ setInterval(()=>{if(document.visibilityState==='visible')chercherMaj()},60*1000)
 /* v40 : les notifications coupées dans les Réglages pendant que l'appli est ouverte : le bouton revient tout de suite */
 try{if(!DEMO&&navigator.permissions&&navigator.permissions.query)navigator.permissions.query({name:'notifications'}).then(st=>{st.onchange=()=>{render(true);if(st.state==='granted'&&S.vapid)abonner()}}).catch(()=>{})}catch(e){}
 cfgSw();
+const A_OUVRIR=location.hash==='#demandes';if(A_OUVRIR)try{history.replaceState(null,'',location.pathname+location.search)}catch(e){}
+try{if(!DEMO&&'serviceWorker' in navigator)navigator.serviceWorker.addEventListener('message',e=>{if(e.data&&e.data.type==='demandes'&&ready)ouvrirDemandes()})}catch(e){}
 if(!DEMO&&'serviceWorker' in navigator&&(location.protocol==='https:'||(location.hostname==='localhost'&&(()=>{try{return localStorage.getItem('runners-test-sw')==='1'}catch(e){return false}})()))){try{
   navigator.serviceWorker.addEventListener('controllerchange',()=>{if(AVAIT_SW){majPrete=true;appliquerMaj(false)}});
   navigator.serviceWorker.register('sw.js').then(r=>{swReg=r}).catch(()=>{})}catch(e){}}
-if(ready)run();
+if(ready)(A_OUVRIR?ouvrirDemandes:run)();
 else{render(true);IDB.get(STORE+'-plan').then(pl=>{
   if(pl&&(pl.lignes||pl.loc)){try{const t=readPlan(pl);S.loc=t.loc;S.impros=t.impros;S.plan=pl}catch(e){}}
   if(!S.plan)S.misAJour='';
   return IDB.get(STORE+'-pas')}).then(pa=>{if(Array.isArray(pa)){const loc=S.passages.filter(x=>x.local);S.passages=pa;
-    loc.forEach(x=>{if(!pa.some(y=>y.at===x.at&&y.by===x.by&&y.cle===x.cle))S.passages.push(x)})}else if(S.passages.length)savePassages()}).finally(()=>{ready=true;run()})}
+    loc.forEach(x=>{if(!pa.some(y=>y.at===x.at&&y.by===x.by&&y.cle===x.cle))S.passages.push(x)})}else if(S.passages.length)savePassages()}).finally(()=>{ready=true;(A_OUVRIR?ouvrirDemandes:run)()})}
 })();
 </script>
 </body>
