@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Runners · Bureau</title>
-<!-- Page bureau de l'appli Runners, v4 : liens des runners, demandes à n'importe quelle date, rappels des runners, passages du jour ; v4 : actualisation automatique, un passage peut clore plusieurs demandes ; v6 (suite de la v4, la v5 est la version pro à part) : envois passés dans l'adresse (GET) car certains appareils bloquaient les envois classiques ; v7 : un véhicule ajouté s'affiche tout de suite (envoi en arrière-plan) ; v8 : « Photos en cours d'envoi » quand les photos suivent le passage ; v9 : « aperçu » tant que seule la photo allégée est arrivée ; v10 : photo effacée au bout de 5 jours indiquée ; v11 : plus rapide (planning retéléchargé seulement s'il a changé), actualisée toutes les 30 secondes ; v12 : indique combien de téléphones ont reçu l'alerte d'une nouvelle demande ; v13 : mise à jour automatique sans recharger à la main ; v14 : page laissée ouverte la nuit remise au nouveau jour le matin, liens photo vérifiés, polices sans bloquer l'affichage ; v15 : demandes et rappels à faire modifiables (bouton Modifier, avec le script v20) ; v16 : onglet « Retours runners » (véhicules demandés vus par un runner, alerte avec bandeau, son et notification de l'ordinateur ; retiré si le runner annule), état de Slack (avec le script v21) -->
+<!-- Page bureau de l'appli Runners, v4 : liens des runners, demandes à n'importe quelle date, rappels des runners, passages du jour ; v4 : actualisation automatique, un passage peut clore plusieurs demandes ; v6 (suite de la v4, la v5 est la version pro à part) : envois passés dans l'adresse (GET) car certains appareils bloquaient les envois classiques ; v7 : un véhicule ajouté s'affiche tout de suite (envoi en arrière-plan) ; v8 : « Photos en cours d'envoi » quand les photos suivent le passage ; v9 : « aperçu » tant que seule la photo allégée est arrivée ; v10 : photo effacée au bout de 5 jours indiquée ; v11 : plus rapide (planning retéléchargé seulement s'il a changé), actualisée toutes les 30 secondes ; v12 : indique combien de téléphones ont reçu l'alerte d'une nouvelle demande ; v13 : mise à jour automatique sans recharger à la main ; v14 : page laissée ouverte la nuit remise au nouveau jour le matin, liens photo vérifiés, polices sans bloquer l'affichage ; v15 : demandes et rappels à faire modifiables (bouton Modifier, avec le script v20) ; v16 : onglet « Retours runners » (véhicules demandés vus par un runner, alerte avec bandeau, son et notification de l'ordinateur ; retiré si le runner annule), état de Slack (avec le script v21) ; v17 (appli v48) : demande sur un jour ou sur plusieurs jours (du … au …) -->
 <link rel="icon" type="image/png" href="icon-192.png">
 <meta name="robots" content="noindex">
 <!-- v42 : polices chargées sans bloquer l'affichage (réseau faible : l'appli s'affiche tout de suite avec la police du téléphone) -->
@@ -66,6 +66,16 @@ input.plate{font-family:var(--mono);text-transform:uppercase;font-size:17px;lett
 .hint.ok{color:var(--accent)}
 .quick{display:flex;flex-wrap:wrap;gap:6px}
 .quick button{min-height:36px;padding:0 12px;border-radius:999px;border:1px solid var(--line-strong);background:var(--surface);font-size:13px;font-weight:600}
+.quick button.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+.when{display:flex;flex-direction:column;gap:10px;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--surface-2)}
+.when-h{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.when-h .lbl{font-size:13px;font-weight:600}
+.seg{display:inline-flex;padding:3px;border-radius:10px;background:var(--surface);border:1px solid var(--line-strong)}
+.seg button{min-height:34px;padding:0 14px;border:0;border-radius:8px;background:transparent;font-size:13px;font-weight:600;color:var(--muted)}
+.seg button.on{background:var(--accent);color:var(--accent-fg)}
+.when .recap{font-size:13px;color:var(--muted)}
+.when .recap b{color:var(--fg)}
+.hidden{display:none!important}
 .pill.mine{background:var(--surface-2);color:var(--fg);box-shadow:inset 0 0 0 1px var(--line-strong)}
 .pill.late{background:var(--warn-soft);color:var(--warn)}
 .btn{min-height:44px;padding:10px 16px;border-radius:10px;border:1px solid var(--line-strong);background:var(--surface);font-size:14px;font-weight:600;white-space:nowrap}
@@ -98,7 +108,7 @@ input.plate{font-family:var(--mono);text-transform:uppercase;font-size:17px;lett
 .empty{padding:24px 16px;text-align:center;color:var(--muted);font-size:14px}
 .runners{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
 .rc{display:flex;flex-direction:column;gap:10px;padding:16px}
-.rc-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.rc-h{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:4px 8px}
 .rc-h b{font-size:18px}
 .qr{align-self:center;width:180px;height:180px;padding:8px;border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:center}
 .qr svg{width:100%;height:100%}
@@ -141,6 +151,11 @@ const TODAY=dayOffset(0),TOMORROW=dayOffset(1);
 const DOW=['dim.','lun.','mar.','mer.','jeu.','ven.','sam.'];const MON=['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
 function dLabel(d){const [y,m,j]=d.split('-').map(Number);return DOW[new Date(y,m-1,j).getDay()]+' '+j+' '+MON[m-1]}
 function dayName(d){return d===TODAY?"Aujourd'hui":d===TOMORROW?'Demain':dLabel(d)}
+/* v17 : demande sur plusieurs jours (colonne « fin ») */
+function finDe(d){return d.fin&&String(d.fin).slice(0,10)>d.date?String(d.fin).slice(0,10):d.date}
+function nbJours(a,b){const x=a.split('-').map(Number),y=b.split('-').map(Number);return Math.round((Date.UTC(y[0],y[1]-1,y[2])-Date.UTC(x[0],x[1]-1,x[2]))/864e5)+1}
+function plusJours(a,n){const x=a.split('-').map(Number);const d=new Date(x[0],x[1]-1,x[2]+n);return iso(d)}
+function periodeName(d){const f=finDe(d);return f===d.date?dayName(d.date):'Du '+dLabel(d.date)+' au '+dLabel(f)}
 function toast(m){const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>{t.hidden=true},3000)}
 function linkFor(code){return APP_URL+'?c='+encodeURIComponent(code)}
 function qrSvg(text){
@@ -153,7 +168,9 @@ let CODE='';
 try{CODE=new URLSearchParams(location.search).get('b')||'';if(CODE)localStorage.setItem('runners-bureau',CODE);else CODE=localStorage.getItem('runners-bureau')||''}catch(e){}
 
 /* ---------- Données ---------- */
-let D=null,err='',tab='demandes',confirmCode='',loading=false,edit='';
+let D=null,err='',tab='demandes',confirmCode='',loading=false,edit='',plage=false;
+/* v17 : demandes en cours de retrait (cachées tout de suite, en attendant la réponse de Google) */
+const RETRAIT=new Set();
 /* v16 : retours déjà vus sur cet ordinateur (null = jamais ouvert ici : rien d'ancien n'est annoncé) */
 let VUS=null;try{const x=localStorage.getItem('bureau-retours-vus');if(x)VUS=new Set(JSON.parse(x))}catch(e){}
 const ANNONCES=new Set();
@@ -238,7 +255,7 @@ function fleet(){
 /* ---------- Écrans ---------- */
 function vDemandes(){
   const runners=D.runners.filter(r=>String(r.actif).toLowerCase()!=='non');
-  const list=D.demandes.filter(d=>d.statut!=='supprimée'&&(d.statut==='à faire'||d.date>=TODAY)).sort((a,b)=>(a.date+a.id).localeCompare(b.date+b.id));
+  const list=D.demandes.filter(d=>d.statut!=='supprimée'&&!RETRAIT.has(d.id)&&(d.statut==='à faire'||finDe(d)>=TODAY)).sort((a,b)=>(a.date+a.id).localeCompare(b.date+b.id));
   const plates=[...fleet().keys()];
   /* v15 : demande en cours de modification (même formulaire que l'ajout) */
   const ed=edit?list.find(d=>d.id===edit&&d.statut==='à faire'):null;if(edit&&!ed)edit='';
@@ -249,20 +266,28 @@ function vDemandes(){
       <div class="field"><label for="dPlate">Plaque</label><input id="dPlate" class="plate" list="fleet" placeholder="AA-123-CD" required><datalist id="fleet">${plates.map(p=>`<option value="${esc(p)}">`).join('')}</datalist><div class="hint" id="dHint"></div></div>
       <div class="two-f">
         <div class="field"><label for="dRunner">Runner</label><select id="dRunner"><option value="Tous">Tous</option>${runners.map(r=>r.prenom).concat(ed&&ed.runner!=='Tous'&&!runners.some(r=>r.prenom===ed.runner)?[ed.runner]:[]).map(p=>`<option>${esc(p)}</option>`).join('')}</select></div>
-        <div class="field"><label for="dDate">Jour</label><input type="date" id="dDate" min="${TODAY}" max="${dayOffset(90)}" value="${TODAY}" required></div>
+        <div class="field"><label for="dPoint">Point</label><select id="dPoint"><option value="">Non précisé</option>${POINTS.concat(ed&&ed.point&&!POINTS.includes(ed.point)?[ed.point]:[]).map(p=>`<option>${esc(p)}</option>`).join('')}</select></div>
       </div>
-      <div class="quick" role="group" aria-label="Raccourcis de date">${[["Aujourd'hui",0],['Demain',1],['Dans 1 semaine',7],['Dans 2 semaines',14]].map(([t,n])=>`<button type="button" data-quick="${dayOffset(n)}">${t}</button>`).join('')}</div>
-      <div class="field"><label for="dPoint">Point</label><select id="dPoint"><option value="">Non précisé</option>${POINTS.concat(ed&&ed.point&&!POINTS.includes(ed.point)?[ed.point]:[]).map(p=>`<option>${esc(p)}</option>`).join('')}</select></div>
-      <div class="field"><label for="dText">Consigne pour le runner</label><textarea id="dText" placeholder="Exemple : faire le tour du véhicule et une photo du compteur." maxlength="200"></textarea></div>
+      <div class="when" role="group" aria-label="Quand">
+        <div class="when-h"><span class="lbl">Quand</span><div class="seg" role="radiogroup" aria-label="Durée"><button type="button" role="radio" data-plage="0" class="${plage?'':'on'}" aria-checked="${!plage}">Un jour</button><button type="button" role="radio" data-plage="1" class="${plage?'on':''}" aria-checked="${plage}">Plusieurs jours</button></div></div>
+        <div class="two-f">
+          <div class="field"><label for="dDate">${plage?'Du':'Jour'}</label><input type="date" id="dDate" min="${TODAY}" max="${dayOffset(90)}" value="${TODAY}" required></div>
+          <div class="field ${plage?'':'hidden'}"><label for="dFin">Au (inclus)</label><input type="date" id="dFin" min="${TODAY}" max="${dayOffset(150)}"></div>
+        </div>
+        <div class="quick ${plage?'hidden':''}" role="group" aria-label="Raccourcis de date">${[["Aujourd'hui",0],['Demain',1],['Dans 1 semaine',7],['Dans 2 semaines',14]].map(([t,n])=>`<button type="button" data-quick="${dayOffset(n)}">${t}</button>`).join('')}</div>
+        <div class="quick ${plage?'':'hidden'}" role="group" aria-label="Durée de la période">${[['2 jours',2],['3 jours',3],['1 semaine',7],['2 semaines',14]].map(([t,n])=>`<button type="button" data-duree="${n}">${t}</button>`).join('')}</div>
+        <div class="recap" id="dRecap" aria-live="polite"></div>
+      </div>
+      <div class="field"><label for="dText">Demande au runner</label><textarea id="dText" placeholder="Exemple : faire le tour du véhicule et une photo du compteur." maxlength="200"></textarea></div>
       ${ed?'<div class="actions"><button type="submit" class="btn primary">Enregistrer</button><button type="button" class="btn" id="editCancel">Annuler</button></div>':'<button type="submit" class="btn primary">Ajouter</button>'}
-      <div class="meta">Le jour venu, le véhicule apparaît en haut de l'appli du runner, avec le bandeau « Demandé par le service parc ».</div>
+      <div class="meta">Le jour venu, le véhicule apparaît en haut de l'appli du runner, avec le bandeau « Demandé par le service parc ». Sur plusieurs jours, il y reste chaque jour jusqu'à ce qu'un runner l'ait vu.</div>
     </form>
   </section>
   <section class="card" aria-labelledby="h-list">
     <div class="card-h"><h2 id="h-list">Demandes et rappels à venir</h2><span class="meta">${list.length}</span></div>
-    ${list.length?list.map(d=>`<div class="li${d.id===edit?' editing':''}"><div class="li-b"><div><span class="plate-t">${esc(d.plaque)}</span> <span class="pill ${d.statut==='faite'?'ok':d.date<TODAY?'late':'wait'}">${d.statut==='faite'?'Faite':d.date<TODAY?'En retard':'À faire'}</span>${d.auteur&&d.auteur!=='Service parc'?` <span class="pill mine">Rappel de ${esc(d.auteur)}</span>`:''}</div>
-      <div class="meta">${esc(dayName(d.date))} · ${esc(d.runner==='Tous'?'Tous les runners':d.runner)}${d.point?' · '+esc(d.point):''}</div>${d.consigne?`<div>${esc(d.consigne)}</div>`:''}</div>
-      ${d.statut==='faite'?'':`<div class="li-a">${String(d.id).startsWith('envoi-')?'':`<button type="button" class="btn small" data-edit="${esc(d.id)}">Modifier</button>`}<button type="button" class="btn small danger" data-del="${esc(d.id)}">Retirer</button></div>`}</div>`).join('')
+    ${list.length?list.map(d=>`<div class="li${d.id===edit?' editing':''}"><div class="li-b"><div><span class="plate-t">${esc(d.plaque)}</span> <span class="pill ${d.statut==='faite'?'ok':finDe(d)<TODAY?'late':'wait'}">${d.statut==='faite'?'Faite':finDe(d)<TODAY?'En retard':d.date<=TODAY&&finDe(d)>TODAY?'En cours':'À faire'}</span>${d.auteur&&d.auteur!=='Service parc'?` <span class="pill mine">Rappel de ${esc(d.auteur)}</span>`:''}</div>
+      <div class="meta">${esc(periodeName(d))} · ${esc(d.runner==='Tous'?'Tous les runners':d.runner)}${d.point?' · '+esc(d.point):''}</div>${d.consigne?`<div>${esc(d.consigne)}</div>`:''}</div>
+      ${d.statut==='faite'?'':`<div class="li-a">${String(d.id).startsWith('envoi-')?'<span class="meta">Enregistrement…</span>':`<button type="button" class="btn small" data-edit="${esc(d.id)}">Modifier</button><button type="button" class="btn small danger" data-del="${esc(d.id)}">Retirer</button>`}</div>`}</div>`).join('')
     :'<div class="empty">Aucune demande ni rappel à venir.</div>'}
   </section></div>`;
 }
@@ -287,7 +312,7 @@ function vRetours(){
   const sl=DEMO?'':D.slack?(/ ok$/.test(D.slack)?'<span class="meta">Slack : relié, chaque demande est suivie dans son fil.</span>':/^pas encore/.test(D.slack)?'<span class="meta">Slack : réglé, en attente de la première demande.</span>':`<div class="slackerr">Slack ne répond pas comme prévu (${esc(D.slack.replace(/^\S+ /,''))}). Vérifiez slack_jeton et slack_canal dans l'onglet Réglages de la feuille, et que le bot est invité dans le canal.</div>`):'';
   return `<section class="card"><div class="card-h"><h2>Retours des runners</h2><span class="meta">${l.length}</span></div>
     <div class="card-b retours-top">${'Notification' in window&&Notification.permission==='default'&&!DEMO?'<button type="button" class="btn small" id="notifOn">Être prévenu sur cet ordinateur</button>':''}<span class="meta">Les véhicules demandés ici, une fois vus par un runner aujourd'hui. Si le runner annule, le retour disparaît.</span>${sl}</div>
-    ${l.length?l.map(r=>passageRow(r.x,`<div>Demande ${esc(dayName(r.d.date).toLowerCase())}${r.d.consigne?' : '+esc(r.d.consigne):''}</div>`)).join(''):'<div class="empty">Aucun retour pour l\'instant.</div>'}
+    ${l.length?l.map(r=>passageRow(r.x,`<div>Demande ${esc(periodeName(r.d).replace(/^./,c=>c.toLowerCase()))}${r.d.consigne?' : '+esc(r.d.consigne):''}</div>`)).join(''):'<div class="empty">Aucun retour pour l\'instant.</div>'}
   </section>`;
 }
 function vPassages(){
@@ -309,7 +334,7 @@ function vRunners(){
     </form></section>
   <div class="runners">${D.runners.filter(r=>String(r.actif).toLowerCase()!=='non').map(r=>{const url=linkFor(r.code);return `
     <section class="card rc">
-      <div class="rc-h"><b>${esc(r.prenom)}</b><span class="meta">${esc(r.points||'Aucun point')}</span></div>
+      <div class="rc-h"><b>${esc(r.prenom)}</b><span class="meta">${esc(r.points||'Aucun point')}</span>${D.slack&&!DEMO?(/\b[UW][A-Z0-9]{6,}\b/.test(String(r.slack||'').toUpperCase())?'<span class="meta no-print">Slack : identifié (@)</span>':'<span class="meta no-print">Slack : pas encore identifié</span>'):''}</div>
       ${qrOk?`<div class="qr" role="img" aria-label="QR code du lien de ${esc(r.prenom)}">${qrSvg(url)}</div>`:''}
       <div class="link">${esc(url)}</div>
       <div class="acts">
@@ -332,18 +357,26 @@ function render(){
   $('#mode').textContent=DEMO?'Démonstration · données fictives':D&&D.misAJour?(()=>{const d=new Date(D.misAJour);return isNaN(d)?'':'Planning du '+d.getDate()+' '+MON[d.getMonth()]+' à '+String(d.getHours()).padStart(2,'0')+'h'+String(d.getMinutes()).padStart(2,'0')})():'';
   $('#sub').textContent=dLabel(TODAY).replace(/^./,c=>c.toUpperCase());
   if(!D){$('#tabs').innerHTML='';$('#view').innerHTML=loading?'<div class="empty">Chargement…</div>':gate();return}
-  const nb={demandes:D.demandes.filter(d=>d.statut==='à faire').length,passages:D.passages.length,runners:D.runners.filter(r=>String(r.actif).toLowerCase()!=='non').length};
+  const nb={demandes:D.demandes.filter(d=>d.statut==='à faire'&&!RETRAIT.has(d.id)).length,passages:D.passages.length,runners:D.runners.filter(r=>String(r.actif).toLowerCase()!=='non').length};
   if(tab==='retours'&&!DEMO)marquerVus();
   const nv=DEMO?0:nouveaux().length;nb.retours=nv||retours().length;
   $('#tabs').innerHTML=[['demandes','Dernière minute'],['retours','Retours runners'],['passages','Passages du jour'],['runners','Runners et liens']].map(([k,t])=>`<button type="button" class="${k===tab?'on':''}" data-tab="${k}" aria-current="${k===tab?'page':'false'}">${t}<span class="cnt${k==='retours'&&nv?' hot':''}">${nb[k]}</span></button>`).join('')+(DEMO?'':'<button type="button" id="reload">Actualiser</button>');
-  const keep=['dPlate','dRunner','dDate','dPoint','dText','rName'].map(id=>[id,$('#'+id)&&$('#'+id).value]);
+  const keep=['dPlate','dRunner','dDate','dFin','dPoint','dText','rName'].map(id=>[id,$('#'+id)&&$('#'+id).value]);
   const coches=[...document.querySelectorAll('input[name=rPt]:checked')].map(x=>x.value);
   $('#view').innerHTML=bandeauRetours()+(tab==='passages'?vPassages():tab==='retours'?vRetours():tab==='runners'?vRunners():vDemandes());
   if(tab==='retours')document.title='Service parc · Runners';
   keep.forEach(([id,v])=>{if(v!=null&&$('#'+id))$('#'+id).value=v});
   document.querySelectorAll('input[name=rPt]').forEach(x=>{if(coches.includes(x.value))x.checked=true});
-  if(tab==='demandes')plateHint();
+  if(tab==='demandes'){plateHint();recapDate()}
 }
+/* v17 : résumé de la période choisie, sous les dates */
+function recapDate(){const r=$('#dRecap');if(!r)return;const a=$('#dDate').value,f=$('#dFin')?$('#dFin').value:'';
+  document.querySelectorAll('[data-duree]').forEach(b=>b.classList.toggle('on',plage&&!!a&&!!f&&nbJours(a,f)===+b.dataset.duree));
+  document.querySelectorAll('[data-quick]').forEach(b=>b.classList.toggle('on',!plage&&b.dataset.quick===a));
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(a)){r.textContent='';return}
+  if(!plage){r.innerHTML='Le runner le verra <b>'+esc(dayName(a).toLowerCase().replace(/^(\d)/,'le $1').replace(/^(lun|mar|mer|jeu|ven|sam|dim)/,'le $1'))+'</b>.';return}
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(f)||f<=a){r.innerHTML='Choisissez le dernier jour, après le premier.';return}
+  const n=nbJours(a,f);r.innerHTML=n>61?'Période trop longue : 60 jours au plus.':'Le runner le verra <b>chaque jour du '+esc(dLabel(a))+' au '+esc(dLabel(f))+'</b> ('+n+' jours), jusqu\'à ce qu\'il soit vu.'}
 function plateHint(){const i=$('#dPlate');if(!i)return;const p=i.value.trim().toUpperCase();const f=fleet();const h=$('#dHint');
   if(norm(p).length<7){h.textContent='';h.className='hint';return}
   const hit=[...f.keys()].find(k=>norm(k)===norm(p));
@@ -353,44 +386,53 @@ function plateHint(){const i=$('#dPlate');if(!i)return;const p=i.value.trim().to
 document.addEventListener('click',async e=>{
   const b=e.target.closest('button');if(!b)return;const d=b.dataset;
   if(d.tab){tab=d.tab;confirmCode='';render();return}
-  if(d.quick){$('#dDate').value=d.quick;return}
+  if(d.quick){$('#dDate').value=d.quick;recapDate();return}
+  if(d.plage!=null){plage=d.plage==='1';if(plage){const a=$('#dDate').value||TODAY,f=$('#dFin');if(f&&(!f.value||f.value<=a))f.value=plusJours(a,2)}render();return}
+  if(d.duree){const a=$('#dDate').value||TODAY;$('#dDate').value=a;$('#dFin').value=plusJours(a,+d.duree-1);recapDate();return}
   if(b.id==='reload'){load();return}
   if(b.id==='notifOn'){try{Notification.requestPermission().then(()=>render())}catch(err){}return}
   if(b.id==='print'){window.print();return}
   if(d.edit){const x=D.demandes.find(y=>y.id===d.edit);if(!x)return;edit=x.id;
     ['dPlate','dText'].forEach(id=>{if($('#'+id))$('#'+id).value=''});render();
-    $('#dPlate').value=x.plaque||'';$('#dRunner').value=x.runner||'Tous';$('#dDate').value=x.date<TODAY?TODAY:x.date;$('#dPoint').value=x.point||'';$('#dText').value=x.consigne||'';plateHint();
+    plage=finDe(x)>x.date&&finDe(x)>TODAY;render();
+    $('#dPlate').value=x.plaque||'';$('#dRunner').value=x.runner||'Tous';$('#dDate').value=x.date<TODAY?TODAY:x.date;$('#dFin').value=plage?finDe(x):'';$('#dPoint').value=x.point||'';$('#dText').value=x.consigne||'';plateHint();recapDate();
     try{$('#fDemande').scrollIntoView({block:'start',behavior:'smooth'})}catch(err){}$('#dText').focus();return}
-  if(b.id==='editCancel'){edit='';['dPlate','dText'].forEach(id=>{if($('#'+id))$('#'+id).value=''});$('#dPoint').value='';$('#dRunner').value='Tous';$('#dDate').value=TODAY;render();return}
-  if(d.del){if(d.del===edit)edit='';b.disabled=true;await act('demande_suppr',{id:d.del});toast('Demande retirée.');return}
+  if(b.id==='editCancel'){edit='';plage=false;['dPlate','dText','dFin'].forEach(id=>{if($('#'+id))$('#'+id).value=''});$('#dPoint').value='';$('#dRunner').value='Tous';$('#dDate').value=TODAY;render();return}
+  /* v17 : retrait affiché tout de suite (avant : on attendait Google, Slack puis le rechargement complet, 5 à 10 s) ;
+     si Google refuse ou s'il n'y a pas de réseau, la demande revient dans la liste avec un message */
+  if(d.del){const id=d.del,x=D.demandes.find(y=>y.id===id);if(id===edit){edit='';plage=false}RETRAIT.add(id);render();toast((x?x.plaque+' : ':'')+'demande retirée.');
+    act('demande_suppr',{id}).then(r=>{RETRAIT.delete(id);if(r&&r.erreur){toast((x?x.plaque+' ':'')+'non retiré : '+(r.erreur==='réseau'?'pas de réseau':r.erreur)+'. Réessayez.')}else if(x)x.statut='supprimée';render()});return}
   if(d.copy){try{await navigator.clipboard.writeText(d.copy);toast('Lien copié.')}catch(err){toast('Copie impossible : sélectionnez le lien à la main.')}return}
   if(d.ask){confirmCode=d.ask;render();return}
   if(d.cancel){confirmCode='';render();return}
   if(d.newcode){b.disabled=true;const r=await act('runner_code',{prenom:d.newcode});confirmCode='';render();if(!r.erreur)toast('Nouveau lien créé pour '+d.newcode+'. Réinstallez l\'appli sur son téléphone.');return}
 });
-document.addEventListener('input',e=>{if(e.target.id==='dPlate')plateHint()});
+document.addEventListener('input',e=>{if(e.target.id==='dPlate')plateHint();if(e.target.id==='dDate'||e.target.id==='dFin')recapDate()});
+document.addEventListener('change',e=>{if(e.target.id==='dDate'||e.target.id==='dFin')recapDate()});
 document.addEventListener('submit',async e=>{
   e.preventDefault();const f=e.target;
   if(f.id==='fCode'){CODE=$('#bCode').value.trim();try{localStorage.setItem('runners-bureau',CODE)}catch(x){}err='';load();return}
   if(f.id==='fDemande'){
     const plaque=$('#dPlate').value.trim().toUpperCase();if(norm(plaque).length<5){toast('Plaque incomplète.');return}
     const date=$('#dDate').value;if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||date<dayOffset(0)){toast('Choisissez un jour à partir d\'aujourd\'hui.');return}
+    let fin='';if(plage){fin=$('#dFin').value;if(!/^\d{4}-\d{2}-\d{2}$/.test(fin)||fin<date){toast('Choisissez le dernier jour, après le premier.');return}
+      if(nbJours(date,fin)>61){toast('Période trop longue : 60 jours au plus.');return}if(fin===date)fin=''}
     if(edit){
       /* v15 : modification d'une demande à faire (même identifiant, les téléphones la mettent à jour à l'actualisation suivante) */
-      const id=edit,champs={id,plaque,runner:$('#dRunner').value,date,point:$('#dPoint').value,consigne:$('#dText').value.trim()};
+      const id=edit,champs={id,plaque,runner:$('#dRunner').value,date,fin,point:$('#dPoint').value,consigne:$('#dText').value.trim()};
       const x=D.demandes.find(y=>y.id===id),avant=x?Object.assign({},x):null;
       if(x&&!DEMO)Object.assign(x,champs);
-      edit='';['dPlate','dText'].forEach(id=>{if($('#'+id))$('#'+id).value=''});$('#dPoint').value='';$('#dRunner').value='Tous';$('#dDate').value=TODAY;plateHint();render();
+      edit='';plage=false;['dPlate','dText','dFin'].forEach(id=>{if($('#'+id))$('#'+id).value=''});$('#dPoint').value='';$('#dRunner').value='Tous';$('#dDate').value=TODAY;plateHint();render();
       toast(plaque+' modifié.');
       act('demande_modif',champs).then(r=>{if(r.erreur&&D){const y=D.demandes.find(z=>z.id===id);if(y&&avant)Object.assign(y,avant);render()}
         else if(r.prevenus>0)toast(plaque+' : alerte envoyée sur '+r.prevenus+' téléphone'+(r.prevenus>1?'s':'')+'.')});
       return}
     /* Affiché tout de suite, envoyé à Google en arrière-plan (Google met 2 à 4 secondes à répondre) */
-    const champs={plaque,runner:$('#dRunner').value,date,point:$('#dPoint').value,consigne:$('#dText').value.trim(),auteur:'Service parc'};
+    const champs={plaque,runner:$('#dRunner').value,date,fin,point:$('#dPoint').value,consigne:$('#dText').value.trim(),auteur:'Service parc'};
     const tmp='envoi-'+Date.now().toString(36);
     if(!DEMO&&D){D.demandes=(D.demandes||[]).concat([Object.assign({id:tmp,statut:'à faire'},champs)])}
     ['dPlate','dText'].forEach(id=>{if($('#'+id))$('#'+id).value=''});plateHint();render();
-    toast(plaque+' ajouté pour '+dayName(date).toLowerCase().replace(/\.$/,'')+'. Le runner le verra ce jour-là.');
+    toast(fin?plaque+' ajouté du '+dLabel(date)+' au '+dLabel(fin)+'. Le runner le verra chaque jour jusqu\'à son passage.':plaque+' ajouté pour '+dayName(date).toLowerCase().replace(/\.$/,'')+'. Le runner le verra ce jour-là.');
     act('demande',champs).then(r=>{if(r.erreur&&D){D.demandes=(D.demandes||[]).filter(x=>x.id!==tmp);render();toast(plaque+' non enregistré : '+(r.erreur==='réseau'?'pas de réseau':r.erreur)+'. Réessayez.')}
       /* v12 : avec le script v15, nombre de téléphones prévenus par une alerte */
       else if(r.prevenus>0)toast(plaque+' : alerte envoyée sur '+r.prevenus+' téléphone'+(r.prevenus>1?'s':'')+'.')});
