@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Runners</title>
-<!-- Appli Runners City Drop, v22 : version reliée au Google Sheet (voir config.js) ; gros caractères, 3 photos, aujourd'hui au milieu, recherche en haut, page des rappels ; v22 : corrections après test complet ; v23 : planning compact (grosses flottes), dates avec le mois, longs textes coupés sur les cartes ; v24 : rapide sur téléphone lent avec une grosse flotte (planning préparé par Google et rangé à part, écran redessiné seulement s'il change) ; v25 : message de fin de tournée simplifié (date en entier, plaques les unes sous les autres, sans heure ni prénom) ; v27 : une validation faite pendant la réception du planning part tout de suite après (avant : jusqu'à 5 min d'attente) ; envois sans photo passés par l'adresse (GET) car l'iPhone bloquait les envois classiques ; v28 : actualisation toutes les 30 s ; v29 : une validation part même si le runner ferme l'appli juste après ; v30 : signalement avec photos envoyé en deux temps (le passage d'abord, même appli fermée, les photos ensuite) ; attente plus longue et message « Google ne répond pas » au lieu d'un faux « Pas de réseau » ; v31 : photo allégée envoyée même appli fermée (la vraie suit à la réouverture) ; un envoi n'est plus jeté quand Google est seulement occupé ; annuler un passage déjà parti l'annule aussi chez Google ; v32 : un lien désactivé ne jette plus les envois ; annulation sûre même quand les envois arrivent dans le désordre ; photos gardées tant que le téléphone n'a pas confirmé les avoir rangées ; un véhicule envoyé ne réapparaît plus si l'appli est tuée juste après ; v33 : envois groupés en un seul appel (avec le script v12), moins de relectures chez Google, deux onglets ouverts sans perte, mémoire pleine sans blocage, une panne de Google n'affiche plus « Lien non reconnu » ; v34 : page bureau v10 (photos effacées au bout de 5 jours, avec le script v13) ; v35 : page bureau v11 plus rapide (avec le script v14) ; v36 : nouvelles demandes du bureau signalées (pastille « 1 nouvelle », bandeau, vibration, chiffre sur l'icône, notification si autorisée) ; v37 : vraies notifications des nouvelles demandes, même écran verrouillé (avec le script v15) ; v38 : les alertes gardent leur détail après une mise à jour de l'appli ; v39 : mise à jour automatique sans fermer l'appli ; v40 : gros bouton ACTIVER LES NOTIFICATIONS en haut de l'accueil tant qu'elles ne sont pas actives ; v41 : encadré des notifications plus sobre, mise à jour repérée chaque minute et appliquée après 30 s sans geste ; v42 (revue de nuit) : ouverture immédiate sur réseau faible (copie du téléphone après 3 s, polices sans bloquer), fiche et « Tout est OK » 2 à 3 fois plus rapides, double appui sans effet sur l'écran suivant, véhicule parti le matin et revenu le soir affiché pour son retour, pas de rechargement à minuit pendant une saisie, panne de Google signalée sur la ligne d'état au lieu d'un message toutes les 30 s ; v43 : horaires d'arrivée et de départ sur chaque demande dans la page « Rappels et demandes », plaque jamais coupée sur deux lignes ; v44 : toucher la notification ouvre directement « Rappels et demandes » avec la demande (son texte s'affiche tout de suite, le détail arrive de Google juste après) ; v45 : demandes sans point (ou sur un point non suivi) affichées dans « Autres demandes » au lieu d'être comptées sans apparaître ; demandes modifiables depuis la page bureau (avec le script v20) -->
+<!-- Appli Runners City Drop, v22 : version reliée au Google Sheet (voir config.js) ; gros caractères, 3 photos, aujourd'hui au milieu, recherche en haut, page des rappels ; v22 : corrections après test complet ; v23 : planning compact (grosses flottes), dates avec le mois, longs textes coupés sur les cartes ; v24 : rapide sur téléphone lent avec une grosse flotte (planning préparé par Google et rangé à part, écran redessiné seulement s'il change) ; v25 : message de fin de tournée simplifié (date en entier, plaques les unes sous les autres, sans heure ni prénom) ; v27 : une validation faite pendant la réception du planning part tout de suite après (avant : jusqu'à 5 min d'attente) ; envois sans photo passés par l'adresse (GET) car l'iPhone bloquait les envois classiques ; v28 : actualisation toutes les 30 s ; v29 : une validation part même si le runner ferme l'appli juste après ; v30 : signalement avec photos envoyé en deux temps (le passage d'abord, même appli fermée, les photos ensuite) ; attente plus longue et message « Google ne répond pas » au lieu d'un faux « Pas de réseau » ; v31 : photo allégée envoyée même appli fermée (la vraie suit à la réouverture) ; un envoi n'est plus jeté quand Google est seulement occupé ; annuler un passage déjà parti l'annule aussi chez Google ; v32 : un lien désactivé ne jette plus les envois ; annulation sûre même quand les envois arrivent dans le désordre ; photos gardées tant que le téléphone n'a pas confirmé les avoir rangées ; un véhicule envoyé ne réapparaît plus si l'appli est tuée juste après ; v33 : envois groupés en un seul appel (avec le script v12), moins de relectures chez Google, deux onglets ouverts sans perte, mémoire pleine sans blocage, une panne de Google n'affiche plus « Lien non reconnu » ; v34 : page bureau v10 (photos effacées au bout de 5 jours, avec le script v13) ; v35 : page bureau v11 plus rapide (avec le script v14) ; v36 : nouvelles demandes du bureau signalées (pastille « 1 nouvelle », bandeau, vibration, chiffre sur l'icône, notification si autorisée) ; v37 : vraies notifications des nouvelles demandes, même écran verrouillé (avec le script v15) ; v38 : les alertes gardent leur détail après une mise à jour de l'appli ; v39 : mise à jour automatique sans fermer l'appli ; v40 : gros bouton ACTIVER LES NOTIFICATIONS en haut de l'accueil tant qu'elles ne sont pas actives ; v41 : encadré des notifications plus sobre, mise à jour repérée chaque minute et appliquée après 30 s sans geste ; v42 (revue de nuit) : ouverture immédiate sur réseau faible (copie du téléphone après 3 s, polices sans bloquer), fiche et « Tout est OK » 2 à 3 fois plus rapides, double appui sans effet sur l'écran suivant, véhicule parti le matin et revenu le soir affiché pour son retour, pas de rechargement à minuit pendant une saisie, panne de Google signalée sur la ligne d'état au lieu d'un message toutes les 30 s ; v43 : horaires d'arrivée et de départ sur chaque demande dans la page « Rappels et demandes », plaque jamais coupée sur deux lignes ; v44 : toucher la notification ouvre directement « Rappels et demandes » avec la demande (son texte s'affiche tout de suite, le détail arrive de Google juste après) ; v45 : demandes sans point (ou sur un point non suivi) affichées dans « Autres demandes » au lieu d'être comptées sans apparaître ; demandes modifiables depuis la page bureau (avec le script v20) ; v47 : véhicules déjà repartis aujourd'hui rangés dans « Déjà partis » (repliés en bas du point, hors du compte « à voir », à part dans le récap) -->
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
@@ -112,6 +112,12 @@ main{flex:1;padding-top:16px;padding-bottom:calc(96px + env(safe-area-inset-bott
 .chev{color:var(--muted);flex:none}
 .pill{padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:600;white-space:nowrap}
 .pill.dep{background:var(--warn-soft);color:var(--warn)}
+.pill.gone{background:var(--surface-2);color:var(--muted);box-shadow:inset 0 0 0 1px var(--line-strong)}
+.gone{border-radius:12px;border:1px dashed var(--line-strong);background:var(--surface-2)}
+.gone>summary{cursor:pointer;padding:12px 14px;font-weight:600;color:var(--muted);list-style-position:inside}
+.gone>summary b{margin-left:4px;color:var(--fg)}
+.gone[open]{display:flex;flex-direction:column;gap:10px;padding-bottom:10px}
+.gone>.row{width:calc(100% - 20px);margin:0 10px;opacity:.85}
 .pill.arr{background:var(--info-soft);color:var(--info)}
 .mini{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:500}
 .mini i,.imp-h i{width:8px;height:8px;border-radius:50%;background:currentColor;flex:none}
@@ -704,7 +710,12 @@ function alertesHtml(big){
 function askFor(p){return openAsks().find(d=>d.plaque===p)||null}
 function asksFor(p){return openAsks().filter(d=>d.plaque===p)}
 function myReminders(p){return allAsks().filter(d=>d.plaque===p&&d.auteur===S.who)}
-function todo(day){day=day||TODAY;const asks=new Set(openAsks(day).map(d=>d.plaque));return staysOn(day).filter(s=>!P[sid(s)]&&!asks.has(s.plaque))}
+/* v47 : un véhicule déjà reparti aujourd'hui (heure de départ passée) n'est plus « à voir » : il va dans « Déjà partis »,
+   en bas de son point, et à part dans le récap (avant : il restait à chercher toute la journée, puis « Pas vu ») */
+function parti(s,day){return (day||TODAY)===TODAY&&!!s.to&&s.to<nowStr()}
+function restants(day){day=day||TODAY;const asks=new Set(openAsks(day).map(d=>d.plaque));return staysOn(day).filter(s=>!P[sid(s)]&&!asks.has(s.plaque))}
+function todo(day){return restants(day).filter(s=>!parti(s,day))}
+function partis(day){return restants(day).filter(s=>parti(s,day))}
 function doneOn(day){return Object.values(P).filter(x=>x.at.slice(0,10)===day&&x.by===S.who).sort((a,b)=>b.at.localeCompare(a.at))}
 function doneToday(){return doneOn(TODAY)}
 let DONE_DAY=TODAY;
@@ -930,7 +941,7 @@ function gate(title,text,btn){return `<div class="gate"><b>${title}</b><p>${text
 function vHome(){
   const pts=LOCAL.concat(allPoints().filter(p=>S.myPoints.includes(p)&&!LOCAL.includes(p)));
   const order=S.myPoints.slice().sort((a,b)=>pts.indexOf(a)-pts.indexOf(b));
-  const now=DAY===TODAY,past=DAY<TODAY;const list=past?staysOn(DAY):todo(DAY),asks=openAsks(DAY);
+  const now=DAY===TODAY,past=DAY<TODAY;const list=past?staysOn(DAY):todo(DAY),asks=openAsks(DAY),gone=now?partis(DAY):[];
   const days=[];for(let i=-DAYS_BACK;i<=DAYS_AHEAD;i++)days.push(plusDays(i));
   return `${alertesHtml(true)}
   <div class="days" role="group" aria-label="Jour">${days.map((d,i)=>dayChip(d,i,'data-day',DAY)).join('')}</div>
@@ -950,6 +961,7 @@ function vHome(){
         <span class="model">${esc(v.modele||'')}</span>
         ${timesHtml(s)}
         ${s.impros.map(improMini).join('')}`)}).join(''):`<div class="empty small"><b>${now?'Tout est fait sur ce point':'Aucun véhicule prévu sur ce point'}</b></div>`}
+    ${(g=>g.length?`<details class="gone"><summary>Déjà partis <b>${g.length}</b></summary>${g.map(s=>{const v=vehicle(s.plaque)||{};return rowHtml(s.plaque,`<span class="row-t"><span class="plate">${esc(s.plaque)}</span><span class="pill gone">Parti</span></span><span class="model">${esc(v.modele||'')}</span>${timesHtml(s)}`)}).join('')}</details>`:'')(gone.filter(s=>s.point===p))}
   </section>`}).join('')}`;
 }
 
@@ -1077,6 +1089,7 @@ function report(){
   [...new Set(d.map(x=>x.point))].forEach(p=>{lines.push('');lines.push('*'+p+'*');
     d.filter(x=>x.point===p).forEach(x=>lines.push(x.plaque+(x.pb.length?' · Problème : '+x.pb.join(', ')+(x.comment?' ('+x.comment+')':'')+(x.photo?' · photo':''):'')))});
   const left=todo();if(left.length){lines.push('');lines.push('*Pas vus*');left.forEach(s=>lines.push(s.plaque))}
+  const pa=partis();if(pa.length){lines.push('');lines.push('*Partis avant passage*');pa.forEach(s=>lines.push(s.plaque))}
   return lines.join('\n');
 }
 
