@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Runners · Bureau</title>
-<!-- Page bureau de l'appli Runners, v4 : liens des runners, demandes à n'importe quelle date, rappels des runners, passages du jour ; v4 : actualisation automatique, un passage peut clore plusieurs demandes ; v6 (suite de la v4, la v5 est la version pro à part) : envois passés dans l'adresse (GET) car certains appareils bloquaient les envois classiques ; v7 : un véhicule ajouté s'affiche tout de suite (envoi en arrière-plan) ; v8 : « Photos en cours d'envoi » quand les photos suivent le passage ; v9 : « aperçu » tant que seule la photo allégée est arrivée ; v10 : photo effacée au bout de 5 jours indiquée ; v11 : plus rapide (planning retéléchargé seulement s'il a changé), actualisée toutes les 30 secondes ; v12 : indique combien de téléphones ont reçu l'alerte d'une nouvelle demande ; v13 : mise à jour automatique sans recharger à la main ; v14 : page laissée ouverte la nuit remise au nouveau jour le matin, liens photo vérifiés, polices sans bloquer l'affichage ; v15 : demandes et rappels à faire modifiables (bouton Modifier, avec le script v20) ; v16 : onglet « Retours runners » (véhicules demandés vus par un runner, alerte avec bandeau, son et notification de l'ordinateur ; retiré si le runner annule), état de Slack (avec le script v21) ; v17 (appli v48) : demande sur un jour ou sur plusieurs jours (du … au …) ; v18 (appli v49) : « Date unique / Période », termes revus -->
+<!-- Page bureau de l'appli Runners, v4 : liens des runners, demandes à n'importe quelle date, rappels des runners, passages du jour ; v4 : actualisation automatique, un passage peut clore plusieurs demandes ; v6 (suite de la v4, la v5 est la version pro à part) : envois passés dans l'adresse (GET) car certains appareils bloquaient les envois classiques ; v7 : un véhicule ajouté s'affiche tout de suite (envoi en arrière-plan) ; v8 : « Photos en cours d'envoi » quand les photos suivent le passage ; v9 : « aperçu » tant que seule la photo allégée est arrivée ; v10 : photo effacée au bout de 5 jours indiquée ; v11 : plus rapide (planning retéléchargé seulement s'il a changé), actualisée toutes les 30 secondes ; v12 : indique combien de téléphones ont reçu l'alerte d'une nouvelle demande ; v13 : mise à jour automatique sans recharger à la main ; v14 : page laissée ouverte la nuit remise au nouveau jour le matin, liens photo vérifiés, polices sans bloquer l'affichage ; v15 : demandes et rappels à faire modifiables (bouton Modifier, avec le script v20) ; v16 : onglet « Retours runners » (véhicules demandés vus par un runner, alerte avec bandeau, son et notification de l'ordinateur ; retiré si le runner annule), état de Slack (avec le script v21) ; v17 (appli v48) : demande sur un jour ou sur plusieurs jours (du … au …) ; v18 (appli v49) : « Date unique / Période », termes revus ; v19 (appli v51) : onglet « Planifier » (avant « Dernière minute »), tirets de la plaque mis tout seuls -->
 <link rel="icon" type="image/png" href="icon-192.png">
 <meta name="robots" content="noindex">
 <!-- v42 : polices chargées sans bloquer l'affichage (réseau faible : l'appli s'affiche tout de suite avec la police du téléphone) -->
@@ -145,6 +145,12 @@ const APP_URL=location.origin+location.pathname.replace(/[^/]*$/,'');
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const norm=s=>String(s||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+/* v51 : plaque tapée sans tirets (« aa123cd ») : les tirets se mettent seuls (AA-123-CD). Plaque collée avec tirets : inchangée.
+   Autres formats (anciennes plaques, étrangères) : laissés tels quels. */
+const fmtPlaque=s=>{const v=String(s||'').toUpperCase();const m=v.replace(/[^A-Z0-9]/g,'').match(/^([A-Z]{1,2})(\d{0,3})([A-Z]{0,2})$/);
+  if(!m||(m[1].length<2&&m[2])||(m[2].length<3&&m[3]))return v;let r=m[1]+(m[2]?'-'+m[2]:'')+(m[3]?'-'+m[3]:'');if(/[-\s]$/.test(v)&&(r.length===2||r.length===6))r+='-';return r};
+function tirets(e){const el=e.target;if(/^delete/.test(e.inputType||'')||el.selectionStart!==el.value.length)return;const f=fmtPlaque(el.value);if(f!==el.value)el.value=f}
+
 function iso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 function dayOffset(n){const d=new Date();d.setDate(d.getDate()+n);return iso(d)}
 const TODAY=dayOffset(0),TOMORROW=dayOffset(1);
@@ -360,7 +366,7 @@ function render(){
   const nb={demandes:D.demandes.filter(d=>d.statut==='à faire'&&!RETRAIT.has(d.id)).length,passages:D.passages.length,runners:D.runners.filter(r=>String(r.actif).toLowerCase()!=='non').length};
   if(tab==='retours'&&!DEMO)marquerVus();
   const nv=DEMO?0:nouveaux().length;nb.retours=nv||retours().length;
-  $('#tabs').innerHTML=[['demandes','Dernière minute'],['retours','Retours runners'],['passages','Passages du jour'],['runners','Runners et liens']].map(([k,t])=>`<button type="button" class="${k===tab?'on':''}" data-tab="${k}" aria-current="${k===tab?'page':'false'}">${t}<span class="cnt${k==='retours'&&nv?' hot':''}">${nb[k]}</span></button>`).join('')+(DEMO?'':'<button type="button" id="reload">Actualiser</button>');
+  $('#tabs').innerHTML=[['demandes','Planifier'],['retours','Retours runners'],['passages','Passages du jour'],['runners','Runners et liens']].map(([k,t])=>`<button type="button" class="${k===tab?'on':''}" data-tab="${k}" aria-current="${k===tab?'page':'false'}">${t}<span class="cnt${k==='retours'&&nv?' hot':''}">${nb[k]}</span></button>`).join('')+(DEMO?'':'<button type="button" id="reload">Actualiser</button>');
   const keep=['dPlate','dRunner','dDate','dFin','dPoint','dText','rName'].map(id=>[id,$('#'+id)&&$('#'+id).value]);
   const coches=[...document.querySelectorAll('input[name=rPt]:checked')].map(x=>x.value);
   $('#view').innerHTML=bandeauRetours()+(tab==='passages'?vPassages():tab==='retours'?vRetours():tab==='runners'?vRunners():vDemandes());
@@ -407,13 +413,13 @@ document.addEventListener('click',async e=>{
   if(d.cancel){confirmCode='';render();return}
   if(d.newcode){b.disabled=true;const r=await act('runner_code',{prenom:d.newcode});confirmCode='';render();if(!r.erreur)toast('Nouveau lien créé pour '+d.newcode+'. Réinstallez l\'appli sur son téléphone.');return}
 });
-document.addEventListener('input',e=>{if(e.target.id==='dPlate')plateHint();if(e.target.id==='dDate'||e.target.id==='dFin')recapDate()});
+document.addEventListener('input',e=>{if(e.target.id==='dPlate'){tirets(e);plateHint()}if(e.target.id==='dDate'||e.target.id==='dFin')recapDate()});
 document.addEventListener('change',e=>{if(e.target.id==='dDate'||e.target.id==='dFin')recapDate()});
 document.addEventListener('submit',async e=>{
   e.preventDefault();const f=e.target;
   if(f.id==='fCode'){CODE=$('#bCode').value.trim();try{localStorage.setItem('runners-bureau',CODE)}catch(x){}err='';load();return}
   if(f.id==='fDemande'){
-    const plaque=$('#dPlate').value.trim().toUpperCase();if(norm(plaque).length<5){toast('Plaque incomplète.');return}
+    const plaque=fmtPlaque($('#dPlate').value.trim());if(norm(plaque).length<5){toast('Plaque incomplète.');return}
     const date=$('#dDate').value;if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||date<dayOffset(0)){toast('Choisissez un jour à partir d\'aujourd\'hui.');return}
     let fin='';if(plage){fin=$('#dFin').value;if(!/^\d{4}-\d{2}-\d{2}$/.test(fin)||fin<date){toast('Choisissez une date de fin postérieure à la date de début.');return}
       if(nbJours(date,fin)>61){toast('Période trop longue : 60 jours au plus.');return}if(fin===date)fin=''}
