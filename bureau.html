@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Runners · Bureau</title>
-<!-- Page bureau de l'appli Runners, v4 : liens des runners, demandes à n'importe quelle date, rappels des runners, passages du jour ; v4 : actualisation automatique, un passage peut clore plusieurs demandes ; v6 (suite de la v4, la v5 est la version pro à part) : envois passés dans l'adresse (GET) car certains appareils bloquaient les envois classiques ; v7 : un véhicule ajouté s'affiche tout de suite (envoi en arrière-plan) ; v8 : « Photos en cours d'envoi » quand les photos suivent le passage ; v9 : « aperçu » tant que seule la photo allégée est arrivée ; v10 : photo effacée au bout de 5 jours indiquée ; v11 : plus rapide (planning retéléchargé seulement s'il a changé), actualisée toutes les 30 secondes ; v12 : indique combien de téléphones ont reçu l'alerte d'une nouvelle demande ; v13 : mise à jour automatique sans recharger à la main ; v14 : page laissée ouverte la nuit remise au nouveau jour le matin, liens photo vérifiés, polices sans bloquer l'affichage ; v15 : demandes et rappels à faire modifiables (bouton Modifier, avec le script v20) ; v16 : onglet « Retours runners » (véhicules demandés vus par un runner, alerte avec bandeau, son et notification de l'ordinateur ; retiré si le runner annule), état de Slack (avec le script v21) ; v17 (appli v48) : demande sur un jour ou sur plusieurs jours (du … au …) -->
+<!-- Page bureau de l'appli Runners, v4 : liens des runners, demandes à n'importe quelle date, rappels des runners, passages du jour ; v4 : actualisation automatique, un passage peut clore plusieurs demandes ; v6 (suite de la v4, la v5 est la version pro à part) : envois passés dans l'adresse (GET) car certains appareils bloquaient les envois classiques ; v7 : un véhicule ajouté s'affiche tout de suite (envoi en arrière-plan) ; v8 : « Photos en cours d'envoi » quand les photos suivent le passage ; v9 : « aperçu » tant que seule la photo allégée est arrivée ; v10 : photo effacée au bout de 5 jours indiquée ; v11 : plus rapide (planning retéléchargé seulement s'il a changé), actualisée toutes les 30 secondes ; v12 : indique combien de téléphones ont reçu l'alerte d'une nouvelle demande ; v13 : mise à jour automatique sans recharger à la main ; v14 : page laissée ouverte la nuit remise au nouveau jour le matin, liens photo vérifiés, polices sans bloquer l'affichage ; v15 : demandes et rappels à faire modifiables (bouton Modifier, avec le script v20) ; v16 : onglet « Retours runners » (véhicules demandés vus par un runner, alerte avec bandeau, son et notification de l'ordinateur ; retiré si le runner annule), état de Slack (avec le script v21) ; v17 (appli v48) : demande sur un jour ou sur plusieurs jours (du … au …) ; v18 (appli v49) : « Date unique / Période », termes revus -->
 <link rel="icon" type="image/png" href="icon-192.png">
 <meta name="robots" content="noindex">
 <!-- v42 : polices chargées sans bloquer l'affichage (réseau faible : l'appli s'affiche tout de suite avec la police du téléphone) -->
@@ -268,11 +268,11 @@ function vDemandes(){
         <div class="field"><label for="dRunner">Runner</label><select id="dRunner"><option value="Tous">Tous</option>${runners.map(r=>r.prenom).concat(ed&&ed.runner!=='Tous'&&!runners.some(r=>r.prenom===ed.runner)?[ed.runner]:[]).map(p=>`<option>${esc(p)}</option>`).join('')}</select></div>
         <div class="field"><label for="dPoint">Point</label><select id="dPoint"><option value="">Non précisé</option>${POINTS.concat(ed&&ed.point&&!POINTS.includes(ed.point)?[ed.point]:[]).map(p=>`<option>${esc(p)}</option>`).join('')}</select></div>
       </div>
-      <div class="when" role="group" aria-label="Quand">
-        <div class="when-h"><span class="lbl">Quand</span><div class="seg" role="radiogroup" aria-label="Durée"><button type="button" role="radio" data-plage="0" class="${plage?'':'on'}" aria-checked="${!plage}">Un jour</button><button type="button" role="radio" data-plage="1" class="${plage?'on':''}" aria-checked="${plage}">Plusieurs jours</button></div></div>
+      <div class="when" role="group" aria-label="Planification">
+        <div class="when-h"><span class="lbl">Planification</span><div class="seg" role="radiogroup" aria-label="Type de planification"><button type="button" role="radio" data-plage="0" class="${plage?'':'on'}" aria-checked="${!plage}">Date unique</button><button type="button" role="radio" data-plage="1" class="${plage?'on':''}" aria-checked="${plage}">Période</button></div></div>
         <div class="two-f">
-          <div class="field"><label for="dDate">${plage?'Du':'Jour'}</label><input type="date" id="dDate" min="${TODAY}" max="${dayOffset(90)}" value="${TODAY}" required></div>
-          <div class="field ${plage?'':'hidden'}"><label for="dFin">Au (inclus)</label><input type="date" id="dFin" min="${TODAY}" max="${dayOffset(150)}"></div>
+          <div class="field"><label for="dDate">${plage?'Début':'Date'}</label><input type="date" id="dDate" min="${TODAY}" max="${dayOffset(90)}" value="${TODAY}" required></div>
+          <div class="field ${plage?'':'hidden'}"><label for="dFin">Fin (incluse)</label><input type="date" id="dFin" min="${TODAY}" max="${dayOffset(150)}"></div>
         </div>
         <div class="quick ${plage?'hidden':''}" role="group" aria-label="Raccourcis de date">${[["Aujourd'hui",0],['Demain',1],['Dans 1 semaine',7],['Dans 2 semaines',14]].map(([t,n])=>`<button type="button" data-quick="${dayOffset(n)}">${t}</button>`).join('')}</div>
         <div class="quick ${plage?'':'hidden'}" role="group" aria-label="Durée de la période">${[['2 jours',2],['3 jours',3],['1 semaine',7],['2 semaines',14]].map(([t,n])=>`<button type="button" data-duree="${n}">${t}</button>`).join('')}</div>
@@ -280,7 +280,7 @@ function vDemandes(){
       </div>
       <div class="field"><label for="dText">Demande au runner</label><textarea id="dText" placeholder="Exemple : faire le tour du véhicule et une photo du compteur." maxlength="200"></textarea></div>
       ${ed?'<div class="actions"><button type="submit" class="btn primary">Enregistrer</button><button type="button" class="btn" id="editCancel">Annuler</button></div>':'<button type="submit" class="btn primary">Ajouter</button>'}
-      <div class="meta">Le jour venu, le véhicule apparaît en haut de l'appli du runner, avec le bandeau « Demandé par le service parc ». Sur plusieurs jours, il y reste chaque jour jusqu'à ce qu'un runner l'ait vu.</div>
+      <div class="meta">Le jour venu, le véhicule apparaît en haut de l'appli du runner, avec le bandeau « Demandé par le service parc ». Sur une période, il y reste chaque jour jusqu'au passage d'un runner.</div>
     </form>
   </section>
   <section class="card" aria-labelledby="h-list">
@@ -374,9 +374,9 @@ function recapDate(){const r=$('#dRecap');if(!r)return;const a=$('#dDate').value
   document.querySelectorAll('[data-duree]').forEach(b=>b.classList.toggle('on',plage&&!!a&&!!f&&nbJours(a,f)===+b.dataset.duree));
   document.querySelectorAll('[data-quick]').forEach(b=>b.classList.toggle('on',!plage&&b.dataset.quick===a));
   if(!/^\d{4}-\d{2}-\d{2}$/.test(a)){r.textContent='';return}
-  if(!plage){r.innerHTML='Le runner le verra <b>'+esc(dayName(a).toLowerCase().replace(/^(\d)/,'le $1').replace(/^(lun|mar|mer|jeu|ven|sam|dim)/,'le $1'))+'</b>.';return}
-  if(!/^\d{4}-\d{2}-\d{2}$/.test(f)||f<=a){r.innerHTML='Choisissez le dernier jour, après le premier.';return}
-  const n=nbJours(a,f);r.innerHTML=n>61?'Période trop longue : 60 jours au plus.':'Le runner le verra <b>chaque jour du '+esc(dLabel(a))+' au '+esc(dLabel(f))+'</b> ('+n+' jours), jusqu\'à ce qu\'il soit vu.'}
+  if(!plage){r.innerHTML='Visible par le runner <b>'+esc(dayName(a).toLowerCase().replace(/^(lun|mar|mer|jeu|ven|sam|dim)/,'le $1'))+'</b>.';return}
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(f)||f<=a){r.innerHTML='Choisissez une date de fin postérieure à la date de début.';return}
+  const n=nbJours(a,f);r.innerHTML=n>61?'Période trop longue : 60 jours au plus.':'Visible par le runner <b>chaque jour du '+esc(dLabel(a))+' au '+esc(dLabel(f))+'</b> ('+n+' jours), jusqu\'à son passage.'}
 function plateHint(){const i=$('#dPlate');if(!i)return;const p=i.value.trim().toUpperCase();const f=fleet();const h=$('#dHint');
   if(norm(p).length<7){h.textContent='';h.className='hint';return}
   const hit=[...f.keys()].find(k=>norm(k)===norm(p));
@@ -415,7 +415,7 @@ document.addEventListener('submit',async e=>{
   if(f.id==='fDemande'){
     const plaque=$('#dPlate').value.trim().toUpperCase();if(norm(plaque).length<5){toast('Plaque incomplète.');return}
     const date=$('#dDate').value;if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||date<dayOffset(0)){toast('Choisissez un jour à partir d\'aujourd\'hui.');return}
-    let fin='';if(plage){fin=$('#dFin').value;if(!/^\d{4}-\d{2}-\d{2}$/.test(fin)||fin<date){toast('Choisissez le dernier jour, après le premier.');return}
+    let fin='';if(plage){fin=$('#dFin').value;if(!/^\d{4}-\d{2}-\d{2}$/.test(fin)||fin<date){toast('Choisissez une date de fin postérieure à la date de début.');return}
       if(nbJours(date,fin)>61){toast('Période trop longue : 60 jours au plus.');return}if(fin===date)fin=''}
     if(edit){
       /* v15 : modification d'une demande à faire (même identifiant, les téléphones la mettent à jour à l'actualisation suivante) */
@@ -432,7 +432,7 @@ document.addEventListener('submit',async e=>{
     const tmp='envoi-'+Date.now().toString(36);
     if(!DEMO&&D){D.demandes=(D.demandes||[]).concat([Object.assign({id:tmp,statut:'à faire'},champs)])}
     ['dPlate','dText'].forEach(id=>{if($('#'+id))$('#'+id).value=''});plateHint();render();
-    toast(fin?plaque+' ajouté du '+dLabel(date)+' au '+dLabel(fin)+'. Le runner le verra chaque jour jusqu\'à son passage.':plaque+' ajouté pour '+dayName(date).toLowerCase().replace(/\.$/,'')+'. Le runner le verra ce jour-là.');
+    toast(fin?plaque+' ajouté du '+dLabel(date)+' au '+dLabel(fin)+'. Visible chaque jour jusqu\'au passage d\'un runner.':plaque+' ajouté pour '+dayName(date).toLowerCase().replace(/\.$/,'')+'.');
     act('demande',champs).then(r=>{if(r.erreur&&D){D.demandes=(D.demandes||[]).filter(x=>x.id!==tmp);render();toast(plaque+' non enregistré : '+(r.erreur==='réseau'?'pas de réseau':r.erreur)+'. Réessayez.')}
       /* v12 : avec le script v15, nombre de téléphones prévenus par une alerte */
       else if(r.prevenus>0)toast(plaque+' : alerte envoyée sur '+r.prevenus+' téléphone'+(r.prevenus>1?'s':'')+'.')});
