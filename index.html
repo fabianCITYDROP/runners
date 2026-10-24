@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Runners</title>
-<!-- Appli Runners City Drop, v22 : version reliée au Google Sheet (voir config.js) ; gros caractères, 3 photos, aujourd'hui au milieu, recherche en haut, page des rappels ; v22 : corrections après test complet ; v23 : planning compact (grosses flottes), dates avec le mois, longs textes coupés sur les cartes ; v24 : rapide sur téléphone lent avec une grosse flotte (planning préparé par Google et rangé à part, écran redessiné seulement s'il change) ; v25 : message de fin de tournée simplifié (date en entier, plaques les unes sous les autres, sans heure ni prénom) ; v27 : une validation faite pendant la réception du planning part tout de suite après (avant : jusqu'à 5 min d'attente) ; envois sans photo passés par l'adresse (GET) car l'iPhone bloquait les envois classiques ; v28 : actualisation toutes les 30 s ; v29 : une validation part même si le runner ferme l'appli juste après ; v30 : signalement avec photos envoyé en deux temps (le passage d'abord, même appli fermée, les photos ensuite) ; attente plus longue et message « Google ne répond pas » au lieu d'un faux « Pas de réseau » ; v31 : photo allégée envoyée même appli fermée (la vraie suit à la réouverture) ; un envoi n'est plus jeté quand Google est seulement occupé ; annuler un passage déjà parti l'annule aussi chez Google ; v32 : un lien désactivé ne jette plus les envois ; annulation sûre même quand les envois arrivent dans le désordre ; photos gardées tant que le téléphone n'a pas confirmé les avoir rangées ; un véhicule envoyé ne réapparaît plus si l'appli est tuée juste après ; v33 : envois groupés en un seul appel (avec le script v12), moins de relectures chez Google, deux onglets ouverts sans perte, mémoire pleine sans blocage, une panne de Google n'affiche plus « Lien non reconnu » ; v34 : page bureau v10 (photos effacées au bout de 5 jours, avec le script v13) ; v35 : page bureau v11 plus rapide (avec le script v14) ; v36 : nouvelles demandes du bureau signalées (pastille « 1 nouvelle », bandeau, vibration, chiffre sur l'icône, notification si autorisée) ; v37 : vraies notifications des nouvelles demandes, même écran verrouillé (avec le script v15) ; v38 : les alertes gardent leur détail après une mise à jour de l'appli ; v39 : mise à jour automatique sans fermer l'appli ; v40 : gros bouton ACTIVER LES NOTIFICATIONS en haut de l'accueil tant qu'elles ne sont pas actives ; v41 : encadré des notifications plus sobre, mise à jour repérée chaque minute et appliquée après 30 s sans geste ; v42 (revue de nuit) : ouverture immédiate sur réseau faible (copie du téléphone après 3 s, polices sans bloquer), fiche et « Tout est OK » 2 à 3 fois plus rapides, double appui sans effet sur l'écran suivant, véhicule parti le matin et revenu le soir affiché pour son retour, pas de rechargement à minuit pendant une saisie, panne de Google signalée sur la ligne d'état au lieu d'un message toutes les 30 s ; v43 : horaires d'arrivée et de départ sur chaque demande dans la page « Rappels et demandes », plaque jamais coupée sur deux lignes ; v44 : toucher la notification ouvre directement « Rappels et demandes » avec la demande (son texte s'affiche tout de suite, le détail arrive de Google juste après) ; v45 : demandes sans point (ou sur un point non suivi) affichées dans « Autres demandes » au lieu d'être comptées sans apparaître ; demandes modifiables depuis la page bureau (avec le script v20) ; v47 : véhicules déjà repartis aujourd'hui rangés dans « Déjà partis » (repliés en bas du point, hors du compte « à voir », à part dans le récap) ; v48 : demandes du bureau sur plusieurs jours (visibles chaque jour de la période, « jusqu'au … ») ; v50 : « Terminer ma tournée » envoie tout seul le récapitulatif au service parc (Slack), même sans réseau (part dès qu'il revient) ; v51 : tirets de la plaque mis tout seuls dans la recherche -->
+<!-- Appli Runners City Drop, v22 : version reliée au Google Sheet (voir config.js) ; gros caractères, 3 photos, aujourd'hui au milieu, recherche en haut, page des rappels ; v22 : corrections après test complet ; v23 : planning compact (grosses flottes), dates avec le mois, longs textes coupés sur les cartes ; v24 : rapide sur téléphone lent avec une grosse flotte (planning préparé par Google et rangé à part, écran redessiné seulement s'il change) ; v25 : message de fin de tournée simplifié (date en entier, plaques les unes sous les autres, sans heure ni prénom) ; v27 : une validation faite pendant la réception du planning part tout de suite après (avant : jusqu'à 5 min d'attente) ; envois sans photo passés par l'adresse (GET) car l'iPhone bloquait les envois classiques ; v28 : actualisation toutes les 30 s ; v29 : une validation part même si le runner ferme l'appli juste après ; v30 : signalement avec photos envoyé en deux temps (le passage d'abord, même appli fermée, les photos ensuite) ; attente plus longue et message « Google ne répond pas » au lieu d'un faux « Pas de réseau » ; v31 : photo allégée envoyée même appli fermée (la vraie suit à la réouverture) ; un envoi n'est plus jeté quand Google est seulement occupé ; annuler un passage déjà parti l'annule aussi chez Google ; v32 : un lien désactivé ne jette plus les envois ; annulation sûre même quand les envois arrivent dans le désordre ; photos gardées tant que le téléphone n'a pas confirmé les avoir rangées ; un véhicule envoyé ne réapparaît plus si l'appli est tuée juste après ; v33 : envois groupés en un seul appel (avec le script v12), moins de relectures chez Google, deux onglets ouverts sans perte, mémoire pleine sans blocage, une panne de Google n'affiche plus « Lien non reconnu » ; v34 : page bureau v10 (photos effacées au bout de 5 jours, avec le script v13) ; v35 : page bureau v11 plus rapide (avec le script v14) ; v36 : nouvelles demandes du bureau signalées (pastille « 1 nouvelle », bandeau, vibration, chiffre sur l'icône, notification si autorisée) ; v37 : vraies notifications des nouvelles demandes, même écran verrouillé (avec le script v15) ; v38 : les alertes gardent leur détail après une mise à jour de l'appli ; v39 : mise à jour automatique sans fermer l'appli ; v40 : gros bouton ACTIVER LES NOTIFICATIONS en haut de l'accueil tant qu'elles ne sont pas actives ; v41 : encadré des notifications plus sobre, mise à jour repérée chaque minute et appliquée après 30 s sans geste ; v42 (revue de nuit) : ouverture immédiate sur réseau faible (copie du téléphone après 3 s, polices sans bloquer), fiche et « Tout est OK » 2 à 3 fois plus rapides, double appui sans effet sur l'écran suivant, véhicule parti le matin et revenu le soir affiché pour son retour, pas de rechargement à minuit pendant une saisie, panne de Google signalée sur la ligne d'état au lieu d'un message toutes les 30 s ; v43 : horaires d'arrivée et de départ sur chaque demande dans la page « Rappels et demandes », plaque jamais coupée sur deux lignes ; v44 : toucher la notification ouvre directement « Rappels et demandes » avec la demande (son texte s'affiche tout de suite, le détail arrive de Google juste après) ; v45 : demandes sans point (ou sur un point non suivi) affichées dans « Autres demandes » au lieu d'être comptées sans apparaître ; demandes modifiables depuis la page bureau (avec le script v20) ; v47 : véhicules déjà repartis aujourd'hui rangés dans « Déjà partis » (repliés en bas du point, hors du compte « à voir », à part dans le récap) ; v48 : demandes du bureau sur plusieurs jours (visibles chaque jour de la période, « jusqu'au … ») ; v50 : « Terminer ma tournée » envoie tout seul le récapitulatif au service parc (Slack), même sans réseau (part dès qu'il revient) ; v51 : tirets de la plaque mis tout seuls dans la recherche ; v52 : un mot possible sur « Tout est OK », liste des défauts revue, clair par défaut avec bouton mode sombre -->
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
@@ -16,6 +16,8 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <!-- v42 : polices chargées sans bloquer l'affichage (réseau faible : l'appli s'affiche tout de suite avec la police du téléphone) -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
+<!-- v52 : clair par défaut ; le runner peut passer en sombre (bouton à côté de son prénom), choix gardé sur le téléphone -->
+<script>try{document.documentElement.dataset.theme=localStorage.getItem('runners-theme')==='dark'?'dark':'light'}catch(e){document.documentElement.dataset.theme='light'}</script>
 <style>
 /* Une colonne, en-tête sombre, deux onglets fixés en bas, fiche véhicule plein écran. */
 :root{
@@ -58,6 +60,9 @@ header.top{background:var(--head);color:var(--head-fg);padding-top:calc(14px + e
 .brand b{font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--head-accent)}
 .who{border:1px solid rgba(255,255,255,.18);background:transparent;color:var(--head-fg);font-size:13px;font-weight:600;padding:5px 12px;border-radius:999px;min-height:32px}
 .who span{font-size:10px;opacity:.7}
+#whoSlot{display:inline-flex;align-items:center;gap:8px}
+.themebtn{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:999px;border:1px solid rgba(255,255,255,.18);background:transparent;color:var(--head-fg);padding:0}
+.themebtn svg{width:18px;height:18px}
 span.who{display:inline-flex;align-items:center}
 header h1{margin:0;font-size:20px;font-weight:700;letter-spacing:-.01em}
 .sub{font-size:13px;color:var(--head-muted)}
@@ -153,6 +158,7 @@ pre.report{margin:0;white-space:pre-wrap;word-break:break-word;font-family:var(-
 .back{display:inline-flex;align-items:center;gap:4px;min-height:44px;padding:0 8px 0 0;border:none;background:transparent;font-size:16px;font-weight:600;color:var(--accent)}
 input[type=search],textarea{width:100%;min-height:44px;padding:10px 12px;border-radius:10px;border:1px solid var(--line-strong);background:var(--surface)}
 textarea{min-height:80px;resize:vertical}
+textarea.oknote{min-height:52px;margin-bottom:10px}
 input.plateinput{font-family:var(--mono);text-transform:uppercase;font-size:22px;min-height:56px;letter-spacing:.04em}
 
 /* Choix du runner (démonstration) */
@@ -336,13 +342,16 @@ const SHORT={'Saint-Cloud':'St-Cloud','Paris-Centre':'Paris'};
 const FULL={'La Def':'La Défense','Aulnay':'Aulnay-sous-Bois'};
 /* Autres écritures possibles dans l'export, ramenées au nom du point */
 const ALIAS={'nanterre':'La Def','la def':'La Def','la defense':'La Def','paris la defense':'La Def','saint cloud':'Saint-Cloud','st cloud':'Saint-Cloud','aulnay':'Aulnay','aulnay sous bois':'Aulnay','paris centre':'Paris-Centre','coignieres':'Coignières'};
-const DAMAGES=['Impact pare-brise','Pare-brise fissuré','Pneu avant à changer','Pneu arrière à changer','Rétroviseur endommagé','Choc carrosserie','Feu cassé','Voyant au tableau de bord'];
+/* v52 (Fabian) : « Voyant moteur » au lieu de « Voyant au tableau de bord », « Choc carrosserie » retiré, AdBlue et lavage ajoutés. Plusieurs choix possibles. */
+const DAMAGES=['Impact pare-brise','Pare-brise fissuré','Pneu avant à changer','Pneu arrière à changer','Rétroviseur endommagé','Feu cassé','Voyant moteur','Voyant AdBlue','Lavage à prévoir'];
 const OTHER='Autre problème';
 const REFRESH_MS=30*1000; /* v28 : toutes les 30 s (avant 5 min) pour voir vite les demandes du bureau ; le planning n'est renvoyé que s'il a changé */
 
 /* ---------- Icônes ---------- */
 const svg=(d,w,sw)=>`<svg width="${w||22}" height="${w||22}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw||2}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
 const I={
+  moon:svg('<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>'),
+  sun:svg('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>'),
   todo:svg('<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/>'),
   done:svg('<path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/>'),
   tick:svg('<path d="M5 12l5 5L20 7"/>',20,3),
@@ -553,7 +562,7 @@ if(!DEMO)(async()=>{
   }})().catch(()=>{}).finally(()=>{QREADY=!!IDB.db;save();run()});
 let sheet=null;            /* {plaque, step:'fiche'|'probleme'} ou {search:true} */
 let showReport=false,picker=false,query='';
-let draft={types:[],photos:[],comment:''};
+let draft={types:[],photos:[],comment:'',note:''};
 let rdraft={date:'',note:'',other:false,point:''};
 function newRemind(p){const st=stayFor(p,DAY)||stayFor(p);return {date:'',note:'',other:false,point:st?st.point:(S.myPoints[0]||LOCAL[0])}}
 let DAY=TODAY;
@@ -1024,7 +1033,7 @@ function vDone(){
       <span class="okdot ${x.pending?'wait':x.pb.length?'ko':''}" aria-hidden="true">${x.pending?I.clock:x.pb.length?'!':I.tick}</span>
       <span class="row-b"><span class="plate">${esc(x.plaque)}</span><span class="model">${esc(v.modele||'')}</span>
       <span class="spec">${esc(x.point)} · ${esc(x.at.slice(11).replace(':','h'))}${x.pending?' · pas encore envoyé':''}</span>
-      ${x.pb.length?`<span class="mini dmg"><i></i>${esc(x.pb.join(', '))}</span>`:'<span class="mini ok"><i></i>Tout est OK</span>'}</span>
+      ${x.pb.length?`<span class="mini dmg"><i></i>${esc(x.pb.join(', '))}</span>`:`<span class="mini ok"><i></i>Tout est OK${x.comment?' · '+esc(x.comment):''}</span>`}</span>
       <span class="chev">${I.chev}</span>
     </button>`}).join('')}</div>
   ${today?'<button type="button" class="btn big primary" id="finish">Terminer ma tournée</button>':''}`
@@ -1090,7 +1099,8 @@ function vSheet(){
       ${ev.length?`<div class="card0"><div class="sec"><div class="mlabel">Déjà signalé dans le BO</div><ul class="evl">${ev.map(e=>`<li><span>${esc(e.label)}</span>${e.status?`<em>${esc(e.status)}</em>`:''}</li>`).join('')}</ul></div></div>`:''}
     </div>
     <div class="sh-foot pad">
-      ${now?`<button type="button" class="btn big primary" id="okBtn">${I.tick}Tout est OK</button>
+      ${now?`<textarea id="okNote" class="oknote" maxlength="300" placeholder="Un mot ? Lavage, déplacement… (facultatif)">${esc(draft.note)}</textarea>
+      <button type="button" class="btn big primary" id="okBtn">${I.tick}Tout est OK</button>
       <button type="button" class="btn big warn-o" id="pbBtn">Signaler un problème</button>
       <div class="duo"><button type="button" class="btn" id="absentBtn">Véhicule pas sur place</button>
       <button type="button" class="btn" id="remBtn">${I.clock}Me le rappeler</button></div>`:`<button type="button" class="btn wide" id="remBtn">${I.clock}Me le rappeler</button>`}
@@ -1105,7 +1115,7 @@ function report(){
   lines.push('*'+fullDay(TODAY)+'*');
   lines.push(plural(d.length,'véhicule')+' vu'+(d.length>1?'s':''));
   [...new Set(d.map(x=>x.point))].forEach(p=>{lines.push('');lines.push('*'+p+'*');
-    d.filter(x=>x.point===p).forEach(x=>lines.push(x.plaque+(x.pb.length?' · Problème : '+x.pb.join(', ')+(x.comment?' ('+x.comment+')':'')+(x.photo?' · photo':''):'')))});
+    d.filter(x=>x.point===p).forEach(x=>lines.push(x.plaque+(x.pb.length?' · Problème : '+x.pb.join(', ')+(x.comment?' ('+x.comment+')':'')+(x.photo?' · photo':''):x.comment?' · '+x.comment:'')))});
   const left=todo();if(left.length){lines.push('');lines.push('*Pas vus*');left.forEach(s=>lines.push(s.plaque))}
   const pa=partis();if(pa.length){lines.push('');lines.push('*Partis avant passage*');pa.forEach(s=>lines.push(s.plaque))}
   return lines.join('\n');
@@ -1128,8 +1138,10 @@ function render(bg){
   index();badge();
   const sc=S.screen==='done'?'done':'home';const l=dLabel(TODAY);
   const ws=$('#whoSlot');
-  if(DEMO){put(ws,`<button type="button" id="who" class="who" aria-haspopup="true" aria-expanded="${picker}">${I.user}${esc(S.who)} <span aria-hidden="true">&#9662;</span></button>`)}
-  else put(ws,S.who?`<span class="who">${I.user}${esc(S.who)}</span>`:'');
+  const sombre=document.documentElement.dataset.theme==='dark';
+  const tb=`<button type="button" id="themeBtn" class="themebtn" aria-label="${sombre?'Passer en mode clair':'Passer en mode sombre'}" title="${sombre?'Mode clair':'Mode sombre'}">${sombre?I.sun:I.moon}</button>`;
+  if(DEMO){put(ws,`<button type="button" id="who" class="who" aria-haspopup="true" aria-expanded="${picker}">${I.user}${esc(S.who)} <span aria-hidden="true">&#9662;</span></button>`+tb)}
+  else put(ws,(S.who?`<span class="who">${I.user}${esc(S.who)}</span>`:'')+tb);
   const dl=dLabel(DAY);let up='';if(!DEMO&&S.misAJour){const m=new Date(S.misAJour);if(!isNaN(m))up=' · planning de '+hm(m).replace(':','h').replace(/h00$/,'h')}
   $('#sub').textContent=dl.dow+' '+dl.num+up;
   /* La ligne d'état ne s'affiche qu'en cas de souci (pas de réseau, envois en attente, pas de planning) */
@@ -1161,7 +1173,7 @@ function render(bg){
   if(sheet){sh.innerHTML=sh._h=vSheet();sh.hidden=false;document.body.classList.add('noscroll')}else{sh.hidden=true;sh.innerHTML=sh._h='';document.body.classList.remove('noscroll')}
   ecranChange();
 }
-function openSheet(p){query='';MINI.clear(); /* v42 : aperçus des photos d'avant oubliés (gardés toute la journée avant) */const x=passageOf(p);draft=x&&x.by===S.who&&x.pb.length?{types:x.pb.slice(),photos:[],comment:x.comment}:{types:[],photos:[],comment:''};sheet={plaque:p,step:'fiche'};render();$('#sheet').scrollTop=0}
+function openSheet(p){query='';MINI.clear(); /* v42 : aperçus des photos d'avant oubliés (gardés toute la journée avant) */const x=passageOf(p);draft=x&&x.by===S.who&&x.pb.length?{types:x.pb.slice(),photos:[],comment:x.comment,note:''}:{types:[],photos:[],comment:'',note:x&&x.by===S.who&&!x.pb.length?x.comment||'':''}; /* v52 : le mot laissé sur « Tout est OK » est repris */sheet={plaque:p,step:'fiche'};render();$('#sheet').scrollTop=0}
 function closeSheet(msg){sheet=sheet&&!sheet.asks&&sheet.back==='asks'?{asks:true}:null;render();if(msg)toast(msg)}
 function set(patch){Object.assign(S,patch);save();render()}
 
@@ -1207,7 +1219,8 @@ document.addEventListener('click',e=>{
   if(b.id==='openRemind'){query='';sheet={search:true,remind:true,back:sheet&&sheet.asks?'asks':''};render();$('#q').focus();return}
   if(b.id==='closeSheet'){closeSheet();return}
   if(b.id==='backFiche'){sheet.step='fiche';render();return}
-  if(b.id==='okBtn'){const p=sheet.plaque;record(p,[],'','');closeSheet(p+' validé. Tout est OK.');return}
+  if(b.id==='themeBtn'){const t=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=t;try{localStorage.setItem('runners-theme',t)}catch(e){}render();return}
+  if(b.id==='okBtn'){const p=sheet.plaque;record(p,[],draft.note.trim(),'');closeSheet(p+' validé. Tout est OK.');return}
   if(b.id==='pbBtn'){sheet.step='probleme';render();$('#sheet').scrollTop=0;return}
   if(d.rmphoto){draft.photos.splice(+d.rmphoto,1);render();return}
   if(d.dmg){const i=draft.types.indexOf(d.dmg);i<0?draft.types.push(d.dmg):draft.types.splice(i,1);render();return}
@@ -1228,6 +1241,7 @@ function selectReport(){const r=document.createRange();r.selectNodeContents($('#
 document.addEventListener('input',e=>{
   if(e.target.id==='q'){tirets(e);query=e.target.value;const r=$('#qres');if(r)r.innerHTML=searchResults()}
   if(e.target.id==='comment')draft.comment=e.target.value;
+  if(e.target.id==='okNote')draft.note=e.target.value;
   if(e.target.id==='rNote')rdraft.note=e.target.value;
   if(e.target.id==='rDate'){rdraft.date=/^\d{4}-\d{2}-\d{2}$/.test(e.target.value)&&e.target.value>TODAY?e.target.value:'';const b=$('#saveRem');if(b)b.disabled=!rdraft.date}
 });
