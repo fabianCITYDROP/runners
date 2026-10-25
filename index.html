@@ -17,6 +17,7 @@
 <!-- v42 : polices chargées sans bloquer l'affichage (réseau faible : l'appli s'affiche tout de suite avec la police du téléphone) -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
 <!-- v52 : clair par défaut ; le runner peut passer en sombre (bouton à côté de son prénom), choix gardé sur le téléphone -->
+<!-- v54 (revue de nuit) : photos qui coincent ne bloquent plus les validations suivantes ; « Valider le problème » attend la photo en préparation ; bouton retour du téléphone ferme la fiche au lieu de quitter ; rappel supprimé pendant l envoi ne revient plus ; date mal écrite dans la feuille sans bloquer ; tournée finie après minuit comptée le bon jour -->
 <script>try{document.documentElement.dataset.theme=localStorage.getItem('runners-theme')==='dark'?'dark':'light'}catch(e){document.documentElement.dataset.theme='light'}</script>
 <style>
 /* Une colonne, en-tête sombre, deux onglets fixés en bas, fiche véhicule plein écran. */
@@ -577,7 +578,7 @@ const norm=s=>String(s||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
    Autres formats (anciennes plaques, étrangères) : laissés tels quels. */
 const fmtPlaque=s=>{const v=String(s||'').toUpperCase();const m=v.replace(/[^A-Z0-9]/g,'').match(/^([A-Z]{1,2})(\d{0,3})([A-Z]{0,2})$/);
   if(!m||(m[1].length<2&&m[2])||(m[2].length<3&&m[3]))return v;let r=m[1]+(m[2]?'-'+m[2]:'')+(m[3]?'-'+m[3]:'');if(/[-\s]$/.test(v)&&(r.length===2||r.length===6))r+='-';return r};
-function tirets(e){const el=e.target;if(/^delete/.test(e.inputType||'')||el.selectionStart!==el.value.length)return;const f=fmtPlaque(el.value);if(f!==el.value)el.value=f}
+function tirets(e){const el=e.target;if(e.isComposing)return;if(/^delete/.test(e.inputType||'')||el.selectionStart!==el.value.length)return;const f=fmtPlaque(el.value);if(f!==el.value)el.value=f}
 
 const fmtKm=n=>n==null?'':String(n).replace(/\B(?=(\d{3})+(?!\d))/g,' ')+' km';
 const plural=(n,w)=>n+' '+w+(n>1?'s':'');
@@ -773,7 +774,9 @@ function remind(p,date,note,point){
 }
 function unremind(id){
   if(DEMO){const d=S.demandes.find(x=>x.id===id);if(d)d.statut='supprimée'}
-  else{const i=S.queue.findIndex(q=>q.action==='rappel'&&q.id===id);if(i>=0)S.queue.splice(i,1);else S.queue.push({id,action:'rappel_suppr'})}
+  else{const i=S.queue.findIndex(q=>q.action==='rappel'&&q.id===id);const q=i>=0?S.queue[i]:null;
+    /* v54 : rappel peut-être déjà arrivé chez Google (en cours d'envoi) : on envoie aussi sa suppression */
+    if(q&&!q.inflight&&!q.tried&&!q.hid)S.queue.splice(i,1);else S.queue.push({id,action:'rappel_suppr'})}
   save();run();
 }
 
@@ -799,7 +802,7 @@ window.addEventListener('storage',e=>{
   if(added){render(true)}
 });
 function baseOf(q){const b=bodyOf(q);delete b.photos;b.photos_attendues=q.photos.length;return b}
-function bodyOf(q){const body={code:CODE};['action','id','cle','plaque','point','problemes','commentaire','photos','demande_id','date','consigne','cible','endpoint','fin','pasVus','partis'].forEach(k=>{if(q[k]!==undefined)body[k]=q[k]});return body}
+function bodyOf(q){const body={code:CODE};['action','id','cle','plaque','point','problemes','commentaire','photos','demande_id','date','consigne','cible','endpoint','fin','pasVus','partis','jour'].forEach(k=>{if(q[k]!==undefined)body[k]=q[k]});if(typeof body.commentaire==='string')body.commentaire=body.commentaire.slice(0,500);return body}
 /* Le runner ferme l'appli juste après avoir validé : on confie les envois sans photo au téléphone (keepalive),
    qui les termine même appli fermée. Ils restent aussi dans la file : au prochain envoi, Google reconnaît
    un doublon (même identifiant) et ne l'enregistre pas deux fois. */
@@ -853,6 +856,11 @@ function handled(q,r){
   else if(q.action==='rapport'&&!showReport)toast('Récapitulatif de la tournée envoyé au service parc.');
   return 'suite';
 }
+/* v54 : photos d'un passage déjà enregistré qui n'arrivent pas à partir : mises en bout de file pour ne pas bloquer
+   les validations suivantes (jamais abandonnées : elles repartent au prochain essai) */
+function photosPlusTard(q,passe){
+  if(S.queue.length>1&&S.queue[0]===q){S.queue.push(S.queue.shift());passe.add(q);save();return true}
+  return false}
 let retryN=0,lastSync=0;
 async function run(force){
   /* Appli restée ouverte après minuit : on repart sur le nouveau jour (rien n'est perdu, tout est enregistré) */
@@ -863,8 +871,9 @@ async function run(force){
   if(busy){again=true;if(force)again='force';return}
   busy=true;again=false;
   try{
+    const passe=new Set();
     while(S.queue.length){
-      const q=S.queue[0];
+      const q=S.queue[0];if(passe.has(q))break;
       /* Photos pas encore relues : on attend ; introuvables : le passage part quand même, sans elles */
       if(q.phN&&!(q.photos&&q.photos.length)){if(!q.phLost)break;delete q.phN;toast('Photos de '+q.plaque+' introuvables sur le téléphone : le signalement part sans elles.')}
       const hasPh=q.photos&&q.photos.length;
@@ -888,7 +897,9 @@ async function run(force){
         if(r0.erreur){drop(q);toast('Envoi refusé : '+r0.erreur);save();render(true);continue}
         q.base=true;save();continue}
       if(q.base)body.action='photos';
-      let r;q.inflight=q.tried=true;try{r=await call(null,body,hasPh?120000:60000)}catch(e){S.offline=true;break}finally{q.inflight=false}
+      let r;q.inflight=q.tried=true;try{r=await call(null,body,hasPh?120000:60000)}catch(e){if(q.base&&photosPlusTard(q,passe))continue;S.offline=true;break}finally{q.inflight=false}
+      /* v54 : le passage est déjà enregistré, seules ses photos coincent : la suite de la file part quand même */
+      if(q.base&&r&&r.erreur&&r.reessayer&&photosPlusTard(q,passe))continue;
       if(handled(q,r)==='stop')break;
       save();savePassages();render(true);
     }
@@ -914,7 +925,7 @@ async function run(force){
         if(!r.partiel&&!got.length)S.depuis='';
         if(r.vp===undefined)S.depuis='';S.vp=r.vp;
         savePassages();
-        S.demandes=(r.demandes||[]).map(d=>({id:d.id,date:String(d.date).slice(0,10),runner:d.runner,plaque:String(d.plaque||'').toUpperCase(),point:d.point,consigne:d.consigne,statut:d.statut,auteur:d.auteur||'Service parc',fin:/^\d{4}-\d{2}-\d{2}/.test(String(d.fin||''))?String(d.fin).slice(0,10):''}));
+        S.demandes=(r.demandes||[]).filter(d=>normDate(d.date)).map(d=>({id:d.id,date:normDate(d.date),runner:d.runner,plaque:String(d.plaque||'').toUpperCase(),point:d.point,consigne:d.consigne,statut:d.statut,auteur:d.auteur||'Service parc',fin:normDate(d.fin)||''}));
         S.who=r.runner.prenom;
         if(!S.ptsSet){S.myPoints=(r.runner.points||[]).map(city).filter(Boolean);S.ptsSet=true}
         const premiere=!S.synced;S.misAJour=r.misAJour||'';S.synced=nowStr();alertAsks(premiere);
@@ -1083,11 +1094,11 @@ function vSheet(){
       <div class="q">Quel problème ?</div>
       <div class="tiles">${DAMAGES.concat(OTHER).map(d=>`<button type="button" class="tile ${draft.types.includes(d)?'on':''}" data-dmg="${esc(d)}" aria-pressed="${draft.types.includes(d)}">${esc(d)}</button>`).join('')}</div>
       ${draft.photos.length?`<div class="photos">${draft.photos.map((u,i)=>`<div class="ph ${u.indexOf('data:')===0?'':'demo'}">${u.indexOf('data:')===0?`<img src="${u}" alt="Photo ${i+1}">`:'Photo '+(i+1)}<button type="button" class="ph-x" data-rmphoto="${i}" aria-label="Retirer la photo ${i+1}">×</button></div>`).join('')}</div>`:''}
-      ${draft.photos.length<MAX_PHOTOS?`<label class="btn wide photo" for="photo">${I.camera}<span id="photoName">${draft.photos.length?'Ajouter une photo ('+draft.photos.length+'/'+MAX_PHOTOS+')':'Prendre une photo (facultatif)'}</span></label>
+      ${draft.photos.length<MAX_PHOTOS?`<label class="btn wide photo" for="photo">${I.camera}<span id="photoName">${draft.pending?'Préparation de la photo…':draft.photos.length?'Ajouter une photo ('+draft.photos.length+'/'+MAX_PHOTOS+')':'Prendre une photo (facultatif)'}</span></label>
       <input type="file" id="photo" accept="image/*" capture="environment" hidden>`:`<div class="meta">${MAX_PHOTOS} photos maximum.</div>`}
-      <textarea id="comment" placeholder="Un mot à ajouter ? (facultatif)">${esc(draft.comment)}</textarea>
+      <textarea id="comment" maxlength="500" placeholder="Un mot à ajouter ? (facultatif)">${esc(draft.comment)}</textarea>
     </div>
-    <div class="sh-foot pad"><button type="button" class="btn big warn" id="saveDmg" ${draft.types.length?'':'disabled'}>Valider le problème</button></div>`;
+    <div class="sh-foot pad"><button type="button" class="btn big warn" id="saveDmg" ${draft.types.length&&!draft.pending&&!draft.wantSave?'':'disabled'}>${draft.pending?'Photo en préparation…':'Valider le problème'}</button></div>`;
   const ev=v.events||[];
   return top+`
     <div class="sh-body pad">
@@ -1134,7 +1145,8 @@ function sourceLine(){
 let lastCk='';
 /* Ne touche l'écran que si son contenu change : ouvrir une fiche ne redessine pas la liste derrière */
 function put(el,html){if(el._h!==html){el._h=html;el.innerHTML=html}}
-function render(bg){
+function render(bg){const r=render0(bg);syncHist();return r}
+function render0(bg){
   index();badge();
   const sc=S.screen==='done'?'done':'home';const l=dLabel(TODAY);
   const ws=$('#whoSlot');
@@ -1174,6 +1186,23 @@ function render(bg){
   ecranChange();
 }
 function openSheet(p){query='';MINI.clear(); /* v42 : aperçus des photos d'avant oubliés (gardés toute la journée avant) */const x=passageOf(p);draft=x&&x.by===S.who&&x.pb.length?{types:x.pb.slice(),photos:[],comment:x.comment,note:''}:{types:[],photos:[],comment:'',note:x&&x.by===S.who&&!x.pb.length?x.comment||'':''}; /* v52 : le mot laissé sur « Tout est OK » est repris */sheet={plaque:p,step:'fiche'};render();$('#sheet').scrollTop=0}
+function saveDraft(dr){const p=dr.wantSave||(sheet&&sheet.plaque);dr.wantSave='';if(!p||dr.saved||!dr.types.length)return;dr.saved=true;record(p,dr.types.slice(),dr.comment.trim(),dr.photos.slice());
+  if(sheet&&sheet.plaque===p&&draft===dr)closeSheet(p+' validé avec un problème. Le service parc sera prévenu.');else{render();toast(p+' validé avec un problème. Le service parc sera prévenu.')}}
+/* v54 : bouton retour du téléphone : ferme la fiche (ou revient d'une étape) au lieu de quitter l'appli */
+let retourEnCours=false;
+function syncHist(){try{const ouvert=!!(sheet||showReport),st=history.state&&history.state.fiche;
+  if(ouvert&&!st)history.pushState({fiche:1},'');else if(!ouvert&&st&&!retourEnCours){retourEnCours=true;history.back()}}catch(e){}}
+window.addEventListener('popstate',()=>{
+  if(retourEnCours){retourEnCours=false;syncHist();return}
+  if(sheet&&(sheet.step==='probleme'||sheet.step==='rappel')){sheet.step='fiche';render();return}
+  if(sheet){closeSheet();return}
+  if(showReport){showReport=false;render();return}
+});
+/* Page rechargée (minuit, mise à jour) alors qu'une fiche était ouverte : on efface la marque au lieu de revenir en arrière
+   (revenir en arrière rechargeait la page une deuxième fois) */
+try{if(history.state&&history.state.fiche)history.replaceState(null,'')}catch(e){}
+/* le navigateur ne remet pas la liste à une ancienne position quand la fiche se ferme */
+try{history.scrollRestoration='manual'}catch(e){}
 function closeSheet(msg){sheet=sheet&&!sheet.asks&&sheet.back==='asks'?{asks:true}:null;render();if(msg)toast(msg)}
 function set(patch){Object.assign(S,patch);save();render()}
 
@@ -1224,11 +1253,13 @@ document.addEventListener('click',e=>{
   if(b.id==='pbBtn'){sheet.step='probleme';render();$('#sheet').scrollTop=0;return}
   if(d.rmphoto){draft.photos.splice(+d.rmphoto,1);render();return}
   if(d.dmg){const i=draft.types.indexOf(d.dmg);i<0?draft.types.push(d.dmg):draft.types.splice(i,1);render();return}
-  if(b.id==='saveDmg'){const p=sheet.plaque;record(p,draft.types.slice(),draft.comment.trim(),draft.photos.slice());closeSheet(p+' validé avec un problème. Le service parc sera prévenu.');return}
+  if(b.id==='saveDmg'){if(draft.pending){draft.wantSave=sheet.plaque;b.disabled=true;b.textContent='Photo en préparation…';return}saveDraft(draft);return}
   if(b.id==='undo'){const p=sheet.plaque;undo(p);closeSheet('Validation annulée pour '+p+'.');return}
   /* v50 : « Terminer ma tournée » envoie le récapitulatif tout seul (file d'envoi : après les passages encore en attente,
      et même sans réseau). Le refaire le même jour met à jour le même message dans Slack. */
   if(b.id==='finish'){if(!DEMO){S.queue=S.queue.filter(q=>q.action!=='rapport'||q.inflight);const q={id:'t'+uid(),action:'rapport',pasVus:todo().map(x=>x.plaque).slice(0,150),partis:partis().map(x=>x.plaque).slice(0,150)};
+      /* v54 : jour donné seulement si toutes les validations sont déjà chez Google (sinon elles arrivent datées du jour d'envoi) */
+      if(!S.queue.some(x=>x.action==='passage'))q.jour=TODAY;
       S.queue.push(q);S.rapportId=q.id;save();setTimeout(()=>run(),0)}
     showReport=true;render();window.scrollTo(0,0);return}
   if(b.id==='closeReport'||b.id==='closeReport2'){showReport=false;render();return}
@@ -1247,8 +1278,10 @@ document.addEventListener('input',e=>{
 });
 document.addEventListener('change',e=>{
   if(e.target.id==='rDate'){rdraft.date=/^\d{4}-\d{2}-\d{2}$/.test(e.target.value)&&e.target.value>TODAY?e.target.value:'';const b=$('#saveRem');if(b)b.disabled=!rdraft.date}
-  if(e.target.id==='photo'){const f=e.target.files[0];if(!f)return;$('#photoName').textContent='Préparation de la photo…';
-    compress(f).then(u=>{if(draft.photos.length<MAX_PHOTOS)draft.photos.push(DEMO?'photo':u);render();if(!DEMO)miniOf(u).then(m=>{if(m)MINI.set(u,m)})},()=>{render();toast('Photo illisible. Réessayez.')})}
+  /* v54 : tant que la photo se prépare, « Valider le problème » attend (avant : validé sans la photo sur un téléphone lent) ;
+     la photo va toujours au véhicule pour lequel elle a été prise */
+  if(e.target.id==='photo'){const f=e.target.files[0];if(!f)return;$('#photoName').textContent='Préparation de la photo…';const dr=draft;dr.pending=(dr.pending||0)+1;render();
+    compress(f).then(u=>{dr.pending--;if(dr.photos.length<MAX_PHOTOS)dr.photos.push(DEMO?'photo':u);render();if(!DEMO)miniOf(u).then(m=>{if(m)MINI.set(u,m)});if(dr.wantSave&&!dr.pending)saveDraft(dr)},()=>{dr.pending--;render();toast('Photo illisible. Réessayez.');if(dr.wantSave&&!dr.pending)saveDraft(dr)})}
   if(e.target.id==='csvFile'){const f=e.target.files[0];if(!f)return;const r=new FileReader();
     r.onload=()=>{try{const t=parseCsv(String(r.result));const m=new Date(f.lastModified||Date.now());
       set({loc:t.loc,impros:t.impros,plan:null,sourceLabel:'Export du '+dLabel(iso(m)).num+' à '+hm(m).replace(':','h')});

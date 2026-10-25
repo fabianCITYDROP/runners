@@ -2,7 +2,7 @@
    Toujours la version en ligne d'abord ; la copie sert en cas de coupure, et depuis la v42 aussi quand le réseau
    est trop lent (plus de 3 s) : l'appli s'ouvre tout de suite et la version en ligne est rangée pour la fois suivante.
    Les données (Google) ne passent jamais par ici. */
-const CACHE = 'runners-v52';
+const CACHE = 'runners-v54';
 const ATTENTE_MAX = 3000; /* v42 : au-delà, on ouvre la copie du téléphone (avant : jusqu'à 30 s d'écran blanc sur un réseau faible) */
 const FICHIERS = ['./', './index.html', './bureau.html', './config.js', './manifest.json', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 self.addEventListener('install', e => {
@@ -19,8 +19,10 @@ self.addEventListener('fetch', e => {
   /* v39 : toujours demander au serveur si le fichier a changé, pour que la nouvelle version arrive tout de suite */
   let range = Promise.resolve();
   const reseau = fetch(e.request, { cache: 'no-cache' }).then(r => {
-    if (r.ok) { const copie = r.clone(); range = caches.open(CACHE).then(c => c.put(url.pathname, copie)).catch(() => {}); }
-    return r;
+    if (r.ok) { const copie = r.clone(); range = caches.open(CACHE).then(c => c.put(url.pathname, copie)).catch(() => {}); return r; }
+    if (r.type === 'opaqueredirect') return r;
+    /* v7 (appli v54) : page d'erreur de l'hébergeur (404, 503…) : la copie du téléphone d'abord */
+    const err = new Error('HTTP ' + r.status); err.rep = r; throw err;
   });
   /* v42 : la page elle-même retombe sur index.html, jamais un autre fichier (sinon un script recevrait de la page) */
   const copie = () => caches.match(url.pathname, { ignoreSearch: true }).then(r => r || (e.request.mode === 'navigate' ? caches.match('./index.html') : null)).catch(() => null);
@@ -28,7 +30,7 @@ self.addEventListener('fetch', e => {
     let fait = false; const fin = r => { if (!fait && r) { fait = true; clearTimeout(t); rendre(r); } };
     /* Réseau lent : la copie du téléphone si elle existe, sinon on continue d'attendre le réseau */
     const t = setTimeout(() => copie().then(fin), ATTENTE_MAX);
-    reseau.then(fin, () => copie().then(r => { fin(r); if (!fait) { fait = true; clearTimeout(t); rendre(Response.error()); } }));
+    reseau.then(fin, err => copie().then(r => { fin(r || (err && err.rep)); if (!fait) { fait = true; clearTimeout(t); rendre(Response.error()); } }));
   }));
   /* La version en ligne finit d'arriver et d'être rangée même si la copie a déjà été montrée */
   e.waitUntil(reseau.then(() => range, () => {}));
