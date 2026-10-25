@@ -18,6 +18,9 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
 <!-- v52 : clair par défaut ; le runner peut passer en sombre (bouton à côté de son prénom), choix gardé sur le téléphone -->
 <!-- v54 (revue de nuit) : photos qui coincent ne bloquent plus les validations suivantes ; « Valider le problème » attend la photo en préparation ; bouton retour du téléphone ferme la fiche au lieu de quitter ; rappel supprimé pendant l envoi ne revient plus ; date mal écrite dans la feuille sans bloquer ; tournée finie après minuit comptée le bon jour -->
+<!-- v55 : demande : encadré « Véhicule immobilisé » (heures et motif de l'impro du jour, jaune ou rouge si méca), seulement le créneau coché par le bureau -->
+<!-- v55 : « Caler pro » (déplacement prévu sans trajet) affiché « Caler pro prévu », sans heure inventée -->
+<!-- v55 : un véhicule validé sur un point le reste tant qu'aucune vraie location ne le ramène sur ce point après la validation (avant : « à voir » de nouveau dès que l'heure d'arrivée bougeait dans le planning, par exemple improductif raccourci ou plage CONNECTED) -->
 <script>try{document.documentElement.dataset.theme=localStorage.getItem('runners-theme')==='dark'?'dark':'light'}catch(e){document.documentElement.dataset.theme='light'}</script>
 <style>
 /* Une colonne, en-tête sombre, deux onglets fixés en bas, fiche véhicule plein écran. */
@@ -229,6 +232,11 @@ body{font-size:17px}
 .row .model,.model{font-size:17px}
 .spec{font-size:15.5px}
 .spec.periode{color:var(--accent);font-weight:600}
+.blq{display:flex;flex-direction:column;gap:3px;margin-top:10px;padding:10px 12px;border-radius:12px;background:var(--yellow-soft);color:var(--yellow)}
+.blq.meca{background:var(--red-soft);color:var(--red)}
+.blq small{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.blq small i{width:8px;height:8px;border-radius:50%;background:currentColor}
+.blq .l{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}.blq b{font-size:19px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--fg)}.blq .m{font-size:15px;font-weight:600}
 .sentline{margin:14px 0 10px;padding:14px 16px;border-radius:12px;font-weight:600;font-size:16px}
 .sentline.ok{background:var(--accent-soft);color:var(--accent)}
 .sentline.wait{background:var(--surface-2,#eee);color:var(--muted)}
@@ -442,7 +450,7 @@ function splitLine(line,sep){
 function readPlan(pl){
   if(pl&&pl.erreur)throw new Error(pl.erreur);
   if(pl&&pl.v===2)return {
-    loc:pl.loc.map(a=>({plaque:a[0],modele:a[1],categorie:a[2],km:a[3]===''||a[3]==null?null:+a[3],villeDep:a[4],dep:a[5],villeArr:a[6],arr:a[7],events:a[8]?parseEvents(a[8]):[]})),
+    loc:pl.loc.map(a=>({plaque:a[0],modele:a[1],categorie:a[2],km:a[3]===''||a[3]==null?null:+a[3],villeDep:a[4],dep:a[5],villeArr:a[6],arr:a[7],events:a[8]?parseEvents(a[8]):[],caler:!!a[9]})),
     impros:pl.impros.map(a=>({plaque:a[0],type:a[1],debut:a[2],fin:a[3],libelle:a[4]}))};
   return parseTable(pl.entetes,pl.lignes);
 }
@@ -594,14 +602,15 @@ function vehicle(p){return vehicles().get(p)||null}
 function allPoints(){const s=new Set();S.loc.forEach(r=>{s.add(r.villeDep);s.add(r.villeArr)});return [...s].filter(Boolean)}
 /* Séjour d'un véhicule sur un de mes points : de son arrivée à son départ suivant */
 const stays=memo(()=>{
+  lignesPar(); /* v55 : retient les vraies arrivées dès que le planning arrive */
   const by={};S.loc.forEach(r=>{(by[r.plaque]=by[r.plaque]||[]).push(r)});
   const out=[];
   Object.keys(by).forEach(p=>{
     const rs=by[p].slice().sort((a,b)=>a.dep.localeCompare(b.dep));
     rs.forEach((r,i)=>{
       if(S.myPoints.includes(r.villeArr)){const nx=rs[i+1];const leaves=nx&&nx.villeDep===r.villeArr?nx:null;
-        out.push({plaque:p,point:r.villeArr,from:r.arr,fromCity:r.villeDep,to:leaves?leaves.dep:'',toCity:leaves?leaves.villeArr:''})}
-      if(S.myPoints.includes(r.villeDep)){const pv=rs[i-1];if(!(pv&&pv.villeArr===r.villeDep))out.push({plaque:p,point:r.villeDep,from:'',fromCity:'',to:r.dep,toCity:r.villeArr})}
+        out.push({plaque:p,point:r.villeArr,from:r.arr,fromCity:r.villeDep,to:leaves?leaves.dep:'',toCity:leaves?leaves.villeArr:'',fromCaler:!!r.caler,toCaler:!!(leaves&&leaves.caler)})}
+      if(S.myPoints.includes(r.villeDep)){const pv=rs[i-1];if(!(pv&&pv.villeArr===r.villeDep))out.push({plaque:p,point:r.villeDep,from:'',fromCity:'',to:r.dep,toCity:r.villeArr,toCaler:!!r.caler})}
     });
   });
   return out;
@@ -633,6 +642,57 @@ function stayFor(p,day){return staysOn(day||TODAY).find(s=>s.plaque===p)||null}
 /* Un passage reste valable tant que le véhicule n'a pas quitté le point */
 function sid(s){return s.plaque+'|'+(s.from||'')+'|'+s.point}
 function keyFor(p){const s=stayFor(p);return s?sid(s):'manual|'+TODAY+'|'+p}
+/* v55 : l'heure d'arrivée d'un séjour peut changer sans nouvelle location (retour corrigé dans le BO, improductif
+   raccourci, plage CONNECTED, location finie sortie de l'export). Une validation sur ce point reste donc valable tant
+   qu'aucune vraie location (départ avant l'arrivée) ne l'y a ramené après elle. Les déplacements ajoutés pour placer
+   le véhicule (départ = arrivée) ne comptent pas, sauf s'il vient d'un autre point : c'est alors un nouveau séjour. */
+function vraie(r){return !!(r.dep&&r.arr&&r.dep<r.arr)}
+const lignesPar=memo(()=>{const by={};S.loc.forEach(r=>{(by[r.plaque]=by[r.plaque]||[]).push(r)});
+  Object.keys(by).forEach(p=>by[p].sort((a,b)=>a.dep.localeCompare(b.dep)));noteArrivees(by);return by});
+/* Vraies arrivées sur mes points gardées 15 jours : le BO efface les locations finies, celle rentrée hier disparaît de
+   l'export ; son retour doit quand même remettre le véhicule « à voir ». Le script v29 envoie aussi celles qu'il a
+   gardées (plan.arr), pour un téléphone qui n'a pas vu la location. Une arrivée encore à venir qui n'est plus au
+   planning (location annulée ou déplacée) est oubliée. */
+function noteArrivees(by){
+  const now=nowStr(),lim=iso(new Date(Date.now()-15*864e5)),fut=iso(new Date(Date.now()+3*864e5))+' 23:59',vu=new Map(),out=[];
+  const ajoute=(p,pt,dep,arr)=>{if(p&&pt&&arr&&arr>=lim&&arr<=fut&&S.myPoints.includes(pt))vu.set(p+'|'+pt+'|'+arr,{p,pt,dep:dep||arr,arr})};
+  Object.keys(by).forEach(p=>by[p].forEach(r=>{if(vraie(r))ajoute(p,r.villeArr,r.dep,r.arr)}));
+  const srv=S.plan&&Array.isArray(S.plan.arr)?S.plan.arr:[];
+  srv.forEach(a=>{if(Array.isArray(a)&&a[3]&&a[3]<=now)ajoute(String(a[0]),String(a[1]),String(a[2]||''),String(a[3]))});
+  (Array.isArray(S.arrivees)?S.arrivees:[]).forEach(a=>{if(!a||!a.arr)return;const k=a.p+'|'+a.pt+'|'+a.arr;if(a.arr>=lim&&a.arr<=now&&!vu.has(k))out.push(a)});
+  vu.forEach(a=>out.push(a));
+  out.sort((a,b)=>a.arr.localeCompare(b.arr));
+  S.arrivees=out.slice(-800);
+}
+/* Depuis quand une validation compte pour ce séjour : départ de la dernière vraie location qui l'a ramené sur ce point
+   (une validation pendant la location = véhicule rendu en avance), ou arrivée depuis un autre point ; '' si inconnu
+   (véhicule là depuis le début du planning : toute validation sur ce point compte) */
+function debutSejour(s){
+  const rs=lignesPar()[s.plaque]||[];let R='',T='';
+  if(s.from){let i=-1;rs.forEach((r,j)=>{if(r.villeArr===s.point&&r.arr===s.from)i=j});
+    while(i>=0){const r=rs[i];
+      if(vraie(r)){R=r.arr;T=r.dep;break}
+      /* déplacement ajouté depuis un autre point (heure inconnue) : compte dès son arrivée là-bas (véhicule ramené en avance) */
+      if(r.villeDep&&r.villeDep!==s.point){const pv=rs[i-1];R=r.arr;T=pv&&pv.arr&&pv.arr<r.arr?pv.arr:r.arr;break}
+      const pv=rs[i-1];if(pv&&pv.villeArr===s.point){i--;continue}
+      if(r.villeDep||pv)R=T=r.arr;break}}
+  const now=nowStr(),lim=s.to&&s.to<now?s.to:now;
+  (S.arrivees||[]).forEach(a=>{if(a.p===s.plaque&&a.pt===s.point&&a.arr<=lim&&a.arr>R){R=a.arr;T=a.dep||a.arr}});
+  /* Rien de connu : seules les validations des 15 derniers jours comptent (au-delà, une location effacée a pu passer) */
+  return T||iso(new Date(Date.now()-15*864e5))+' 00:00';
+}
+/* Validation qui vaut pour ce séjour : celle faite sur ce séjour (même avant l'heure d'arrivée prévue : le runner l'a vu),
+   sauf si une vraie location gardée en mémoire est partie puis revenue depuis ; sinon la dernière sur ce point depuis son
+   début réel, avant son départ */
+function vuSejour(s){
+  if(!s)return null;
+  const x=P[sid(s)];
+  if(x){const now=nowStr();if(!(S.arrivees||[]).some(a=>a.p===s.plaque&&a.pt===s.point&&a.arr<=now&&(a.dep||a.arr)>x.at&&(!s.to||a.arr<=s.to)))return x}
+  const l=PP[s.plaque+'|'+s.point];if(!l)return null;
+  const T=debutSejour(s);let b=null;
+  l.forEach(y=>{if(y.at&&y.at>=T&&(!s.to||y.at<=s.to)&&(!b||y.at>=b.at))b=y});
+  return b;
+}
 
 /* ---------- Passages ---------- */
 function fromQueue(q){return {at:q.at,by:q.by,plaque:q.plaque,point:q.point,cle:q.cle,pb:q.problemes||[],comment:q.commentaire||'',photo:!!(q.photos&&q.photos.length),demande:q.demande_id||'',id:q.id,pending:true}}
@@ -646,9 +706,9 @@ function allPassages(){
 }
 /* v42 : FAITES = demandes déjà closes par un passage, calculé une fois ici (avant : relu pour chaque demande à chaque
    affichage, plus d'une seconde de calcul sur un téléphone lent avec un mois de passages) */
-let P={},PL=[],FAITES=new Set();
-function index(){PL=allPassages();P={};FAITES=new Set();PL.forEach(x=>{P[x.cle]=x;if(x.demande)String(x.demande).split(',').forEach(id=>{if(id)FAITES.add(id)})})}
-function passageOf(p){return P[keyFor(p)]||null}
+let P={},PP={},PL=[],FAITES=new Set();
+function index(){PL=allPassages();P={};PP={};FAITES=new Set();PL.forEach(x=>{P[x.cle]=x;const kp=x.plaque+'|'+x.point;(PP[kp]=PP[kp]||[]).push(x);if(x.demande)String(x.demande).split(',').forEach(id=>{if(id)FAITES.add(id)})})}
+function passageOf(p){const s=stayFor(p);return s?vuSejour(s):P['manual|'+TODAY+'|'+p]||null}
 /* Demandes du bureau et rappels du runner, y compris ceux pas encore envoyés */
 function allAsks(){
   const list=S.demandes.map(d=>Object.assign({},d));
@@ -739,7 +799,7 @@ function myReminders(p){return allAsks().filter(d=>d.plaque===p&&d.auteur===S.wh
 /* v47 : un véhicule déjà reparti aujourd'hui (heure de départ passée) n'est plus « à voir » : il va dans « Déjà partis »,
    en bas de son point, et à part dans le récap (avant : il restait à chercher toute la journée, puis « Pas vu ») */
 function parti(s,day){return (day||TODAY)===TODAY&&!!s.to&&s.to<nowStr()}
-function restants(day){day=day||TODAY;const asks=new Set(openAsks(day).map(d=>d.plaque));return staysOn(day).filter(s=>!P[sid(s)]&&!asks.has(s.plaque))}
+function restants(day){day=day||TODAY;const asks=new Set(openAsks(day).map(d=>d.plaque));return staysOn(day).filter(s=>!vuSejour(s)&&!asks.has(s.plaque))}
 function todo(day){return restants(day).filter(s=>!parti(s,day))}
 function partis(day){return restants(day).filter(s=>parti(s,day))}
 function doneOn(day){return Object.values(P).filter(x=>x.at.slice(0,10)===day&&x.by===S.who).sort((a,b)=>b.at.localeCompare(a.at))}
@@ -754,7 +814,8 @@ function record(p,types,comment,photos){
   save();run();
 }
 function undo(p){
-  const k=keyFor(p);
+  /* v55 : la validation retrouvée peut porter l'ancienne clé du séjour : on annule celle-là */
+  const vx=passageOf(p),k=vx&&vx.cle?vx.cle:keyFor(p);
   if(DEMO){removeLast(S.passages,k,p)}
   else{let i=-1;S.queue.forEach((q,j)=>{if(q.action==='passage'&&q.cle===k)i=j});
     /* Déjà parti chez Google (en partie, ou à la fermeture de l'appli) : il faut aussi l'annuler là-bas */
@@ -925,7 +986,7 @@ async function run(force){
         if(!r.partiel&&!got.length)S.depuis='';
         if(r.vp===undefined)S.depuis='';S.vp=r.vp;
         savePassages();
-        S.demandes=(r.demandes||[]).filter(d=>normDate(d.date)).map(d=>({id:d.id,date:normDate(d.date),runner:d.runner,plaque:String(d.plaque||'').toUpperCase(),point:d.point,consigne:d.consigne,statut:d.statut,auteur:d.auteur||'Service parc',fin:normDate(d.fin)||''}));
+        S.demandes=(r.demandes||[]).filter(d=>normDate(d.date)).map(d=>({id:d.id,date:normDate(d.date),runner:d.runner,plaque:String(d.plaque||'').toUpperCase(),point:d.point,consigne:d.consigne,statut:d.statut,auteur:d.auteur||'Service parc',fin:normDate(d.fin)||'',creneau:String(d.creneau||'').slice(0,40)}));
         S.who=r.runner.prenom;
         if(!S.ptsSet){S.myPoints=(r.runner.points||[]).map(city).filter(Boolean);S.ptsSet=true}
         const premiere=!S.synced;S.misAJour=r.misAJour||'';S.synced=nowStr();alertAsks(premiere);
@@ -945,7 +1006,7 @@ async function run(force){
 /* ---------- Écrans ---------- */
 function improBlock(i){
   return i.type==='meca'
-    ?`<div class="imp meca"><div class="imp-h"><i></i>RDV méca prévu</div><div class="imp-p">${esc(when(i.debut))} <span>jusqu'à</span> ${esc(when(i.fin))}</div></div>`
+    ?`<div class="imp meca"><div class="imp-h"><i></i>Immobilisé garage</div><div class="imp-p">${esc(when(i.debut))} <span>jusqu'à</span> ${esc(when(i.fin))}</div></div>`
     :`<div class="imp normal"><div class="imp-h"><i></i>Improductif</div><div class="imp-t">${esc(i.libelle||'Sans intitulé')}</div><div class="imp-p">${esc(when(i.debut))} <span>jusqu'à</span> ${esc(when(i.fin))}</div></div>`;
 }
 function askBlock(d){
@@ -968,9 +1029,12 @@ function full(p){return FULL[p]||p}
 /* Arrivée et départ sur deux lignes, avec le jour */
 /* Court : « Auj. 11h », « Dem. 17h30 », « Hier 23h », « Sam. 17 9h » */
 function short(t){if(!t)return '';const [d,h]=t.split(' ');const n=dayDiff(d);const l=dLabel(d);const day=n===0?'Auj.':n===1?'Dem.':n===-1?'Hier':l.dow+' '+l.num+' à';const [hh,mm]=h.split(':');return day+' '+Number(hh)+'h'+(mm==='00'?'':mm)}
-function timesHtml(s){return `<span class="tgrid"><span><small>Arrivée</small><b>${s.from?esc(short(s.from)):'Sur place'}</b></span><span><small>Départ</small><b>${s.to?esc(short(s.to)):'Pas prévu'}</b></span></span>`}
+/* v55 : « Caler pro » (plage CALER_PRO du BO) : le véhicule doit changer de ville, par une gestion ou un convoyeur,
+   mais il n'y a pas encore de trajet : pas d'heure affichée, seulement « Caler pro prévu » */
+function calerCell(label,city){return `<div class="tc"><div class="mlabel">${label}</div><div class="tt">Caler pro</div><div class="td">Prévu ${esc(city)} · gestion ou convoyeur, pas encore de trajet</div></div>`}
+function timesHtml(s){return `<span class="tgrid"><span><small>Arrivée</small><b>${s.fromCaler?'Caler pro prévu':s.from?esc(short(s.from)):'Sur place'}</b></span><span><small>Départ</small><b>${s.toCaler?'Caler pro prévu':s.to?esc(short(s.to)):'Pas prévu'}</b></span></span>`}
 /* Texte d'improductif limité à 2 lignes sur la carte ; en entier dans la fiche */
-function improMini(i){return `<span class="bar ${i.type}"><i></i><span class="bl">${i.type==='meca'?'RDV méca':esc(i.libelle||'Improductif')}</span><span class="bd">${esc(short(i.debut))}${i.fin?' → '+esc(short(i.fin)):''}</span></span>`}
+function improMini(i){return `<span class="bar ${i.type}"><i></i><span class="bl">${i.type==='meca'?'Garage':esc(i.libelle||'Improductif')}</span><span class="bd">${esc(short(i.debut))}${i.fin?' → '+esc(short(i.fin)):''}</span></span>`}
 function dayChip(d,i,attr,sel){const l=dLabel(d);const n=dayDiff(d);const on=d===sel;return `<button type="button" class="day ${on?'on':''}" ${attr}="${d}" aria-pressed="${on}" aria-label="${esc(l.dow+' '+l.num)}"><small>${n===0?'Auj.':n===1?'Dem.':n===-1?'Hier':l.dow}</small><b>${Number(d.slice(8))}</b></button>`}
 function rowHtml(p,inner,cls){return `<button type="button" class="row ${cls||''}" data-open="${esc(p)}"><span class="row-b">${inner}</span><span class="chev">${I.chev}</span></button>`}
 function gate(title,text,btn){return `<div class="gate"><b>${title}</b><p>${text}</p>${btn||''}</div>`}
@@ -994,7 +1058,7 @@ function vHome(){
     <div class="pband"><h2>${esc(full(p))}</h2><div class="pband-n"><b>${l.length+pa.length}</b> ${now?'à voir':'sur place'}</div></div>
     ${pa.map(d=>askCard(d,staysOn(DAY).find(s=>s.plaque===d.plaque&&s.point===p))).join('')}
     ${l.length||pa.length?l.map(s=>{const v=vehicle(s.plaque)||{};const imp=s.impros[0];return rowHtml(s.plaque,`
-        <span class="row-t"><span class="plate">${esc(s.plaque)}</span>${past?(P[sid(s)]?'<span class="pill seen">Vu</span>':'<span class="pill unseen">Pas vu</span>'):s.leaves?`<span class="pill dep">${now?'Part aujourd\'hui':'Part ce jour-là'}</span>`:s.arrives?'<span class="pill arr">Arrive</span>':''}</span>
+        <span class="row-t"><span class="plate">${esc(s.plaque)}</span>${past?(vuSejour(s)?'<span class="pill seen">Vu</span>':'<span class="pill unseen">Pas vu</span>'):s.leaves?`<span class="pill dep">${s.toCaler?'Caler pro prévu':now?'Part aujourd\'hui':'Part ce jour-là'}</span>`:s.arrives?`<span class="pill arr">${s.fromCaler?'Caler pro prévu':'Arrive'}</span>`:''}</span>
         <span class="model">${esc(v.modele||'')}</span>
         ${timesHtml(s)}
         ${s.impros.map(improMini).join('')}`)}).join(''):`<div class="empty small"><b>${now?'Tout est fait sur ce point':'Aucun véhicule prévu sur ce point'}</b></div>`}
@@ -1006,13 +1070,27 @@ function vHome(){
 function askPt(d){return d.point||((stayFor(d.plaque,DAY)||{}).point)||''}
 function askPill(d){return d.date<TODAY?`<span class="pill late">Prévu ${esc(dayWord(d.date))}</span>`:d.auteur===S.who?'<span class="pill mine">Mon rappel</span>':'<span class="pill ask">Service parc</span>'}
 /* Rappel ou demande dans la liste du point, même si le planning ne met pas le véhicule ici */
-function askCard(d,s,ou){const v=vehicle(d.plaque)||{};return rowHtml(d.plaque,`<span class="row-t"><span class="plate">${esc(d.plaque)}</span>${askPill(d)}</span>${v.modele?`<span class="model">${esc(v.modele)}</span>`:''}<span class="consigne">${esc(d.consigne||'Passer voir ce véhicule.')}</span>${jusqua(d)?`<span class="spec periode">${esc(cap(jusqua(d)))}</span>`:''}${ou?`<span class="spec">${esc(ou)}</span>`:''}${s?timesHtml(s)+s.impros.map(improMini).join(''):'<span class="spec">Pas prévu ici dans le planning</span>'}`,'ask')}
+function askCard(d,s,ou){const v=vehicle(d.plaque)||{};return rowHtml(d.plaque,`<span class="row-t"><span class="plate">${esc(d.plaque)}</span>${askPill(d)}</span>${v.modele?`<span class="model">${esc(v.modele)}</span>`:''}<span class="consigne">${esc(d.consigne||'Passer voir ce véhicule.')}</span>${jusqua(d)?`<span class="spec periode">${esc(cap(jusqua(d)))}</span>`:''}${ou?`<span class="spec">${esc(ou)}</span>`:''}${s?timesHtml(s)+bloque(d,s)+improsDemande(d,s).map(improMini).join(''):'<span class="spec">Pas prévu ici dans le planning</span>'+bloque(d,s)}`,'ask')}
 function cap(t){return t.charAt(0).toUpperCase()+t.slice(1)}
+/* v55 (Fabian) : sur une demande, le créneau où le véhicule est bloqué dans le BO (improductif) le jour de la demande,
+   encadré « Véhicule immobilisé » (jaune pour un improductif, rouge pour la méca) puis une ligne par impro (heures, motif). Si le bureau a coché
+   un créneau (plusieurs impros ce jour-là), seulement celui-là : l'autre concerne quelqu'un d'autre. */
+function jourDemande(d){return d.date<TODAY?TODAY:d.date}
+function improsDuJour(d){const day=jourDemande(d);let l=improsFor(d.plaque,day+' 00:00',day+' 23:59');
+  const c=String(d.creneau||'').split('|');if(c[0]&&l.some(m=>m.debut===c[0]))l=l.filter(m=>m.debut===c[0]);return l}
+/* barres d'impro gardées seulement pour les autres jours (celles du jour sont dans l'encadré « Véhicule immobilisé ») */
+function improsDemande(d,s){const day=jourDemande(d),k=improsFor(d.plaque,day+' 00:00',day+' 23:59');return s.impros.filter(m=>!k.includes(m))}
+function bloque(d,s){
+  const day=jourDemande(d),l=improsDuJour(d);if(!l.length)return '';
+  const hh=t=>{const [x,h]=t.split(' ');const v=Number(h.slice(0,2))+'h'+(h.slice(3)==='00'?'':h.slice(3));return x===day?v:short(t)};
+  /* toujours les heures du BO (Fabian : « toute la journée » ne dit rien au runner, il doit savoir s'il passe avant ou après) */
+  const un=m=>hh(m.debut)+' → '+(m.fin?hh(m.fin):'fin non prévue');
+  return `<span class="blq${l.some(m=>m.type==='meca')?' meca':''}"><small><i></i>Véhicule immobilisé</small>${l.map(m=>`<span class="l"><b>${esc(un(m))}</b><span class="m">${esc(m.type==='meca'?'Garage':m.libelle||'Improductif')}</span></span>`).join('')}</span>`}
 function vAsks(){
   const now=DAY===TODAY,cur=openAsks(DAY),from=DAY>TODAY?DAY:TODAY;
   const later=allAsks().filter(d=>d.date>from).sort((a,b)=>a.date.localeCompare(b.date));
   /* v43 : horaires d'arrivée et de départ (planning Metabase) sur chaque demande, comme dans la liste des véhicules */
-  const row=d=>{const v=vehicle(d.plaque)||{};const st=stayFor(d.plaque,d.date<TODAY?TODAY:d.date);const pt=d.point||(st||{}).point||'';return rowHtml(d.plaque,`<span class="row-t"><span class="plate">${esc(d.plaque)}</span>${d.auteur===S.who?'<span class="pill mine">Mon rappel</span>':'<span class="pill ask">Service parc</span>'}${sheet&&sheet.nouv&&sheet.nouv.includes(d.id)?'<span class="pill new">Nouvelle</span>':''}</span>${v.modele?`<span class="model">${esc(v.modele)}</span>`:''}<span class="consigne">${esc(d.consigne||'Passer voir ce véhicule.')}</span><span class="spec">${esc((d.date<TODAY?'Prévu '+dayWord(d.date):jusqua(d)?cap(jusqua(d)):cap(dayWord(d.date)))+(pt?' · '+full(pt):''))}</span>${st?timesHtml(st)+st.impros.map(improMini).join(''):'<span class="spec">Pas dans le planning ce jour-là</span>'}`,'ask')};
+  const row=d=>{const v=vehicle(d.plaque)||{};const st=stayFor(d.plaque,d.date<TODAY?TODAY:d.date);const pt=d.point||(st||{}).point||'';return rowHtml(d.plaque,`<span class="row-t"><span class="plate">${esc(d.plaque)}</span>${d.auteur===S.who?'<span class="pill mine">Mon rappel</span>':'<span class="pill ask">Service parc</span>'}${sheet&&sheet.nouv&&sheet.nouv.includes(d.id)?'<span class="pill new">Nouvelle</span>':''}</span>${v.modele?`<span class="model">${esc(v.modele)}</span>`:''}<span class="consigne">${esc(d.consigne||'Passer voir ce véhicule.')}</span><span class="spec">${esc((d.date<TODAY?'Prévu '+dayWord(d.date):jusqua(d)?cap(jusqua(d)):cap(dayWord(d.date)))+(pt?' · '+full(pt):''))}</span>${st?timesHtml(st)+bloque(d,st)+improsDemande(d,st).map(improMini).join(''):'<span class="spec">Pas dans le planning ce jour-là</span>'+bloque(d,st)}`,'ask')};
   return `<div class="sh-top pad"><button type="button" class="back" id="closeSheet">${I.back}Retour</button></div>
   <div class="sh-body pad">
     <div class="q">Rappels et demandes</div>
@@ -1105,7 +1183,7 @@ function vSheet(){
       ${done?`<div class="status ${done.pb.length?'ko':'ok'}">${done.pb.length?'Problème signalé : '+esc(done.pb.join(', ')):'Validé'}${mine?'':' par '+esc(done.by)} · ${esc(when(done.at))}</div>`:''}
       ${now?'':`<div class="later">Vous regardez ${esc(leWord(DAY))}. La validation se fait le jour même.</div>`}
       ${asks.map(askBlock).join('')}
-      ${st?`<div class="card0 times">${timeCell('Arrivée',st.from,st.fromCity?'de '+st.fromCity:'','Déjà sur place')}<div class="sep" aria-hidden="true"></div>${timeCell('Départ',st.to,st.toCity?'vers '+st.toCity:'','Non planifié')}</div>`:''}
+      ${st?`<div class="card0 times">${st.fromCaler?calerCell('Arrivée','de '+st.fromCity):timeCell('Arrivée',st.from,st.fromCity?'de '+st.fromCity:'','Déjà sur place')}<div class="sep" aria-hidden="true"></div>${st.toCaler?calerCell('Départ','vers '+st.toCity):timeCell('Départ',st.to,st.toCity?'vers '+st.toCity:'','Non planifié')}</div>`:''}
       ${st?st.impros.map(improBlock).join(''):''}
       ${ev.length?`<div class="card0"><div class="sec"><div class="mlabel">Déjà signalé dans le BO</div><ul class="evl">${ev.map(e=>`<li><span>${esc(e.label)}</span>${e.status?`<em>${esc(e.status)}</em>`:''}</li>`).join('')}</ul></div></div>`:''}
     </div>

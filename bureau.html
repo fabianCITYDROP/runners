@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Runners · Bureau</title>
 <!-- Page bureau de l'appli Runners, v4 : liens des runners, demandes à n'importe quelle date, rappels des runners, passages du jour ; v4 : actualisation automatique, un passage peut clore plusieurs demandes ; v6 (suite de la v4, la v5 est la version pro à part) : envois passés dans l'adresse (GET) car certains appareils bloquaient les envois classiques ; v7 : un véhicule ajouté s'affiche tout de suite (envoi en arrière-plan) ; v8 : « Photos en cours d'envoi » quand les photos suivent le passage ; v9 : « aperçu » tant que seule la photo allégée est arrivée ; v10 : photo effacée au bout de 5 jours indiquée ; v11 : plus rapide (planning retéléchargé seulement s'il a changé), actualisée toutes les 30 secondes ; v12 : indique combien de téléphones ont reçu l'alerte d'une nouvelle demande ; v13 : mise à jour automatique sans recharger à la main ; v14 : page laissée ouverte la nuit remise au nouveau jour le matin, liens photo vérifiés, polices sans bloquer l'affichage ; v15 : demandes et rappels à faire modifiables (bouton Modifier, avec le script v20) ; v16 : onglet « Retours runners » (véhicules demandés vus par un runner, alerte avec bandeau, son et notification de l'ordinateur ; retiré si le runner annule), état de Slack (avec le script v21) ; v17 (appli v48) : demande sur un jour ou sur plusieurs jours (du … au …) ; v18 (appli v49) : « Date unique / Période », termes revus ; v19 (appli v51) : onglet « Planifier » (avant « Dernière minute »), tirets de la plaque mis tout seuls ; v20 (appli v53) : liste « à faire » seulement, la plus récente en haut, 7 jours au plus ; passages du jour rangés par runner ; v21 (appli v54) : panne passagère de Google sans perdre la page, ajout sans doublon si la réponse se perd, actualisation lente ne défait plus un ajout ou un retrait, modification annulée proprement si la demande est faite entre-temps, plaque à moitié tapée refusée, téléphone étroit -->
+<!-- v22 (25/10, Fabian) : demande : impro du BO affichée sous la plaque (créneau, ou « penser à bloquer le véhicule ») ; deux impros le même jour : on coche celle de la demande -->
+<!-- v22 (25/10, Fabian) : onglet « Passages » sur les 7 derniers jours, jour par jour puis runner par runner ; « Retours runners » de la semaine -->
 <link rel="icon" type="image/png" href="icon-192.png">
 <meta name="robots" content="noindex">
 <!-- v42 : polices chargées sans bloquer l'affichage (réseau faible : l'appli s'affiche tout de suite avec la police du téléphone) -->
@@ -15,7 +17,7 @@
   --bg:#F3F4F1; --surface:#FFFFFF; --surface-2:#F6F7F4; --line:#DCE0DA; --line-strong:#C9CFC8;
   --fg:#17201B; --muted:#5B655F; --head:#17201B; --head-fg:#FFFFFF; --head-muted:#C9D2CC; --head-accent:#B9D7C8;
   --accent:#1F5D45; --accent-fg:#FFFFFF; --accent-soft:#E3EEE8;
-  --info:#23477A; --info-soft:#E4EAF4; --warn:#8A3109; --warn-soft:#FBEADF;
+  --info:#23477A; --info-soft:#E4EAF4; --warn:#8A3109; --warn-soft:#FBEADF; --yellow:#7A5A00; --yellow-soft:#FBF0C8; --red:#A11D1D; --red-soft:#FBE3E1;
   --sans:'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --mono:'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Consolas, monospace;
 }
@@ -23,12 +25,12 @@
   --bg:#111613; --surface:#1A211D; --surface-2:#222A25; --line:#2E3832; --line-strong:#3F4B44;
   --fg:#E8ECE9; --muted:#9AA69F; --head:#0B0F0D; --head-muted:#A9B5AE; --head-accent:#8FC4AA;
   --accent:#4FA383; --accent-fg:#0B0F0D; --accent-soft:#1E3329;
-  --info:#9DB8E3; --info-soft:#1D2A3D; --warn:#F0A97C; --warn-soft:#3A2418; color-scheme:dark}}
+  --info:#9DB8E3; --info-soft:#1D2A3D; --warn:#F0A97C; --warn-soft:#3A2418; --yellow:#E8C95A; --yellow-soft:#352C10; --red:#F29A93; --red-soft:#3D1C1A; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#111613; --surface:#1A211D; --surface-2:#222A25; --line:#2E3832; --line-strong:#3F4B44;
   --fg:#E8ECE9; --muted:#9AA69F; --head:#0B0F0D; --head-muted:#A9B5AE; --head-accent:#8FC4AA;
   --accent:#4FA383; --accent-fg:#0B0F0D; --accent-soft:#1E3329;
-  --info:#9DB8E3; --info-soft:#1D2A3D; --warn:#F0A97C; --warn-soft:#3A2418; color-scheme:dark}
+  --info:#9DB8E3; --info-soft:#1D2A3D; --warn:#F0A97C; --warn-soft:#3A2418; --yellow:#E8C95A; --yellow-soft:#352C10; --red:#F29A93; --red-soft:#3D1C1A; color-scheme:dark}
 *{box-sizing:border-box}
 html,body{margin:0}
 body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:15px;-webkit-font-smoothing:antialiased;font-feature-settings:"tnum" 1}
@@ -65,6 +67,21 @@ textarea{min-height:72px;resize:vertical}
 input.plate{font-family:var(--mono);text-transform:uppercase;font-size:17px;letter-spacing:.03em}
 .hint{font-size:13px;color:var(--muted);min-height:18px}
 .hint.ok{color:var(--accent)}
+.bo{margin-top:10px;border:1px solid var(--line);border-radius:12px;background:var(--surface);overflow:hidden}
+.bo-h{display:flex;gap:12px;align-items:center;padding:12px 14px}
+.bo-i{flex:none;display:grid;place-items:center;width:36px;height:36px;border-radius:9px}
+.bo-i svg{width:20px;height:20px}
+.bo.ok .bo-i{background:var(--yellow-soft);color:var(--yellow)}.bo.ok.meca .bo-i{background:var(--red-soft);color:var(--red)}
+.bo.warn{border-color:var(--warn)}.bo.warn .bo-h{background:var(--warn-soft)}.bo.warn .bo-i{background:var(--warn);color:var(--warn-soft)}
+.bo-t{font-size:14.5px;font-weight:700;color:var(--fg)}.bo.warn .bo-t{color:var(--warn)}
+.bo-s{font-size:13px;color:var(--muted);margin-top:1px}.bo.warn .bo-s{color:var(--warn)}
+.bo-r{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;align-items:center;width:100%;padding:11px 14px;border:0;border-top:1px solid var(--line);background:none;font:inherit;text-align:left;color:var(--fg)}
+button.bo-r{cursor:pointer}button.bo-r:hover{background:var(--surface-2)}
+.bo-r .bo-o{grid-row:span 2;width:18px;height:18px;border-radius:50%;border:2px solid var(--line-strong)}
+.bo-r.on{background:var(--accent-soft)}.bo-r.on .bo-o{border:5px solid var(--accent)}
+.bo-r .bo-hh{font-size:15px;font-weight:700;font-variant-numeric:tabular-nums}
+.bo-r .bo-m{font-size:13px;color:var(--muted)}
+.bo-r.seul{grid-template-columns:1fr}
 .quick{display:flex;flex-wrap:wrap;gap:6px}
 .quick button{min-height:36px;padding:0 12px;border-radius:999px;border:1px solid var(--line-strong);background:var(--surface);font-size:13px;font-weight:600}
 .quick button.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
@@ -103,6 +120,7 @@ input.plate{font-family:var(--mono);text-transform:uppercase;font-size:17px;lett
 .alertb{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 16px;padding:12px 16px;border-radius:12px;background:var(--accent);color:var(--accent-fg);font-weight:600}
 .alertb .btn{background:var(--accent-fg);color:var(--accent);border-color:var(--accent-fg)}
 .cnt.hot{background:var(--warn)!important;color:#fff!important}
+.jours{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}.jours .btn.on{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
 .retours-top{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
 .slackerr{padding:8px 10px;border-radius:8px;background:var(--warn-soft);color:var(--warn);font-size:13px}
 .li.ko .meta{color:var(--fg)}
@@ -185,7 +203,7 @@ const ENVOIS=new Map(),MODIFS=new Map();let viderForm='',DERNIER_ECHEC=null;
 /* v16 : retours déjà vus sur cet ordinateur (null = jamais ouvert ici : rien d'ancien n'est annoncé) */
 let VUS=null;try{const x=localStorage.getItem('bureau-retours-vus');if(x)VUS=new Set(JSON.parse(x))}catch(e){}
 const ANNONCES=new Set();
-function nouveaux(){const l=retours();if(!VUS){VUS=new Set(l.map(r=>r.k));sauverVus()}return l.filter(r=>!VUS.has(r.k))}
+function nouveaux(){const l=retours().filter(r=>String(r.x.horodatage).slice(0,10)===TODAY);if(!VUS){VUS=new Set(l.map(r=>r.k));sauverVus()}return l.filter(r=>!VUS.has(r.k))}
 function sauverVus(){try{localStorage.setItem('bureau-retours-vus',JSON.stringify([...VUS].slice(-400)))}catch(e){}}
 function marquerVus(){if(!VUS)VUS=new Set();retours().forEach(r=>VUS.add(r.k));sauverVus()}
 function bip(){try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return;const c=new A(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=880;g.gain.setValueAtTime(.12,c.currentTime);g.gain.exponentialRampToValueAtTime(.001,c.currentTime+.5);o.start();o.stop(c.currentTime+.5)}catch(e){}}
@@ -247,11 +265,17 @@ async function load(){
      le prénom et les points cochés d'un runner en cours d'ajout) */
   loading=true;if(!D)render();
   let change=true,frais=false;const seq=load.seq=(load.seq||0)+1;
-  try{const r=await call(Object.assign({bureau:CODE,action:'donnees'},D&&D.planning&&D.misAJour?{version:D.misAJour}:{}));
+  /* v22 (Fabian) : passages des 7 derniers jours ; la semaine entière est relue toutes les 5 minutes, sinon seulement
+     aujourd'hui (actualisation légère toutes les 30 s), ajouté aux jours d'avant déjà reçus */
+  const semaine=!D||!load.semaine||Date.now()-load.semaine>5*60e3||load.jour!==TODAY,depuis=semaine?dayOffset(-6):TODAY;
+  try{const r=await call(Object.assign({bureau:CODE,action:'donnees',depuis},D&&D.planning&&D.misAJour?{version:D.misAJour}:{}));
     /* v21 : une réponse plus ancienne qu'un chargement lancé après elle est ignorée (elle effaçait un ajout ou un retrait) */
     if(seq!==load.seq)return false;
     /* v21 : seul un code faux renvoie à l'écran du code ; une panne passagère de Google garde la page et l'actualisation */
     if(r.erreur&&(r.erreur==='Code bureau incorrect'||!D)){err=r.erreur;D=null}else if(r.erreur){toast('Google ne répond pas : données non actualisées.')}else{err='';
+    r.passages=r.passages||[];
+    if(r.depuis===depuis&&depuis===TODAY&&D&&D.passages)r.passages=D.passages.filter(x=>String(x.horodatage).slice(0,10)<TODAY).concat(r.passages);
+    else if(r.depuis===depuis){load.semaine=Date.now();load.jour=TODAY}
     r.demandes=r.demandes||[];ENVOIS.forEach((x,id)=>{if(!r.demandes.some(d=>d.id===id))r.demandes.push(x)});
     MODIFS.forEach((c,id)=>{const d=r.demandes.find(y=>y.id===id);if(d)Object.assign(d,c)});frais=true;load.ids=new Set((r.demandes||[]).map(d=>d.id).filter(id=>!ENVOIS.has(id)));
     const sig=JSON.stringify([r.runners,r.demandes,r.passages,r.misAJour,r.importErreur]);change=!D||!!r.planning||sig!==load.sig;load.sig=sig;
@@ -284,7 +308,7 @@ function vDemandes(){
   <section class="card" aria-labelledby="h-new">
     <div class="card-h"><h2 id="h-new">${ed?'Modifier '+esc(ed.plaque):'Ajouter un véhicule à voir'}</h2></div>
     <form class="card-b" id="fDemande" autocomplete="off">
-      <div class="field"><label for="dPlate">Plaque</label><input id="dPlate" class="plate" maxlength="20" list="fleet" placeholder="AA-123-CD" required><datalist id="fleet">${plates.map(p=>`<option value="${esc(p)}">`).join('')}</datalist><div class="hint" id="dHint"></div></div>
+      <div class="field"><label for="dPlate">Plaque</label><input id="dPlate" class="plate" maxlength="20" list="fleet" placeholder="AA-123-CD" required><datalist id="fleet">${plates.map(p=>`<option value="${esc(p)}">`).join('')}</datalist><div class="hint" id="dHint"></div><div id="dImpro" class="bo" hidden></div></div>
       <div class="two-f">
         <div class="field"><label for="dRunner">Runner</label><select id="dRunner"><option value="Tous">Tous</option>${runners.map(r=>r.prenom).concat(ed&&ed.runner!=='Tous'&&!runners.some(r=>r.prenom===ed.runner)?[ed.runner]:[]).map(p=>`<option>${esc(p)}</option>`).join('')}</select></div>
         <div class="field"><label for="dPoint">Point</label><select id="dPoint"><option value="">Non précisé</option>${POINTS.concat(ed&&ed.point&&!POINTS.includes(ed.point)?[ed.point]:[]).map(p=>`<option>${esc(p)}</option>`).join('')}</select></div>
@@ -315,7 +339,7 @@ function vDemandes(){
 /* Un passage (onglets Passages du jour et Retours runners) ; avant = ligne affichée au-dessus (la demande d'origine) */
 function passageRow(x,avant){return `<div class="li ${x.resultat==='Problème'?'ko':''}"><div class="li-b">
     <div><span class="plate-t">${esc(x.plaque)}</span> <span class="pill ${x.resultat==='Problème'?'ko':'ok'}">${x.resultat==='Problème'?'Problème':'OK'}</span></div>
-    <div class="meta">${esc(String(x.horodatage).slice(11,16).replace(':','h'))} · ${esc(x.runner)} · ${esc(x.point||'Hors liste')}</div>${avant||''}
+    <div class="meta">${(j=>j&&j!==TODAY&&!jourAffiche?esc(dayName(j))+' · ':'')(String(x.horodatage).slice(0,10))}${esc(String(x.horodatage).slice(11,16).replace(':','h'))} · ${esc(x.runner)} · ${esc(x.point||'Hors liste')}</div>${avant||''}
     ${x.problemes?`<div><b>${esc(x.problemes)}</b>${x.commentaire?' · '+esc(x.commentaire):''}</div>`:x.commentaire?`<div>${esc(x.commentaire)}</div>`:''}
     ${x.photo&&/^https:\/\//.test(x.photo)?`<div>${String(x.photo).split(' ').filter(l=>/^https:\/\/[^\s"'<>]+$/.test(l)).map((l,i)=>`<a href="${esc(l)}" target="_blank" rel="noopener">Photo ${i+1}</a>`).join(' · ')}${x.apercu?' <span class="meta">(aperçu, la photo nette arrive)</span>':''}</div>`:x.photo==='en attente'?'<div class="meta">Photos en cours d\'envoi</div>':x.photo==='photo effacée'?'<div class="meta">Photo effacée (gardée 5 jours)</div>':x.photo?'<div class="meta">Photo jointe (démonstration)</div>':''}
   </div></div>`}
@@ -336,17 +360,24 @@ function vRetours(){
   const l=retours();marquerVus();
   const sl=DEMO?'':D.slack?(/ ok$/.test(D.slack)?'<span class="meta">Slack : relié, chaque demande est suivie dans son fil.</span>':/^pas encore/.test(D.slack)?'<span class="meta">Slack : réglé, en attente de la première demande.</span>':`<div class="slackerr">Slack ne répond pas comme prévu (${esc(D.slack.replace(/^\S+ /,''))}). Vérifiez slack_jeton et slack_canal dans l'onglet Réglages de la feuille, et que le bot est invité dans le canal.</div>`):'';
   return `<section class="card"><div class="card-h"><h2>Retours des runners</h2><span class="meta">${l.length}</span></div>
-    <div class="card-b retours-top">${'Notification' in window&&Notification.permission==='default'&&!DEMO?'<button type="button" class="btn small" id="notifOn">Être prévenu sur cet ordinateur</button>':''}<span class="meta">Les véhicules demandés ici, une fois vus par un runner aujourd'hui. Si le runner annule, le retour disparaît.</span>${sl}</div>
+    <div class="card-b retours-top">${'Notification' in window&&Notification.permission==='default'&&!DEMO?'<button type="button" class="btn small" id="notifOn">Être prévenu sur cet ordinateur</button>':''}<span class="meta">Les véhicules demandés ici, une fois vus par un runner (7 derniers jours). Si le runner annule, le retour disparaît.</span>${sl}</div>
     ${l.length?l.map(r=>passageRow(r.x,`<div>Demande ${esc(periodeName(r.d).replace(/^./,c=>c.toLowerCase()))}${r.d.consigne?' : '+esc(r.d.consigne):''}</div>`)).join(''):'<div class="empty">Aucun retour pour l\'instant.</div>'}
   </section>`;
 }
+/* v22 (Fabian) : 7 derniers jours, jour par jour (aujourd'hui par défaut), puis une zone par runner */
+let JOUR_P='',jourAffiche=false;
 function vPassages(){
-  const list=D.passages.slice().sort((a,b)=>String(b.horodatage).localeCompare(String(a.horodatage)));
-  /* v20 (Fabian) : une zone par runner, avec les véhicules sur lesquels il est passé aujourd'hui (le plus récent en haut) */
+  const jours=[];for(let i=0;i<7;i++)jours.push(dayOffset(-i));
+  if(!jours.includes(JOUR_P))JOUR_P=TODAY;
+  const parJour=j=>D.passages.filter(x=>String(x.horodatage).slice(0,10)===j);
+  const list=parJour(JOUR_P).sort((a,b)=>String(b.horodatage).localeCompare(String(a.horodatage)));
+  const chips=`<div class="jours" role="group" aria-label="Jour">${jours.slice().reverse().map(j=>{const n=parJour(j).length;return `<button type="button" class="btn small${j===JOUR_P?' on':''}" data-jourp="${j}" aria-pressed="${j===JOUR_P}">${esc(j===TODAY?"Aujourd'hui":dLabel(j))}${n?' <b>'+n+'</b>':''}</button>`}).join('')}</div>`;
   const qui=[...new Set(list.map(x=>x.runner))].sort((a,b)=>String(a).localeCompare(String(b),'fr'));
-  if(!qui.length)return '<section class="card"><div class="card-h"><h2>Passages du jour</h2></div><div class="empty">Aucun passage pour l\'instant.</div></section>';
-  return `<div class="grid two">${qui.map(r=>{const l=list.filter(x=>x.runner===r),pb=l.filter(x=>x.resultat==='Problème').length;
+  if(!qui.length)return chips+`<section class="card"><div class="card-h"><h2>Passages ${JOUR_P===TODAY?'du jour':'du '+esc(dLabel(JOUR_P))}</h2></div><div class="empty">${JOUR_P===TODAY?'Aucun passage pour l\'instant.':'Aucun passage ce jour-là.'}</div></section>`;
+  jourAffiche=true;
+  const html=chips+`<div class="grid two">${qui.map(r=>{const l=list.filter(x=>x.runner===r),pb=l.filter(x=>x.resultat==='Problème').length;
     return `<section class="card"><div class="card-h"><h2>${esc(r)}</h2><span class="meta">${l.length} véhicule${l.length>1?'s':''}${pb?' · '+pb+' problème'+(pb>1?'s':''):''}</span></div>${l.map(x=>passageRow(x)).join('')}</section>`}).join('')}</div>`;
+  jourAffiche=false;return html;
 }
 function vRunners(){
   const qrOk=typeof window.qrcode==='function';
@@ -381,10 +412,10 @@ function render(){
   $('#mode').textContent=DEMO?'Démonstration · données fictives':D&&D.misAJour?(()=>{const d=new Date(D.misAJour);return isNaN(d)?'':'Planning du '+d.getDate()+' '+MON[d.getMonth()]+' à '+String(d.getHours()).padStart(2,'0')+'h'+String(d.getMinutes()).padStart(2,'0')+(D.importErreur?' · Dernier export refusé ('+D.importErreur+')':'')})():'';
   $('#sub').textContent=dLabel(TODAY).replace(/^./,c=>c.toUpperCase());
   if(!D){$('#tabs').innerHTML='';$('#view').innerHTML=loading?'<div class="empty">Chargement…</div>':gate();return}
-  const nb={demandes:D.demandes.filter(d=>d.statut==='à faire'&&!RETRAIT.has(d.id)).length,passages:D.passages.length,runners:D.runners.filter(r=>String(r.actif).toLowerCase()!=='non').length};
+  const nb={demandes:D.demandes.filter(d=>d.statut==='à faire'&&!RETRAIT.has(d.id)).length,passages:D.passages.filter(x=>String(x.horodatage).slice(0,10)===TODAY).length,runners:D.runners.filter(r=>String(r.actif).toLowerCase()!=='non').length};
   if(tab==='retours'&&!DEMO)marquerVus();
   const nv=DEMO?0:nouveaux().length;nb.retours=nv||retours().length;
-  $('#tabs').innerHTML=[['demandes','Planifier'],['retours','Retours runners'],['passages','Passages du jour'],['runners','Runners et liens']].map(([k,t])=>`<button type="button" class="${k===tab?'on':''}" data-tab="${k}" aria-current="${k===tab?'page':'false'}">${t}<span class="cnt${k==='retours'&&nv?' hot':''}">${nb[k]}</span></button>`).join('')+(DEMO?'':'<button type="button" id="reload">Actualiser</button>');
+  $('#tabs').innerHTML=[['demandes','Planifier'],['retours','Retours runners'],['passages','Passages'],['runners','Runners et liens']].map(([k,t])=>`<button type="button" class="${k===tab?'on':''}" data-tab="${k}" aria-current="${k===tab?'page':'false'}">${t}<span class="cnt${k==='retours'&&nv?' hot':''}">${nb[k]}</span></button>`).join('')+(DEMO?'':'<button type="button" id="reload">Actualiser</button>');
   const keep=['dPlate','dRunner','dDate','dFin','dPoint','dText','rName'].map(id=>[id,$('#'+id)&&$('#'+id).value]);
   const coches=[...document.querySelectorAll('input[name=rPt]:checked')].map(x=>x.value);
   $('#view').innerHTML=bandeauRetours()+(tab==='passages'?vPassages():tab==='retours'?vRetours():tab==='runners'?vRunners():vDemandes());
@@ -396,14 +427,46 @@ function render(){
   if(tab==='demandes'){plateHint();recapDate()}
 }
 /* v17 : résumé de la période choisie, sous les dates */
-function recapDate(){const r=$('#dRecap');if(!r)return;const a=$('#dDate').value,f=$('#dFin')?$('#dFin').value:'';
+function recapDate(){improHint();const r=$('#dRecap');if(!r)return;const a=$('#dDate').value,f=$('#dFin')?$('#dFin').value:'';
   document.querySelectorAll('[data-duree]').forEach(b=>b.classList.toggle('on',plage&&!!a&&!!f&&nbJours(a,f)===+b.dataset.duree));
   document.querySelectorAll('[data-quick]').forEach(b=>b.classList.toggle('on',!plage&&b.dataset.quick===a));
   if(!/^\d{4}-\d{2}-\d{2}$/.test(a)){r.textContent='';return}
   if(!plage){r.innerHTML='Visible par le runner <b>'+esc(dayName(a).toLowerCase().replace(/^(lun|mar|mer|jeu|ven|sam|dim)/,'le $1'))+'</b>.';return}
   if(!/^\d{4}-\d{2}-\d{2}$/.test(f)||f<=a){r.innerHTML='Choisissez une date de fin postérieure à la date de début.';return}
   const n=nbJours(a,f);r.innerHTML=n>61?'Période trop longue : 60 jours au plus.':'Visible par le runner <b>chaque jour du '+esc(dLabel(a))+' au '+esc(dLabel(f))+'</b> ('+n+' jours), jusqu\'à son passage.'}
-function plateHint(){const i=$('#dPlate');if(!i)return;const p=i.value.trim().toUpperCase();const f=fleet();const h=$('#dHint');
+/* v22 (Fabian) : improductif posé dans le BO sur ce véhicule pour le jour choisi (le runner voit ce créneau sur son
+   téléphone) ; sans improductif, rappel de bloquer le véhicule pour qu'il ne parte pas en location avant le passage */
+function improsBO(p){
+  const out=[];if(!D||!D.planning)return out;
+  const h=(D.planning.entetes||[]).map(x=>String(x).trim().toLowerCase()),ix=k=>h.indexOf(k);
+  const ip=h.findIndex(x=>['plaque','immat','immatriculation'].includes(x)),it=ix('impro_type'),id=ix('impro_debut'),fi=ix('impro_fin'),il=ix('impro_libelle');
+  if(ip<0||it<0||id<0)return out;
+  (D.planning.lignes||[]).forEach(r=>{if(norm(String(r[ip]||''))!==norm(p))return;const ty=String(r[it]||'').toLowerCase();if(!ty||ty==='non'||ty==='0')return;
+    const deb=String(r[id]||'').replace('T',' ').slice(0,16),fin=fi<0?'':String(r[fi]||'').replace('T',' ').slice(0,16);
+    if(/^\d{4}-\d{2}-\d{2}/.test(deb))out.push({meca:/m[ée]ca/.test(ty),deb,fin,lib:il<0?'':String(r[il]||'')})});
+  return out.sort((a,b)=>a.deb.localeCompare(b.deb));
+}
+function heureBO(t,ref){if(!t)return '';const d=t.slice(0,10),h=t.slice(11,16);const hh=h?Number(h.slice(0,2))+'h'+(h.slice(3)==='00'?'':h.slice(3)):'';return (d===ref?'':dayName(d).toLowerCase()+' ')+hh}
+const ICO_BLOQUE='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
+const ICO_ALERTE='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>';
+let CRENEAU='';
+function creneauTxt(m,j){return heureBO(m.deb,j)+(m.fin?' → '+heureBO(m.fin,j):'')}
+function improHint(){
+  const x=$('#dImpro'),i=$('#dPlate');if(!x||!i)return;const p=i.value.trim().toUpperCase();
+  if(norm(p).length<7||!fleet().size){x.hidden=true;x.innerHTML='';CRENEAU='';return}
+  const a=($('#dDate')&&$('#dDate').value)||TODAY,f=($('#dFin')&&$('#dFin').value)||a;
+  const l=improsBO(p).filter(m=>m.deb.slice(0,10)<=f&&(!m.fin||m.fin.slice(0,10)>=a));
+  if(!l.some(m=>m.deb+'|'+m.fin===CRENEAU))CRENEAU='';
+  x.hidden=false;x.setAttribute('role','status');
+  const motif=m=>m.meca?'Garage':m.lib||'Improductif';
+  const ligne=(m,choix)=>{const j=m.deb.slice(0,10),k=m.deb+'|'+m.fin,on=k===CRENEAU;
+    const inner=(choix?'<span class="bo-o" aria-hidden="true"></span>':'')+'<span class="bo-hh">'+esc(creneauTxt(m,j))+'</span><span class="bo-m">'+esc(cap1(dayName(j))+' · '+motif(m))+'</span>';
+    return choix?'<button type="button" class="bo-r'+(on?' on':'')+'" data-creneau="'+esc(k)+'" aria-pressed="'+on+'">'+inner+'</button>':'<div class="bo-r seul">'+inner+'</div>'};
+  if(l.length){x.className='bo ok'+(l.some(m=>m.meca)?' meca':'');x.innerHTML='<div class="bo-h"><span class="bo-i">'+ICO_BLOQUE+'</span><div><div class="bo-t">'+(l.length>1?l.length+' impros dans le BO ce jour-là':'Véhicule immobilisé dans le BO')+'</div><div class="bo-s">'+(l.length>1?'Choisissez celle de la demande, sinon le runner voit tous les créneaux.':'Le runner verra ce créneau sur sa demande.')+'</div></div></div>'+l.map(m=>ligne(m,l.length>1)).join('')}
+  else{CRENEAU='';x.className='bo warn';x.innerHTML='<div class="bo-h"><span class="bo-i">'+ICO_ALERTE+'</span><div><div class="bo-t">Pas d\'impro dans le BO ce jour-là</div><div class="bo-s">Penser à bloquer le véhicule dans le BO, sinon il peut partir en location avant le passage du runner.</div></div></div>'}
+}
+function cap1(t){return t?t.charAt(0).toUpperCase()+t.slice(1):t}
+function plateHint(){improHint();const i=$('#dPlate');if(!i)return;const p=i.value.trim().toUpperCase();const f=fleet();const h=$('#dHint');
   if(norm(p).length<7){h.textContent='';h.className='hint';return}
   const hit=[...f.keys()].find(k=>norm(k)===norm(p));
   h.textContent=hit?(f.get(hit)||'Véhicule de la flotte'):'Pas dans l\'export : la demande sera créée quand même.';h.className='hint'+(hit?' ok':'')}
@@ -412,6 +475,8 @@ function plateHint(){const i=$('#dPlate');if(!i)return;const p=i.value.trim().to
 document.addEventListener('click',async e=>{
   const b=e.target.closest('button');if(!b)return;const d=b.dataset;
   if(d.tab){tab=d.tab;confirmCode='';render();return}
+  if(d.jourp){JOUR_P=d.jourp;render();return}
+  if(d.creneau!=null){CRENEAU=CRENEAU===d.creneau?'':d.creneau;improHint();return}
   if(d.quick){$('#dDate').value=d.quick;recapDate();return}
   if(d.plage!=null){plage=d.plage==='1';if(plage){const a=$('#dDate').value||TODAY,f=$('#dFin');if(f&&(!f.value||f.value<=a))f.value=plusJours(a,2)}render();return}
   if(d.duree){const a=$('#dDate').value||TODAY;$('#dDate').value=a;$('#dFin').value=plusJours(a,+d.duree-1);recapDate();return}
@@ -421,9 +486,9 @@ document.addEventListener('click',async e=>{
   if(d.edit){const x=D.demandes.find(y=>y.id===d.edit);if(!x)return;edit=x.id;
     ['dPlate','dText'].forEach(id=>{if($('#'+id))$('#'+id).value=''});render();
     plage=finDe(x)>x.date&&finDe(x)>TODAY;render();
-    $('#dPlate').value=x.plaque||'';$('#dRunner').value=x.runner||'Tous';$('#dDate').value=x.date<TODAY?TODAY:x.date;$('#dFin').value=plage?finDe(x):'';$('#dPoint').value=x.point||'';$('#dText').value=x.consigne||'';if($('#dDate').max&&x.date>$('#dDate').max)$('#dDate').removeAttribute('max');plateHint();recapDate();
+    $('#dPlate').value=x.plaque||'';$('#dRunner').value=x.runner||'Tous';$('#dDate').value=x.date<TODAY?TODAY:x.date;$('#dFin').value=plage?finDe(x):'';$('#dPoint').value=x.point||'';$('#dText').value=x.consigne||'';CRENEAU=String(x.creneau||'');if($('#dDate').max&&x.date>$('#dDate').max)$('#dDate').removeAttribute('max');plateHint();recapDate();
     try{$('#fDemande').scrollIntoView({block:'start',behavior:'smooth'})}catch(err){}$('#dText').focus();return}
-  if(b.id==='editCancel'){edit='';plage=false;['dPlate','dText','dFin'].forEach(id=>{if($('#'+id))$('#'+id).value=''});$('#dPoint').value='';$('#dRunner').value='Tous';$('#dDate').value=TODAY;render();return}
+  if(b.id==='editCancel'){edit='';plage=false;CRENEAU='';['dPlate','dText','dFin'].forEach(id=>{if($('#'+id))$('#'+id).value=''});$('#dPoint').value='';$('#dRunner').value='Tous';$('#dDate').value=TODAY;render();return}
   /* v17 : retrait affiché tout de suite (avant : on attendait Google, Slack puis le rechargement complet, 5 à 10 s) ;
      si Google refuse ou s'il n'y a pas de réseau, la demande revient dans la liste avec un message */
   if(d.del){const id=d.del,x=D.demandes.find(y=>y.id===id);if(id===edit){edit='';plage=false;viderForm='retirée'}RETRAIT.add(id);render();toast((x?x.plaque+' : ':'')+'demande retirée.');
@@ -446,7 +511,7 @@ document.addEventListener('submit',async e=>{
       if(nbJours(date,fin)>61){toast('Période trop longue : 60 jours au plus.');return}if(fin===date)fin=''}
     if(edit){
       /* v15 : modification d'une demande à faire (même identifiant, les téléphones la mettent à jour à l'actualisation suivante) */
-      const id=edit,champs={id,plaque,runner:$('#dRunner').value,date,fin,point:$('#dPoint').value,consigne:$('#dText').value.trim()};
+      const id=edit,champs={id,plaque,runner:$('#dRunner').value,date,fin,point:$('#dPoint').value,consigne:$('#dText').value.trim(),creneau:CRENEAU};
       const x=D.demandes.find(y=>y.id===id),avant=x?Object.assign({},x):null;
       if(x&&!DEMO){Object.assign(x,champs);MODIFS.set(id,champs)}
       edit='';plage=false;['dPlate','dText','dFin'].forEach(id=>{if($('#'+id))$('#'+id).value=''});$('#dPoint').value='';$('#dRunner').value='Tous';$('#dDate').value=TODAY;plateHint();render();
@@ -455,7 +520,7 @@ document.addEventListener('submit',async e=>{
         else if(r.prevenus>0)toast(plaque+' : alerte envoyée sur '+r.prevenus+' téléphone'+(r.prevenus>1?'s':'')+'.')});
       return}
     /* Affiché tout de suite, envoyé à Google en arrière-plan (Google met 2 à 4 secondes à répondre) */
-    const champs={plaque,runner:$('#dRunner').value,date,fin,point:$('#dPoint').value,consigne:$('#dText').value.trim(),auteur:'Service parc'};
+    const champs={plaque,runner:$('#dRunner').value,date,fin,point:$('#dPoint').value,consigne:$('#dText').value.trim(),auteur:'Service parc',creneau:CRENEAU};
     /* v21 : identifiant choisi ici et envoyé à Google : si la réponse se perd, un nouvel envoi ne crée pas de doublon */
     const cleDem=JSON.stringify(champs);
     const tmp=DERNIER_ECHEC&&DERNIER_ECHEC.cle===cleDem?DERNIER_ECHEC.id:'D'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);champs.id=tmp;
