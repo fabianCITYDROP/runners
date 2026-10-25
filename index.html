@@ -18,6 +18,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
 <!-- v52 : clair par défaut ; le runner peut passer en sombre (bouton à côté de son prénom), choix gardé sur le téléphone -->
 <!-- v54 (revue de nuit) : photos qui coincent ne bloquent plus les validations suivantes ; « Valider le problème » attend la photo en préparation ; bouton retour du téléphone ferme la fiche au lieu de quitter ; rappel supprimé pendant l envoi ne revient plus ; date mal écrite dans la feuille sans bloquer ; tournée finie après minuit comptée le bon jour -->
+<!-- v56 (Fabian) : « Tout est OK » : « Fait sur place ? » à cocher (6 choix + une case de texte) au lieu de « Un mot ? » ; petits téléphones : boutons du bas resserrés -->
 <!-- v55 : demande : encadré « Véhicule immobilisé » (heures et motif de l'impro du jour, jaune ou rouge si méca), seulement le créneau coché par le bureau -->
 <!-- v55 : « Caler pro » (déplacement prévu sans trajet) affiché « Caler pro prévu », sans heure inventée -->
 <!-- v55 : un véhicule validé sur un point le reste tant qu'aucune vraie location ne le ramène sur ce point après la validation (avant : « à voir » de nouveau dès que l'heure d'arrivée bougeait dans le planning, par exemple improductif raccourci ou plage CONNECTED) -->
@@ -163,6 +164,12 @@ pre.report{margin:0;white-space:pre-wrap;word-break:break-word;font-family:var(-
 input[type=search],textarea{width:100%;min-height:44px;padding:10px 12px;border-radius:10px;border:1px solid var(--line-strong);background:var(--surface)}
 textarea{min-height:80px;resize:vertical}
 textarea.oknote{min-height:52px;margin-bottom:10px}
+.faits{margin-bottom:10px}.faits .mlabel{margin-bottom:6px;font-size:12px}
+.chips{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.chip{min-height:40px;padding:6px 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-radius:10px;border:2px solid var(--line-strong);background:var(--surface);font-size:14px;font-weight:600;line-height:1.15;color:var(--fg);text-align:left}
+.chip.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.chip.on::before{content:'✓ '}
+.faits textarea.oknote{margin:10px 0 0}
 input.plateinput{font-family:var(--mono);text-transform:uppercase;font-size:22px;min-height:56px;letter-spacing:.04em}
 
 /* Choix du runner (démonstration) */
@@ -308,6 +315,11 @@ nav.tabs button{font-size:16px}
 .duo{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .duo .btn{min-height:56px;padding:6px 8px;font-size:15.5px;line-height:1.2;display:flex;align-items:center;justify-content:center;gap:6px;text-align:center}
 @media (max-height:700px){.sh-foot{position:static}}
+/* v56 : petits téléphones (Android ~740 px de haut) : boutons du bas un peu plus bas pour que l'arrivée et le départ restent visibles */
+@media (max-height:800px){.sh-foot{gap:8px;padding-top:8px}.sh-foot .btn.big{min-height:52px}.sh-foot .duo .btn{min-height:46px;font-size:14.5px}.chip{min-height:36px;font-size:13.5px;padding:6px 8px;letter-spacing:-.01em}.faits{margin-bottom:6px}.faits .mlabel{margin-bottom:4px}.faits textarea.oknote{min-height:44px;height:44px;margin-top:8px}}
+/* v56 : écrans très bas (iPhone SE/8) : tout encore un peu resserré pour que « Tout est OK » reste visible */
+@media (max-height:700px){.chips{gap:5px}.chip{min-height:34px}.sh-foot{gap:6px}.sh-foot .btn.big{min-height:48px}.sh-foot .duo .btn{min-height:42px}.faits textarea.oknote{min-height:40px;height:40px;padding:8px 12px;margin-top:6px}}
+@media (max-width:340px){.chip{font-size:12.5px;padding:6px 6px;letter-spacing:-.02em}}
 /* v23 : longs textes coupés sur les cartes (la fiche montre tout) */
 .bar{flex-wrap:wrap;align-items:flex-start}.bar i{margin-top:7px}
 .bar .bl{font-weight:600;flex:1;min-width:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
@@ -571,7 +583,11 @@ if(!DEMO)(async()=>{
   }})().catch(()=>{}).finally(()=>{QREADY=!!IDB.db;save();run()});
 let sheet=null;            /* {plaque, step:'fiche'|'probleme'} ou {search:true} */
 let showReport=false,picker=false,query='';
-let draft={types:[],photos:[],comment:'',note:''};
+let draft={types:[],photos:[],comment:'',note:'',faits:[]};
+/* v56 (Fabian) : sur « Tout est OK », ce qui a été fait sur place se coche (plusieurs choix) au lieu de s'écrire ;
+   choix tirés des messages des runners dans #parc-runner, rangés par paires ; le texte envoyé reste le même champ (« AdBlue effacé, Rétro changé »), Slack et bureau inchangés */
+const FAITS=['AdBlue effacé','Voyant effacé','Rétro changé','Ampoule changée','Essuie-glace changé','RDS vérifiée'];
+function faitsDe(t){const l=String(t||'').split(/\s*,\s*/).filter(Boolean),f=l.filter(x=>FAITS.includes(x));return {faits:f,note:l.filter(x=>!FAITS.includes(x)).join(', ')}}
 let rdraft={date:'',note:'',other:false,point:''};
 function newRemind(p){const st=stayFor(p,DAY)||stayFor(p);return {date:'',note:'',other:false,point:st?st.point:(S.myPoints[0]||LOCAL[0])}}
 let DAY=TODAY;
@@ -1188,7 +1204,8 @@ function vSheet(){
       ${ev.length?`<div class="card0"><div class="sec"><div class="mlabel">Déjà signalé dans le BO</div><ul class="evl">${ev.map(e=>`<li><span>${esc(e.label)}</span>${e.status?`<em>${esc(e.status)}</em>`:''}</li>`).join('')}</ul></div></div>`:''}
     </div>
     <div class="sh-foot pad">
-      ${now?`<textarea id="okNote" class="oknote" maxlength="300" placeholder="Un mot ? Lavage, déplacement… (facultatif)">${esc(draft.note)}</textarea>
+      ${now?`<div class="faits"><div class="mlabel">Fait sur place ? (facultatif)</div><div class="chips">${FAITS.map(f=>{const on=draft.faits.includes(f);return `<button type="button" class="chip ${on?'on':''}" data-fait="${esc(f)}" aria-pressed="${on}">${esc(f)}</button>`}).join('')}</div>
+      <textarea id="okNote" class="oknote" maxlength="300" placeholder="Autre chose ? Écris-le ici">${esc(draft.note)}</textarea></div>
       <button type="button" class="btn big primary" id="okBtn">${I.tick}Tout est OK</button>
       <button type="button" class="btn big warn-o" id="pbBtn">Signaler un problème</button>
       <div class="duo"><button type="button" class="btn" id="absentBtn">Véhicule pas sur place</button>
@@ -1263,7 +1280,7 @@ function render0(bg){
   if(sheet){sh.innerHTML=sh._h=vSheet();sh.hidden=false;document.body.classList.add('noscroll')}else{sh.hidden=true;sh.innerHTML=sh._h='';document.body.classList.remove('noscroll')}
   ecranChange();
 }
-function openSheet(p){query='';MINI.clear(); /* v42 : aperçus des photos d'avant oubliés (gardés toute la journée avant) */const x=passageOf(p);draft=x&&x.by===S.who&&x.pb.length?{types:x.pb.slice(),photos:[],comment:x.comment,note:''}:{types:[],photos:[],comment:'',note:x&&x.by===S.who&&!x.pb.length?x.comment||'':''}; /* v52 : le mot laissé sur « Tout est OK » est repris */sheet={plaque:p,step:'fiche'};render();$('#sheet').scrollTop=0}
+function openSheet(p){query='';MINI.clear(); /* v42 : aperçus des photos d'avant oubliés (gardés toute la journée avant) */const x=passageOf(p);draft=x&&x.by===S.who&&x.pb.length?{types:x.pb.slice(),photos:[],comment:x.comment,note:'',faits:[]}:{types:[],photos:[],comment:'',note:'',faits:[]};if(x&&x.by===S.who&&!x.pb.length)Object.assign(draft,faitsDe(x.comment)); /* v52 : le mot laissé sur « Tout est OK » est repris */sheet={plaque:p,step:'fiche'};render();$('#sheet').scrollTop=0}
 function saveDraft(dr){const p=dr.wantSave||(sheet&&sheet.plaque);dr.wantSave='';if(!p||dr.saved||!dr.types.length)return;dr.saved=true;record(p,dr.types.slice(),dr.comment.trim(),dr.photos.slice());
   if(sheet&&sheet.plaque===p&&draft===dr)closeSheet(p+' validé avec un problème. Le service parc sera prévenu.');else{render();toast(p+' validé avec un problème. Le service parc sera prévenu.')}}
 /* v54 : bouton retour du téléphone : ferme la fiche (ou revient d'une étape) au lieu de quitter l'appli */
@@ -1327,9 +1344,10 @@ document.addEventListener('click',e=>{
   if(b.id==='closeSheet'){closeSheet();return}
   if(b.id==='backFiche'){sheet.step='fiche';render();return}
   if(b.id==='themeBtn'){const t=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=t;try{localStorage.setItem('runners-theme',t)}catch(e){}render();return}
-  if(b.id==='okBtn'){const p=sheet.plaque;record(p,[],draft.note.trim(),'');closeSheet(p+' validé. Tout est OK.');return}
+  if(b.id==='okBtn'){const p=sheet.plaque;record(p,[],draft.faits.concat(draft.note.trim()?[draft.note.trim()]:[]).join(', '),'');closeSheet(p+' validé. Tout est OK.');return}
   if(b.id==='pbBtn'){sheet.step='probleme';render();$('#sheet').scrollTop=0;return}
   if(d.rmphoto){draft.photos.splice(+d.rmphoto,1);render();return}
+  if(d.fait){const i=draft.faits.indexOf(d.fait);i<0?draft.faits.push(d.fait):draft.faits.splice(i,1);render();return}
   if(d.dmg){const i=draft.types.indexOf(d.dmg);i<0?draft.types.push(d.dmg):draft.types.splice(i,1);render();return}
   if(b.id==='saveDmg'){if(draft.pending){draft.wantSave=sheet.plaque;b.disabled=true;b.textContent='Photo en préparation…';return}saveDraft(draft);return}
   if(b.id==='undo'){const p=sheet.plaque;undo(p);closeSheet('Validation annulée pour '+p+'.');return}

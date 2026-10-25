@@ -2,7 +2,7 @@
    Toujours la version en ligne d'abord ; la copie sert en cas de coupure, et depuis la v42 aussi quand le réseau
    est trop lent (plus de 3 s) : l'appli s'ouvre tout de suite et la version en ligne est rangée pour la fois suivante.
    Les données (Google) ne passent jamais par ici. */
-const CACHE = 'runners-v55';
+const CACHE = 'runners-v56';
 const ATTENTE_MAX = 3000; /* v42 : au-delà, on ouvre la copie du téléphone (avant : jusqu'à 30 s d'écran blanc sur un réseau faible) */
 const FICHIERS = ['./', './index.html', './bureau.html', './config.js', './manifest.json', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 self.addEventListener('install', e => {
