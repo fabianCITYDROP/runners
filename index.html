@@ -18,6 +18,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
 <!-- v52 : clair par défaut ; le runner peut passer en sombre (bouton à côté de son prénom), choix gardé sur le téléphone -->
 <!-- v54 (revue de nuit) : photos qui coincent ne bloquent plus les validations suivantes ; « Valider le problème » attend la photo en préparation ; bouton retour du téléphone ferme la fiche au lieu de quitter ; rappel supprimé pendant l envoi ne revient plus ; date mal écrite dans la feuille sans bloquer ; tournée finie après minuit comptée le bon jour -->
+<!-- v57 (Fabian) : récap de tournée sans « Pas vus » ni « Partis avant passage » ; demande : heures d'immobilisation saisies par le bureau (impro pas encore dans le BO) -->
 <!-- v56 (Fabian) : « Tout est OK » : « Fait sur place ? » à cocher (6 choix + une case de texte) au lieu de « Un mot ? » ; petits téléphones : boutons du bas resserrés -->
 <!-- v55 : demande : encadré « Véhicule immobilisé » (heures et motif de l'impro du jour, jaune ou rouge si méca), seulement le créneau coché par le bureau -->
 <!-- v55 : « Caler pro » (déplacement prévu sans trajet) affiché « Caler pro prévu », sans heure inventée -->
@@ -1093,7 +1094,11 @@ function cap(t){return t.charAt(0).toUpperCase()+t.slice(1)}
    un créneau (plusieurs impros ce jour-là), seulement celui-là : l'autre concerne quelqu'un d'autre. */
 function jourDemande(d){return d.date<TODAY?TODAY:d.date}
 function improsDuJour(d){const day=jourDemande(d);let l=improsFor(d.plaque,day+' 00:00',day+' 23:59');
-  const c=String(d.creneau||'').split('|');if(c[0]&&l.some(m=>m.debut===c[0]))l=l.filter(m=>m.debut===c[0]);return l}
+  const c=String(d.creneau||'').split('|');if(c[0]&&l.some(m=>m.debut===c[0]))l=l.filter(m=>m.debut===c[0]);
+  /* v57 (Fabian) : heures saisies par le bureau quand l'impro n'était pas encore dans le BO (export toutes les heures) ;
+     dès que l'impro arrive dans l'export, ce sont les heures du BO qui s'affichent */
+  else if(!l.length&&/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(c[0]))l=[{debut:c[0],fin:/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(c[1]||'')?c[1]:'',type:c[2]==='g'?'meca':'normal',libelle:'Improductif'}];
+  return l}
 /* barres d'impro gardées seulement pour les autres jours (celles du jour sont dans l'encadré « Véhicule immobilisé ») */
 function improsDemande(d,s){const day=jourDemande(d),k=improsFor(d.plaque,day+' 00:00',day+' 23:59');return s.impros.filter(m=>!k.includes(m))}
 function bloque(d,s){
@@ -1222,8 +1227,7 @@ function report(){
   lines.push(plural(d.length,'véhicule')+' vu'+(d.length>1?'s':''));
   [...new Set(d.map(x=>x.point))].forEach(p=>{lines.push('');lines.push('*'+p+'*');
     d.filter(x=>x.point===p).forEach(x=>lines.push(x.plaque+(x.pb.length?' · Problème : '+x.pb.join(', ')+(x.comment?' ('+x.comment+')':'')+(x.photo?' · photo':''):x.comment?' · '+x.comment:'')))});
-  const left=todo();if(left.length){lines.push('');lines.push('*Pas vus*');left.forEach(s=>lines.push(s.plaque))}
-  const pa=partis();if(pa.length){lines.push('');lines.push('*Partis avant passage*');pa.forEach(s=>lines.push(s.plaque))}
+  /* v57 (Fabian) : plus de « Pas vus » ni « Partis avant passage » dans le récap montré au runner (le bureau les a de son côté) */
   return lines.join('\n');
 }
 

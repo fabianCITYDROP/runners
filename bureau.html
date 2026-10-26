@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Runners · Bureau</title>
 <!-- Page bureau de l'appli Runners, v4 : liens des runners, demandes à n'importe quelle date, rappels des runners, passages du jour ; v4 : actualisation automatique, un passage peut clore plusieurs demandes ; v6 (suite de la v4, la v5 est la version pro à part) : envois passés dans l'adresse (GET) car certains appareils bloquaient les envois classiques ; v7 : un véhicule ajouté s'affiche tout de suite (envoi en arrière-plan) ; v8 : « Photos en cours d'envoi » quand les photos suivent le passage ; v9 : « aperçu » tant que seule la photo allégée est arrivée ; v10 : photo effacée au bout de 5 jours indiquée ; v11 : plus rapide (planning retéléchargé seulement s'il a changé), actualisée toutes les 30 secondes ; v12 : indique combien de téléphones ont reçu l'alerte d'une nouvelle demande ; v13 : mise à jour automatique sans recharger à la main ; v14 : page laissée ouverte la nuit remise au nouveau jour le matin, liens photo vérifiés, polices sans bloquer l'affichage ; v15 : demandes et rappels à faire modifiables (bouton Modifier, avec le script v20) ; v16 : onglet « Retours runners » (véhicules demandés vus par un runner, alerte avec bandeau, son et notification de l'ordinateur ; retiré si le runner annule), état de Slack (avec le script v21) ; v17 (appli v48) : demande sur un jour ou sur plusieurs jours (du … au …) ; v18 (appli v49) : « Date unique / Période », termes revus ; v19 (appli v51) : onglet « Planifier » (avant « Dernière minute »), tirets de la plaque mis tout seuls ; v20 (appli v53) : liste « à faire » seulement, la plus récente en haut, 7 jours au plus ; passages du jour rangés par runner ; v21 (appli v54) : panne passagère de Google sans perdre la page, ajout sans doublon si la réponse se perd, actualisation lente ne défait plus un ajout ou un retrait, modification annulée proprement si la demande est faite entre-temps, plaque à moitié tapée refusée, téléphone étroit -->
+<!-- v23 (25/10, Fabian) : pas encore d'impro dans le BO (l'export Metabase arrive toutes les heures) : on peut saisir les heures de l'immobilisation (toujours « Improductif » pour le runner, Fabian) ; le runner les voit sur sa demande -->
 <!-- v22 (25/10, Fabian) : demande : impro du BO affichée sous la plaque (créneau, ou « penser à bloquer le véhicule ») ; deux impros le même jour : on coche celle de la demande -->
 <!-- v22 (25/10, Fabian) : onglet « Passages » sur les 7 derniers jours, jour par jour puis runner par runner ; « Retours runners » de la semaine -->
 <link rel="icon" type="image/png" href="icon-192.png">
@@ -82,6 +83,14 @@ button.bo-r{cursor:pointer}button.bo-r:hover{background:var(--surface-2)}
 .bo-r .bo-hh{font-size:15px;font-weight:700;font-variant-numeric:tabular-nums}
 .bo-r .bo-m{font-size:13px;color:var(--muted)}
 .bo-r.seul{grid-template-columns:1fr}
+/* v23 : heures saisies à la main quand l'impro n'est pas encore dans le BO */
+.bo-sai{border-top:1px solid var(--line);padding:12px 14px;display:grid;gap:10px}
+.bo-lien{justify-self:start;border:0;background:none;padding:0;font:inherit;font-size:14px;font-weight:600;color:var(--accent);text-decoration:underline;cursor:pointer}
+.bo-st{font-size:13.5px;font-weight:600;color:var(--fg)}.bo-st span{font-weight:400;color:var(--muted)}
+.bo-hrs{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.bo-hrs label{display:grid;gap:4px;font-size:12px;font-weight:600;color:var(--muted)}
+.bo-hrs input{width:100%;font-variant-numeric:tabular-nums}
+
 .quick{display:flex;flex-wrap:wrap;gap:6px}
 .quick button{min-height:36px;padding:0 12px;border-radius:999px;border:1px solid var(--line-strong);background:var(--surface);font-size:13px;font-weight:600}
 .quick button.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
@@ -449,21 +458,29 @@ function improsBO(p){
 function heureBO(t,ref){if(!t)return '';const d=t.slice(0,10),h=t.slice(11,16);const hh=h?Number(h.slice(0,2))+'h'+(h.slice(3)==='00'?'':h.slice(3)):'';return (d===ref?'':dayName(d).toLowerCase()+' ')+hh}
 const ICO_BLOQUE='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
 const ICO_ALERTE='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>';
-let CRENEAU='';
+let CRENEAU='',SAISIE=false;
+/* v23 : créneau saisi à la main (« 2026-10-25 20:00|2026-10-25 22:00 »), pour une impro pas encore dans l'export */
+const CR_MAIN=/^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2})\|(?:(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}))?(\|g)?$/;
+function creneauMain(){const a=($('#dDate')&&$('#dDate').value)||TODAY,de=($('#iDe')||{}).value||'',fi=($('#iA')||{}).value||'';
+  if(!/^\d{2}:\d{2}$/.test(de)){CRENEAU='';return}const jf=fi&&fi<=de?plusJours(a,1):a;CRENEAU=a+' '+de+'|'+(/^\d{2}:\d{2}$/.test(fi)?jf+' '+fi:'')}
 function creneauTxt(m,j){return heureBO(m.deb,j)+(m.fin?' → '+heureBO(m.fin,j):'')}
 function improHint(){
   const x=$('#dImpro'),i=$('#dPlate');if(!x||!i)return;const p=i.value.trim().toUpperCase();
-  if(norm(p).length<7||!fleet().size){x.hidden=true;x.innerHTML='';CRENEAU='';return}
+  if(norm(p).length<7||!fleet().size){x.hidden=true;x.innerHTML='';CRENEAU='';SAISIE=false;return}
   const a=($('#dDate')&&$('#dDate').value)||TODAY,f=($('#dFin')&&$('#dFin').value)||a;
   const l=improsBO(p).filter(m=>m.deb.slice(0,10)<=f&&(!m.fin||m.fin.slice(0,10)>=a));
-  if(!l.some(m=>m.deb+'|'+m.fin===CRENEAU))CRENEAU='';
+  const main=CR_MAIN.exec(CRENEAU);if(!l.length&&main)SAISIE=true;
+  if(l.length){SAISIE=false;if(!l.some(m=>m.deb+'|'+m.fin===CRENEAU))CRENEAU=''}
   x.hidden=false;x.setAttribute('role','status');
   const motif=m=>m.meca?'Garage':m.lib||'Improductif';
   const ligne=(m,choix)=>{const j=m.deb.slice(0,10),k=m.deb+'|'+m.fin,on=k===CRENEAU;
     const inner=(choix?'<span class="bo-o" aria-hidden="true"></span>':'')+'<span class="bo-hh">'+esc(creneauTxt(m,j))+'</span><span class="bo-m">'+esc(cap1(dayName(j))+' · '+motif(m))+'</span>';
     return choix?'<button type="button" class="bo-r'+(on?' on':'')+'" data-creneau="'+esc(k)+'" aria-pressed="'+on+'">'+inner+'</button>':'<div class="bo-r seul">'+inner+'</div>'};
   if(l.length){x.className='bo ok'+(l.some(m=>m.meca)?' meca':'');x.innerHTML='<div class="bo-h"><span class="bo-i">'+ICO_BLOQUE+'</span><div><div class="bo-t">'+(l.length>1?l.length+' impros dans le BO ce jour-là':'Véhicule immobilisé dans le BO')+'</div><div class="bo-s">'+(l.length>1?'Choisissez celle de la demande, sinon le runner voit tous les créneaux.':'Le runner verra ce créneau sur sa demande.')+'</div></div></div>'+l.map(m=>ligne(m,l.length>1)).join('')}
-  else{CRENEAU='';x.className='bo warn';x.innerHTML='<div class="bo-h"><span class="bo-i">'+ICO_ALERTE+'</span><div><div class="bo-t">Pas d\'impro dans le BO ce jour-là</div><div class="bo-s">Penser à bloquer le véhicule dans le BO, sinon il peut partir en location avant le passage du runner.</div></div></div>'}
+  else{x.className='bo warn';const m2=main||[],de=m2[2]||'',fi=m2[4]||'';
+    x.innerHTML='<div class="bo-h"><span class="bo-i">'+ICO_ALERTE+'</span><div><div class="bo-t">Pas d\'impro dans le BO ce jour-là</div><div class="bo-s">Penser à bloquer le véhicule dans le BO, sinon il peut partir en location avant le passage du runner.</div></div></div>'+
+      '<div class="bo-sai">'+(SAISIE?'<div class="bo-st">Heures de l\'immobilisation <span>· le runner les verra sur sa demande</span></div><div class="bo-hrs"><label>De<input type="time" id="iDe" step="900" value="'+esc(de)+'"></label><label>À<input type="time" id="iA" step="900" value="'+esc(fi)+'"></label></div><button type="button" class="bo-lien" data-saisie="0">Retirer les heures</button>':'<button type="button" class="bo-lien" data-saisie="1">Impro posée à l\'instant ? Saisir ses heures</button><div class="bo-s" style="margin-top:-4px">Elle n\'apparaîtra ici qu\'au prochain export du BO (toutes les heures).</div>')+'</div>';
+    if(SAISIE)creneauMain();else CRENEAU=''}
 }
 function cap1(t){return t?t.charAt(0).toUpperCase()+t.slice(1):t}
 function plateHint(){improHint();const i=$('#dPlate');if(!i)return;const p=i.value.trim().toUpperCase();const f=fleet();const h=$('#dHint');
@@ -477,6 +494,7 @@ document.addEventListener('click',async e=>{
   if(d.tab){tab=d.tab;confirmCode='';render();return}
   if(d.jourp){JOUR_P=d.jourp;render();return}
   if(d.creneau!=null){CRENEAU=CRENEAU===d.creneau?'':d.creneau;improHint();return}
+  if(d.saisie!=null){SAISIE=d.saisie==='1';CRENEAU='';improHint();if(SAISIE&&$('#iDe'))$('#iDe').focus();return}
   if(d.quick){$('#dDate').value=d.quick;recapDate();return}
   if(d.plage!=null){plage=d.plage==='1';if(plage){const a=$('#dDate').value||TODAY,f=$('#dFin');if(f&&(!f.value||f.value<=a))f.value=plusJours(a,2)}render();return}
   if(d.duree){const a=$('#dDate').value||TODAY;$('#dDate').value=a;$('#dFin').value=plusJours(a,+d.duree-1);recapDate();return}
@@ -488,7 +506,7 @@ document.addEventListener('click',async e=>{
     plage=finDe(x)>x.date&&finDe(x)>TODAY;render();
     $('#dPlate').value=x.plaque||'';$('#dRunner').value=x.runner||'Tous';$('#dDate').value=x.date<TODAY?TODAY:x.date;$('#dFin').value=plage?finDe(x):'';$('#dPoint').value=x.point||'';$('#dText').value=x.consigne||'';CRENEAU=String(x.creneau||'');if($('#dDate').max&&x.date>$('#dDate').max)$('#dDate').removeAttribute('max');plateHint();recapDate();
     try{$('#fDemande').scrollIntoView({block:'start',behavior:'smooth'})}catch(err){}$('#dText').focus();return}
-  if(b.id==='editCancel'){edit='';plage=false;CRENEAU='';['dPlate','dText','dFin'].forEach(id=>{if($('#'+id))$('#'+id).value=''});$('#dPoint').value='';$('#dRunner').value='Tous';$('#dDate').value=TODAY;render();return}
+  if(b.id==='editCancel'){edit='';plage=false;CRENEAU='';SAISIE=false;['dPlate','dText','dFin'].forEach(id=>{if($('#'+id))$('#'+id).value=''});$('#dPoint').value='';$('#dRunner').value='Tous';$('#dDate').value=TODAY;render();return}
   /* v17 : retrait affiché tout de suite (avant : on attendait Google, Slack puis le rechargement complet, 5 à 10 s) ;
      si Google refuse ou s'il n'y a pas de réseau, la demande revient dans la liste avec un message */
   if(d.del){const id=d.del,x=D.demandes.find(y=>y.id===id);if(id===edit){edit='';plage=false;viderForm='retirée'}RETRAIT.add(id);render();toast((x?x.plaque+' : ':'')+'demande retirée.');
@@ -499,8 +517,8 @@ document.addEventListener('click',async e=>{
   if(d.cancel){confirmCode='';render();return}
   if(d.newcode){b.disabled=true;const r=await act('runner_code',{prenom:d.newcode});confirmCode='';render();if(!r.erreur)toast('Nouveau lien créé pour '+d.newcode+'. Réinstallez l\'appli sur son téléphone.');return}
 });
-document.addEventListener('input',e=>{if(e.target.id==='dPlate'){tirets(e);plateHint()}if(e.target.id==='dDate'||e.target.id==='dFin')recapDate()});
-document.addEventListener('change',e=>{if(e.target.id==='dDate'||e.target.id==='dFin')recapDate()});
+document.addEventListener('input',e=>{if(e.target.id==='dPlate'){tirets(e);plateHint()}if(e.target.id==='dDate'||e.target.id==='dFin')recapDate();if(e.target.id==='iDe'||e.target.id==='iA')creneauMain()});
+document.addEventListener('change',e=>{if(e.target.id==='dDate'||e.target.id==='dFin')recapDate();if(e.target.id==='iDe'||e.target.id==='iA')creneauMain()});
 document.addEventListener('submit',async e=>{
   e.preventDefault();const f=e.target;
   if(f.id==='fCode'){CODE=$('#bCode').value.trim();try{localStorage.setItem('runners-bureau',CODE)}catch(x){}err='';load();return}
