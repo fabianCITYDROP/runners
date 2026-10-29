@@ -18,6 +18,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
 <!-- v52 : clair par défaut ; le runner peut passer en sombre (bouton à côté de son prénom), choix gardé sur le téléphone -->
 <!-- v54 (revue de nuit) : photos qui coincent ne bloquent plus les validations suivantes ; « Valider le problème » attend la photo en préparation ; bouton retour du téléphone ferme la fiche au lieu de quitter ; rappel supprimé pendant l envoi ne revient plus ; date mal écrite dans la feuille sans bloquer ; tournée finie après minuit comptée le bon jour -->
+<!-- v58 (Fabian, Mika) : « Fait sur place » (choix + texte) gardé quand le runner signale aussi un problème : repris en bas de l'écran du problème, envoyé à part (faits) -->
 <!-- v57 (Fabian) : récap de tournée sans « Pas vus » ni « Partis avant passage » ; demande : heures d'immobilisation saisies par le bureau (impro pas encore dans le BO) -->
 <!-- v56 (Fabian) : « Tout est OK » : « Fait sur place ? » à cocher (6 choix + une case de texte) au lieu de « Un mot ? » ; petits téléphones : boutons du bas resserrés -->
 <!-- v55 : demande : encadré « Véhicule immobilisé » (heures et motif de l'impro du jour, jaune ou rouge si méca), seulement le créneau coché par le bureau -->
@@ -171,6 +172,7 @@ textarea.oknote{min-height:52px;margin-bottom:10px}
 .chip.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
 .chip.on::before{content:'✓ '}
 .faits textarea.oknote{margin:10px 0 0}
+.faits.pbf{margin:16px 0 0}
 input.plateinput{font-family:var(--mono);text-transform:uppercase;font-size:22px;min-height:56px;letter-spacing:.04em}
 
 /* Choix du runner (démonstration) */
@@ -588,6 +590,9 @@ let draft={types:[],photos:[],comment:'',note:'',faits:[]};
 /* v56 (Fabian) : sur « Tout est OK », ce qui a été fait sur place se coche (plusieurs choix) au lieu de s'écrire ;
    choix tirés des messages des runners dans #parc-runner, rangés par paires ; le texte envoyé reste le même champ (« AdBlue effacé, Rétro changé »), Slack et bureau inchangés */
 const FAITS=['AdBlue effacé','Voyant effacé','Rétro changé','Ampoule changée','Essuie-glace changé','RDS vérifiée'];
+/* v58 : mêmes choix sur « Tout est OK » et sur « Signaler un problème » (Fabian, Mika : le runner peut avoir effacé un voyant ET trouvé un pare-brise cassé) */
+function faitsChips(){return `<div class="mlabel">Fait sur place ? (facultatif)</div><div class="chips">${FAITS.map(f=>{const on=draft.faits.includes(f);return `<button type="button" class="chip ${on?'on':''}" data-fait="${esc(f)}" aria-pressed="${on}">${esc(f)}</button>`}).join('')}</div>`}
+function faitsTexte(dr){return dr.faits.concat(dr.note.trim()?[dr.note.trim()]:[]).join(', ')}
 function faitsDe(t){const l=String(t||'').split(/\s*,\s*/).filter(Boolean),f=l.filter(x=>FAITS.includes(x));return {faits:f,note:l.filter(x=>!FAITS.includes(x)).join(', ')}}
 let rdraft={date:'',note:'',other:false,point:''};
 function newRemind(p){const st=stayFor(p,DAY)||stayFor(p);return {date:'',note:'',other:false,point:st?st.point:(S.myPoints[0]||LOCAL[0])}}
@@ -712,8 +717,8 @@ function vuSejour(s){
 }
 
 /* ---------- Passages ---------- */
-function fromQueue(q){return {at:q.at,by:q.by,plaque:q.plaque,point:q.point,cle:q.cle,pb:q.problemes||[],comment:q.commentaire||'',photo:!!(q.photos&&q.photos.length),demande:q.demande_id||'',id:q.id,pending:true}}
-function fromServer(x){return {at:String(x.horodatage||'').replace('T',' ').slice(0,16),by:x.runner,plaque:String(x.plaque||'').toUpperCase(),point:x.point,cle:x.cle,pb:x.problemes?String(x.problemes).split(', ').filter(Boolean):[],comment:x.commentaire||'',photo:!!x.photo,demande:x.demande_id||'',id:x.id||''}}
+function fromQueue(q){return {at:q.at,by:q.by,plaque:q.plaque,point:q.point,cle:q.cle,pb:q.problemes||[],comment:q.commentaire||'',faits:q.faits||'',photo:!!(q.photos&&q.photos.length),demande:q.demande_id||'',id:q.id,pending:true}}
+function fromServer(x){return {at:String(x.horodatage||'').replace('T',' ').slice(0,16),by:x.runner,plaque:String(x.plaque||'').toUpperCase(),point:x.point,cle:x.cle,pb:x.problemes?String(x.problemes).split(', ').filter(Boolean):[],comment:x.commentaire||'',faits:x.faits||'',photo:!!x.photo,demande:x.demande_id||'',id:x.id||''}}
 function removeLast(list,cle,plaque){for(let i=list.length-1;i>=0;i--)if(list[i].cle===cle&&list[i].plaque===plaque){list.splice(i,1);return true}return false}
 /* Passages enregistrés + ceux pas encore envoyés */
 function allPassages(){
@@ -823,9 +828,9 @@ function doneOn(day){return Object.values(P).filter(x=>x.at.slice(0,10)===day&&x
 function doneToday(){return doneOn(TODAY)}
 let DONE_DAY=TODAY;
 
-function record(p,types,comment,photos){
+function record(p,types,comment,photos,faits){
   const st=stayFor(p),ask=askFor(p);
-  const q={id:uid(),action:'passage',cle:keyFor(p),plaque:p,point:st?st.point:(ask&&ask.point)||'Hors liste',problemes:types,commentaire:comment,photos:(photos||[]).slice(0,MAX_PHOTOS),demande_id:asksFor(p).map(d=>d.id).join(','),at:nowStr(),by:S.who};
+  const q={id:uid(),action:'passage',cle:keyFor(p),plaque:p,point:st?st.point:(ask&&ask.point)||'Hors liste',problemes:types,commentaire:comment,faits:types.length&&faits?String(faits).slice(0,500):'',photos:(photos||[]).slice(0,MAX_PHOTOS),demande_id:asksFor(p).map(d=>d.id).join(','),at:nowStr(),by:S.who};
   if(q.photos.length&&MINI.get(q.photos[0]))q.mini=MINI.get(q.photos[0]);
   if(DEMO){const x=fromQueue(q);delete x.pending;S.passages.push(x)}else{S.queue.push(q);savePhotos(q)}
   save();run();
@@ -880,7 +885,7 @@ window.addEventListener('storage',e=>{
   if(added){render(true)}
 });
 function baseOf(q){const b=bodyOf(q);delete b.photos;b.photos_attendues=q.photos.length;return b}
-function bodyOf(q){const body={code:CODE};['action','id','cle','plaque','point','problemes','commentaire','photos','demande_id','date','consigne','cible','endpoint','fin','pasVus','partis','jour'].forEach(k=>{if(q[k]!==undefined)body[k]=q[k]});if(typeof body.commentaire==='string')body.commentaire=body.commentaire.slice(0,500);return body}
+function bodyOf(q){const body={code:CODE};['action','id','cle','plaque','point','problemes','commentaire','faits','photos','demande_id','date','consigne','cible','endpoint','fin','pasVus','partis','jour'].forEach(k=>{if(q[k]!==undefined)body[k]=q[k]});if(typeof body.commentaire==='string')body.commentaire=body.commentaire.slice(0,500);return body}
 /* Le runner ferme l'appli juste après avoir validé : on confie les envois sans photo au téléphone (keepalive),
    qui les termine même appli fermée. Ils restent aussi dans la file : au prochain envoi, Google reconnaît
    un doublon (même identifiant) et ne l'enregistre pas deux fois. */
@@ -1004,8 +1009,9 @@ async function run(force){
         if(r.vp===undefined)S.depuis='';S.vp=r.vp;
         savePassages();
         S.demandes=(r.demandes||[]).filter(d=>normDate(d.date)).map(d=>({id:d.id,date:normDate(d.date),runner:d.runner,plaque:String(d.plaque||'').toUpperCase(),point:d.point,consigne:d.consigne,statut:d.statut,auteur:d.auteur||'Service parc',fin:normDate(d.fin)||'',creneau:String(d.creneau||'').slice(0,40)}));
+        const autreRunner=S.who&&S.who!==r.runner.prenom; /* v58 : autre lien ouvert sur ce téléphone : on reprend les points de ce runner */
         S.who=r.runner.prenom;
-        if(!S.ptsSet){S.myPoints=(r.runner.points||[]).map(city).filter(Boolean);S.ptsSet=true}
+        if(!S.ptsSet||autreRunner){S.myPoints=(r.runner.points||[]).map(city).filter(Boolean);S.ptsSet=true}
         const premiere=!S.synced;S.misAJour=r.misAJour||'';S.synced=nowStr();alertAsks(premiere);
         if(attDem){attDem=0;notifTxt='';if(sheet&&sheet.asks){sheet.nouv=(sheet.nouv||[]).concat(newAsks().map(d=>d.id));markAsksSeen()}}
         S.vapid=r.vapid||'';if(S.vapid&&'Notification' in window&&Notification.permission==='granted')abonner();
@@ -1130,7 +1136,7 @@ function vDone(){
   if(showReport)return `
   <div><button type="button" class="back" id="closeReport">${I.back}Retour</button></div>
   <div class="mlabel">Récapitulatif de la tournée</div>
-  <pre class="report" id="reportText">${esc(report())}</pre>
+  <pre class="report" id="reportText">${esc(report()).replace(/^\*([^*\n]+)\*$/gm,'<b>$1</b>')}</pre>
   ${DEMO?`<button type="button" class="btn big primary" id="copy">Copier le message</button>
   <div class="meta">Démonstration : le message se copie. Dans la version reliée, il part tout seul.</div>`
   :`<div class="sentline ${rapportEnAttente()?'wait':'ok'}" role="status">${rapportEnAttente()?(S.offline?'Pas de réseau : le récapitulatif partira tout seul dès que le réseau revient.':'Envoi au service parc…'):'Récapitulatif envoyé au service parc.'}</div>
@@ -1143,7 +1149,7 @@ function vDone(){
       <span class="okdot ${x.pending?'wait':x.pb.length?'ko':''}" aria-hidden="true">${x.pending?I.clock:x.pb.length?'!':I.tick}</span>
       <span class="row-b"><span class="plate">${esc(x.plaque)}</span><span class="model">${esc(v.modele||'')}</span>
       <span class="spec">${esc(x.point)} · ${esc(x.at.slice(11).replace(':','h'))}${x.pending?' · pas encore envoyé':''}</span>
-      ${x.pb.length?`<span class="mini dmg"><i></i>${esc(x.pb.join(', '))}</span>`:`<span class="mini ok"><i></i>Tout est OK${x.comment?' · '+esc(x.comment):''}</span>`}</span>
+      ${x.pb.length?`<span class="mini dmg"><i></i>${esc(x.pb.join(', '))}${x.faits?' · Fait : '+esc(x.faits):''}</span>`:`<span class="mini ok"><i></i>Tout est OK${x.comment?' · '+esc(x.comment):''}</span>`}</span>
       <span class="chev">${I.chev}</span>
     </button>`}).join('')}</div>
   ${today?'<button type="button" class="btn big primary" id="finish">Terminer ma tournée</button>':''}`
@@ -1195,7 +1201,8 @@ function vSheet(){
       ${draft.photos.length?`<div class="photos">${draft.photos.map((u,i)=>`<div class="ph ${u.indexOf('data:')===0?'':'demo'}">${u.indexOf('data:')===0?`<img src="${u}" alt="Photo ${i+1}">`:'Photo '+(i+1)}<button type="button" class="ph-x" data-rmphoto="${i}" aria-label="Retirer la photo ${i+1}">×</button></div>`).join('')}</div>`:''}
       ${draft.photos.length<MAX_PHOTOS?`<label class="btn wide photo" for="photo">${I.camera}<span id="photoName">${draft.pending?'Préparation de la photo…':draft.photos.length?'Ajouter une photo ('+draft.photos.length+'/'+MAX_PHOTOS+')':'Prendre une photo (facultatif)'}</span></label>
       <input type="file" id="photo" accept="image/*" capture="environment" hidden>`:`<div class="meta">${MAX_PHOTOS} photos maximum.</div>`}
-      <textarea id="comment" maxlength="500" placeholder="Un mot à ajouter ? (facultatif)">${esc(draft.comment)}</textarea>
+      <textarea id="comment" maxlength="500" placeholder="Un mot sur le problème ? (facultatif)">${esc(draft.comment)}</textarea>
+      <div class="faits pbf">${faitsChips()}<textarea id="okNote" class="oknote" maxlength="300" placeholder="Autre chose fait sur place ?">${esc(draft.note)}</textarea></div>
     </div>
     <div class="sh-foot pad"><button type="button" class="btn big warn" id="saveDmg" ${draft.types.length&&!draft.pending&&!draft.wantSave?'':'disabled'}>${draft.pending?'Photo en préparation…':'Valider le problème'}</button></div>`;
   const ev=v.events||[];
@@ -1209,7 +1216,7 @@ function vSheet(){
       ${ev.length?`<div class="card0"><div class="sec"><div class="mlabel">Déjà signalé dans le BO</div><ul class="evl">${ev.map(e=>`<li><span>${esc(e.label)}</span>${e.status?`<em>${esc(e.status)}</em>`:''}</li>`).join('')}</ul></div></div>`:''}
     </div>
     <div class="sh-foot pad">
-      ${now?`<div class="faits"><div class="mlabel">Fait sur place ? (facultatif)</div><div class="chips">${FAITS.map(f=>{const on=draft.faits.includes(f);return `<button type="button" class="chip ${on?'on':''}" data-fait="${esc(f)}" aria-pressed="${on}">${esc(f)}</button>`}).join('')}</div>
+      ${now?`<div class="faits">${faitsChips()}
       <textarea id="okNote" class="oknote" maxlength="300" placeholder="Autre chose ? Écris-le ici">${esc(draft.note)}</textarea></div>
       <button type="button" class="btn big primary" id="okBtn">${I.tick}Tout est OK</button>
       <button type="button" class="btn big warn-o" id="pbBtn">Signaler un problème</button>
@@ -1226,7 +1233,7 @@ function report(){
   lines.push('*'+fullDay(TODAY)+'*');
   lines.push(plural(d.length,'véhicule')+' vu'+(d.length>1?'s':''));
   [...new Set(d.map(x=>x.point))].forEach(p=>{lines.push('');lines.push('*'+p+'*');
-    d.filter(x=>x.point===p).forEach(x=>lines.push(x.plaque+(x.pb.length?' · Problème : '+x.pb.join(', ')+(x.comment?' ('+x.comment+')':'')+(x.photo?' · photo':''):x.comment?' · '+x.comment:'')))});
+    d.filter(x=>x.point===p).forEach(x=>lines.push(x.plaque+(x.pb.length?' · Problème : '+x.pb.join(', ')+(x.comment?' ('+x.comment+')':'')+(x.photo?' · photo':'')+(x.faits?' · Fait sur place : '+x.faits:''):x.comment?' · '+x.comment:'')))});
   /* v57 (Fabian) : plus de « Pas vus » ni « Partis avant passage » dans le récap montré au runner (le bureau les a de son côté) */
   return lines.join('\n');
 }
@@ -1284,8 +1291,8 @@ function render0(bg){
   if(sheet){sh.innerHTML=sh._h=vSheet();sh.hidden=false;document.body.classList.add('noscroll')}else{sh.hidden=true;sh.innerHTML=sh._h='';document.body.classList.remove('noscroll')}
   ecranChange();
 }
-function openSheet(p){query='';MINI.clear(); /* v42 : aperçus des photos d'avant oubliés (gardés toute la journée avant) */const x=passageOf(p);draft=x&&x.by===S.who&&x.pb.length?{types:x.pb.slice(),photos:[],comment:x.comment,note:'',faits:[]}:{types:[],photos:[],comment:'',note:'',faits:[]};if(x&&x.by===S.who&&!x.pb.length)Object.assign(draft,faitsDe(x.comment)); /* v52 : le mot laissé sur « Tout est OK » est repris */sheet={plaque:p,step:'fiche'};render();$('#sheet').scrollTop=0}
-function saveDraft(dr){const p=dr.wantSave||(sheet&&sheet.plaque);dr.wantSave='';if(!p||dr.saved||!dr.types.length)return;dr.saved=true;record(p,dr.types.slice(),dr.comment.trim(),dr.photos.slice());
+function openSheet(p){query='';MINI.clear(); /* v42 : aperçus des photos d'avant oubliés (gardés toute la journée avant) */const x=passageOf(p),pbs=x?x.pb.filter(t=>DAMAGES.includes(t)||t===OTHER):[]; /* v58 : « Pas trouvé sur place » n'est pas repris dans le brouillon */draft=x&&x.by===S.who&&pbs.length?{types:pbs,photos:[],comment:x.comment,note:'',faits:[]}:{types:[],photos:[],comment:'',note:'',faits:[]};if(x&&x.by===S.who)Object.assign(draft,faitsDe(x.pb.length?x.faits:x.comment)); /* v52 : le mot laissé sur « Tout est OK » est repris */sheet={plaque:p,step:'fiche'};render();$('#sheet').scrollTop=0}
+function saveDraft(dr){const p=dr.wantSave||(sheet&&sheet.plaque);dr.wantSave='';if(!p||dr.saved||!dr.types.length)return;dr.saved=true;record(p,dr.types.slice(),dr.comment.trim(),dr.photos.slice(),faitsTexte(dr)); /* v58 : avec ce qui a été fait sur place */
   if(sheet&&sheet.plaque===p&&draft===dr)closeSheet(p+' validé avec un problème. Le service parc sera prévenu.');else{render();toast(p+' validé avec un problème. Le service parc sera prévenu.')}}
 /* v54 : bouton retour du téléphone : ferme la fiche (ou revient d'une étape) au lieu de quitter l'appli */
 let retourEnCours=false;
@@ -1348,7 +1355,7 @@ document.addEventListener('click',e=>{
   if(b.id==='closeSheet'){closeSheet();return}
   if(b.id==='backFiche'){sheet.step='fiche';render();return}
   if(b.id==='themeBtn'){const t=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=t;try{localStorage.setItem('runners-theme',t)}catch(e){}render();return}
-  if(b.id==='okBtn'){const p=sheet.plaque;record(p,[],draft.faits.concat(draft.note.trim()?[draft.note.trim()]:[]).join(', '),'');closeSheet(p+' validé. Tout est OK.');return}
+  if(b.id==='okBtn'){const p=sheet.plaque;record(p,[],faitsTexte(draft),'');closeSheet(p+' validé. Tout est OK.');return}
   if(b.id==='pbBtn'){sheet.step='probleme';render();$('#sheet').scrollTop=0;return}
   if(d.rmphoto){draft.photos.splice(+d.rmphoto,1);render();return}
   if(d.fait){const i=draft.faits.indexOf(d.fait);i<0?draft.faits.push(d.fait):draft.faits.splice(i,1);render();return}
