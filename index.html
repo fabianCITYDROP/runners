@@ -220,13 +220,17 @@ input.plateinput{font-family:var(--mono);text-transform:uppercase;font-size:22px
 .vues button{flex:1;border:0;border-radius:9px;padding:9px;font:600 15px var(--sans);background:transparent;color:var(--muted)}
 .vues button[aria-pressed="true"]{background:var(--surface);color:var(--fg);box-shadow:0 1px 2px rgba(0,0,0,.12)}
 .pl{display:grid;grid-template-columns:104px minmax(0,1fr);background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.pl-hdw{position:sticky;z-index:2;display:grid;grid-template-columns:104px minmax(0,1fr);background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:-6px}
+.pl-hsc{scrollbar-width:none}.pl-hsc::-webkit-scrollbar{display:none}
+.pl-grp{display:flex;justify-content:space-between;align-items:center;width:100%;padding:11px 14px;border:1px dashed var(--line);border-radius:12px;background:transparent;font:600 14px var(--sans);color:var(--muted);text-align:left}
+.pl-grp b{color:var(--fg)}
 .pl-lab{display:flex;flex-direction:column;justify-content:center;gap:2px;height:54px;padding:0 8px 0 10px;border-bottom:1px solid var(--line);background:var(--surface);text-align:left;border-left:0;border-right:0;border-top:0;font:inherit;color:inherit}
 .pl-lab.h{height:30px}
 .pl-lab .plate{font-size:12px;align-self:flex-start}
 .pl-lab small{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .pl-sc{overflow-x:auto;position:relative;-webkit-overflow-scrolling:touch}
 .pl-tr{position:relative}
-.pl-hd{position:relative;z-index:2;background:var(--surface);display:flex;height:30px;border-bottom:1px solid var(--line);font-size:11.5px;color:var(--muted)}
+.pl-hd{position:relative;background:var(--surface);display:flex;height:30px;font-size:11.5px;color:var(--muted)}
 .pl-hd div{flex:none;border-left:1px solid var(--line);padding:7px 0;white-space:nowrap}
 .pl-hd span{position:sticky;left:0;padding:0 6px;background:var(--surface)}
 .pl-hd div.auj{color:var(--fg);font-weight:700}
@@ -1150,8 +1154,8 @@ function enMs(t){const m=/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})/.exec(t||'');
 /* Locations déjà rentrées sur ce point (gardées par le script, onglet « Arrivées », le BO les efface) : 7 jours au plus */
 function retoursDe(pt,p){const lim=plusDays(-7)+' 00:00';return (S.arrivees||[]).filter(a=>a.pt===pt&&(!p||a.p===p)&&a.dep&&a.dep<a.arr&&a.arr>=lim&&a.arr<=nowStr())}
 function fenetre(pt){const d=DAY.split('-').map(Number);let a=new Date(d[0],d[1]-1,d[2],DAY===TODAY&&new Date().getHours()<6?0:6).getTime();
-  /* Fabian 1/11 : 3 jours de base ; si une location rentrée ici a duré plus longtemps, le planning commence à son départ (7 jours au plus) */
-  if(pt){const min=new Date(d[0],d[1]-1,d[2]-7).getTime();retoursDe(pt).forEach(x=>{const t=enMs(x.dep);if(t<a&&enMs(x.arr)>a-3*864e5)a=Math.max(min,new Date(new Date(t).setHours(0,0,0,0)).getTime())})} /* la nuit, depuis minuit */return {a,b:new Date(d[0],d[1]-1,d[2]+3).getTime()}}
+  /* Fabian 1/11 : de maintenant à une semaine plus tard (v63) ; si une location rentrée ici a duré plus longtemps, le planning commence à son départ (7 jours au plus) */
+  if(pt){const min=new Date(d[0],d[1]-1,d[2]-7).getTime();retoursDe(pt).forEach(x=>{const t=enMs(x.dep);if(t<a&&enMs(x.arr)>a-3*864e5)a=Math.max(min,new Date(new Date(t).setHours(0,0,0,0)).getTime())})} /* la nuit, depuis minuit */return {a,b:new Date(d[0],d[1]-1,d[2]+8).getTime()}}
 function dureeTxt(ms){const h=Math.round(ms/36e5);return h<1?'moins d\'1 h':h<24?h+' h':Math.floor(h/24)+' j'+(h%24?' '+h%24+' h':'')}
 function barresDe(p,pt,W){
   const out=[],coupe=(a,b)=>({a:Math.max(a,W.a),b:Math.min(b,W.b)}),dans=(a,b)=>b>W.a&&a<W.b;
@@ -1165,17 +1169,32 @@ function barresDe(p,pt,W){
   improsFor(p).forEach(i=>{const a=enMs(i.debut),b=i.fin?enMs(i.fin):W.b;if(dans(a,b))out.push(Object.assign(coupe(a,b),{k:i.type==='meca'?'meca':'normal',t:i.type==='meca'?'Garage':(i.libelle||'Improductif'),a0:i.debut,b0:i.fin,i}))});
   return out;
 }
+/* v63 (Fabian 1/11) : en haut les véhicules sur place le jour choisi (du premier qui part au dernier) ; en dessous
+   « Arrivent plus tard » (ouvert) et « Déjà partis » (fermé). Barre des jours fixe en haut ; tous les blocs du point
+   défilent ensemble (même data-plsc). */
+const PLG={}; /* groupes ouverts ou fermés à la main : 'point|fut' / 'point|par' */
 function vPlanning(pt){
-  const W=fenetre(pt),x=ms=>Math.round((ms-W.a)/36e5*PL_H),larg=x(W.b),a=W.a,b=W.b;
-  const ps=[...new Set(stays().filter(s=>s.point===pt&&(!s.from||enMs(s.from)<b)&&(!s.to||enMs(s.to)>a)).map(s=>s.plaque))];
-  const prochain={};stays().forEach(y=>{if(y.point===pt&&y.to&&enMs(y.to)>Date.now()&&(!prochain[y.plaque]||y.to<prochain[y.plaque]))prochain[y.plaque]=y.to});
-  const cle=p=>prochain[p]||'9999';ps.sort((u,v)=>cle(u).localeCompare(cle(v))||u.localeCompare(v)); /* d'abord ceux qui partent bientôt */
-  if(!ps.length)return '<div class="empty small"><b>Aucun véhicule sur ce point ces 3 jours</b></div>';
-  let hd='';for(let t=a;t<b;){const d=new Date(t),n=new Date(d.getFullYear(),d.getMonth(),d.getDate()+1).getTime(),j=iso(d),l=dLabel(j);hd+=`<div class="${j===TODAY?'auj':''}" style="width:${x(Math.min(n,b))-x(t)}px"><span>${j===TODAY?"Aujourd'hui":esc(l.dow+' '+l.num)}</span></div>`;t=n}
-  const labs=ps.map(p=>{const v=vehicle(p)||{},st=stayFor(p,DAY),vu=st&&st.point===pt&&vuSejour(st);return `<button type="button" class="pl-lab" data-open="${esc(p)}"><span class="plate">${esc(p)}</span><small>${vu?'✓ Vu · ':''}${esc(v.modele||'')}</small></button>`}).join('');
-  const lanes=ps.map(p=>`<div class="pl-ln">${barresDe(p,pt,W).map((r,i)=>{const on=PSEL&&PSEL.pt===pt&&PSEL.p===p&&PSEL.cle===cleBarre(r);return `<button type="button" class="pb ${r.k}${r.s&&r.s.ici?' ici':''}${on?' sel':''}" style="left:${x(r.a)}px;width:${Math.max(x(r.b)-x(r.a),12)}px" data-pbar="${esc(cleBarre(r))}" data-pt="${esc(pt)}" data-pp="${esc(p)}" aria-label="${esc(p+' : '+r.t)}"><span>${esc(r.t)}</span></button>`}).join('')}</div>`).join('');
-  const now=Date.now(),nl=now>a&&now<b?`<div class="pl-now" style="left:${x(now)}px"></div>`:'';
-  return `<div class="pl"><div><div class="pl-lab h"></div>${labs}</div><div class="pl-sc" data-plsc="${esc(pt+'|'+DAY)}"><div class="pl-tr" style="width:${larg}px"><div class="pl-hd">${hd}</div>${lanes}${nl}</div></div></div>${PSEL&&PSEL.pt===pt?detailBarre(pt):''}`;
+  const W=fenetre(pt),x=ms=>Math.round((ms-W.a)/36e5*PL_H),larg=x(W.b),a=W.a,b=W.b,now=Date.now(),cle=pt+'|'+DAY;
+  const d=DAY.split('-').map(Number),D0=new Date(d[0],d[1]-1,d[2]).getTime(),D1=new Date(d[0],d[1]-1,d[2]+1).getTime(),debut=DAY===TODAY?now:D0;
+  const sej={};stays().forEach(s=>{if(s.point===pt&&(!s.from||enMs(s.from)<b)&&(!s.to||enMs(s.to)>a))(sej[s.plaque]=sej[s.plaque]||[]).push(s)});
+  const ps=Object.keys(sej);
+  if(!ps.length)return '<div class="empty small"><b>Aucun véhicule sur ce point cette semaine</b></div>';
+  const de=s=>s.from?enMs(s.from):-Infinity,a_=s=>s.to?enMs(s.to):Infinity;
+  const ici=[],fut=[],par=[];
+  ps.forEach(p=>{const l=sej[p];if(l.some(s=>de(s)<D1&&a_(s)>debut))ici.push(p);else if(l.some(s=>de(s)>=debut))fut.push(p);else par.push(p)});
+  const prochain=p=>Math.min(...sej[p].map(s=>a_(s)>debut?a_(s):Infinity)),arrive=p=>Math.min(...sej[p].map(de).filter(t=>t>=debut)),parti=p=>Math.max(...sej[p].map(a_));
+  const tri=f=>(u,v)=>f(u)-f(v)||u.localeCompare(v);
+  ici.sort(tri(prochain));fut.sort(tri(arrive));par.sort(tri(p=>-parti(p)));
+  const ks=new Set(),nl=now>a&&now<b?x(now):'',nx=DAY===TODAY?nl:x(Math.max(a,D0+6*36e5)); /* nl : trait « maintenant » ; nx : où caler le planning */
+  const det=l=>PSEL&&PSEL.pt===pt&&l.includes(PSEL.p)?detailBarre(pt):'';
+  const bloc=l=>{const labs=l.map(p=>{const v=vehicle(p)||{},st=stayFor(p,DAY),vu=st&&st.point===pt&&vuSejour(st);return `<button type="button" class="pl-lab" data-open="${esc(p)}"><span class="plate">${esc(p)}</span><small>${vu?'✓ Vu · ':''}${esc(v.modele||'')}</small></button>`}).join('');
+    const lanes=l.map(p=>`<div class="pl-ln">${barresDe(p,pt,W).map(r=>{const on=PSEL&&PSEL.pt===pt&&PSEL.p===p&&PSEL.cle===cleBarre(r);ks.add(r.k);return `<button type="button" class="pb ${r.k}${r.s&&r.s.ici?' ici':''}${on?' sel':''}" style="left:${x(r.a)}px;width:${Math.max(x(r.b)-x(r.a),12)}px" data-pbar="${esc(cleBarre(r))}" data-pt="${esc(pt)}" data-pp="${esc(p)}" aria-label="${esc(p+' : '+r.t)}"><span>${esc(r.t)}</span></button>`}).join('')}</div>`).join('');
+    return `<div class="pl"><div>${labs}</div><div class="pl-sc" data-plsc="${esc(cle)}" data-nowx="${nx}"><div class="pl-tr" style="width:${larg}px">${lanes}${nl!==''?`<div class="pl-now" style="left:${nl}px"></div>`:''}</div></div></div>${det(l)}`};
+  const groupe=(k,titre,l,ouvert)=>{if(!l.length)return '';const o=(pt+'|'+k) in PLG?PLG[pt+'|'+k]:ouvert;return `<button type="button" class="pl-grp" data-plgrp="${esc(pt+'|'+k)}" aria-expanded="${o}"><span>${titre} <b>${l.length}</b></span><span aria-hidden="true">${o?'▾':'▸'}</span></button>${o?bloc(l):''}`};
+  const corps=(ici.length?bloc(ici):`<div class="empty small"><b>Aucun véhicule sur place ${DAY===TODAY?'en ce moment':'ce jour-là'}</b></div>`)+groupe('fut','Arrivent plus tard',fut,true)+groupe('par','Déjà partis',par,false);
+  let hd='';for(let t=a;t<b;){const dd=new Date(t),n=new Date(dd.getFullYear(),dd.getMonth(),dd.getDate()+1).getTime(),j=iso(dd),l=dLabel(j);hd+=`<div class="${j===DAY?'auj':''}" style="width:${x(Math.min(n,b))-x(t)}px"><span>${j===TODAY?"Aujourd'hui":esc(l.dow+' '+l.num)}</span></div>`;t=n}
+  const tete=`<div class="pl-hdw"><div class="pl-lab h"></div><div class="pl-sc pl-hsc" data-plsc="${esc(cle)}" data-nowx="${nx}"><div class="pl-tr" style="width:${larg}px"><div class="pl-hd">${hd}</div></div></div></div>`;
+  return legende(ks)+tete+corps;
 }
 function detailBarre(pt){
   const W=fenetre(pt),r=barresDe(PSEL.p,pt,W).find(x=>cleBarre(x)===PSEL.cle);if(!r)return '';
@@ -1189,10 +1208,17 @@ function detailBarre(pt){
   if(r.s&&r.s.ici)l.push(['Le BO le met à',full(r.s.ici.bo)]);
   return `<div class="pl-det" aria-live="polite"><div class="dr"><span class="plate">${esc(PSEL.p)}</span><span class="dv">${esc(r.t)}</span></div>${l.map(([k,v])=>`<div class="dr"><span class="dk">${esc(k)}</span><span class="dv">${esc(v)}</span></div>`).join('')}<button type="button" class="btn wide primary" data-open="${esc(PSEL.p)}">Ouvrir la fiche</button></div>`;
 }
-const LEGENDE=`<div class="pl-leg">${[['pose','Sur place'],['ouest','Location Paris Ouest'],['nord','Location Paris Nord'],['centre','Location Paris-Centre'],['est','Location Paris Est (Meaux)'],['caler','Caler pro'],['meca','Garage'],['normal','Improductif']].map(([c,t])=>`<span><i class="pb ${c}"></i>${t}</span>`).join('')}</div>`;
+/* v63 (Fabian) : légende réduite à ce qui est dessiné sur le planning du point */
+const LEG=[['pose','Sur place'],['ouest','Location Paris Ouest'],['nord','Location Paris Nord'],['centre','Location Paris-Centre'],['est','Location Paris Est (Meaux)'],['prov','Location autre point'],['caler','Caler pro'],['meca','Garage'],['normal','Improductif']];
+function legende(ks){const l=LEG.filter(([c])=>ks.has(c));return l.length?`<div class="pl-leg">${l.map(([c,t])=>`<span><i class="pb ${c}"></i>${t}</span>`).join('')}</div>`:''}
 
 /* Planning : chaque point s'ouvre centré sur maintenant (une seule fois par affichage) */
-function caleMaintenant(el){(el||document).querySelectorAll('[data-plsc]').forEach(e=>{if(e._cale)return;e._cale=1;const n=e.querySelector('.pl-now');if(n)e.scrollLeft=Math.max(0,n.offsetLeft-70)})}
+function caleMaintenant(el){(el||document).querySelectorAll('[data-plsc]').forEach(e=>{if(e._cale)return;e._cale=1;const n=e.dataset.nowx;if(n!=='')e.scrollLeft=Math.max(0,+n-70)})}
+/* Barre des jours collée sous le bandeau du point ; défilement horizontal synchronisé */
+function collerJours(el){(el||document).querySelectorAll('.pl-hdw').forEach(h=>{const pb=h.parentElement&&h.parentElement.querySelector('.pband');if(pb)h.style.top=((parseFloat(getComputedStyle(pb).top)||0)+pb.offsetHeight)+'px'})}
+document.addEventListener('scroll',e=>{const t=e.target;if(!t||!t.dataset||t.dataset.plsc===undefined)return;
+  if(t._sx!==undefined&&Math.abs(t.scrollLeft-t._sx)<1){t._sx=undefined;return} /* écho de notre propre synchro : on ne renvoie rien (sinon l'inertie s'arrête) */
+  document.querySelectorAll('[data-plsc]').forEach(o=>{if(o!==t&&o.dataset.plsc===t.dataset.plsc&&Math.abs(o.scrollLeft-t.scrollLeft)>=1){o._sx=t.scrollLeft;o.scrollLeft=t.scrollLeft}})},true);
 function vHome(){
   const pts=LOCAL.concat(allPoints().filter(p=>S.myPoints.includes(p)&&!LOCAL.includes(p)));
   const order=S.myPoints.slice().sort((a,b)=>pts.indexOf(a)-pts.indexOf(b));
@@ -1208,7 +1234,6 @@ function vHome(){
   ${(()=>{/* v45 : demandes sans point connu, ou sur un point non suivi : avant, comptées dans le total mais affichées nulle part */
     const ot=asks.filter((d,i,a)=>!order.includes(askPt(d))&&a.findIndex(x=>x.plaque===d.plaque)===i);if(!ot.length)return '';
     return `<section class="psec"><div class="pband"><h2>Autres demandes</h2><div class="pband-n"><b>${ot.length}</b> à voir</div></div>${ot.map(d=>askCard(d,stayFor(d.plaque,DAY),askPt(d)?'Point : '+full(askPt(d)):'Point non précisé')).join('')}</section>`})()}
-  ${S.vue==='plan'&&order.length?LEGENDE:''}
   ${order.map(p=>{const pa=asks.filter((d,i,a)=>askPt(d)===p&&a.findIndex(x=>x.plaque===d.plaque)===i);const l=list.filter(s=>s.point===p&&!pa.some(d=>d.plaque===s.plaque));return `
   <section class="psec">
     <div class="pband"><h2>${esc(full(p))}</h2><div class="pband-n"><b>${l.length+pa.length}</b> ${now?'à voir':'sur place'}</div></div>
@@ -1409,7 +1434,7 @@ function put(el,html){if(el._h===html)return;el._h=html;
   const sc={};el.querySelectorAll('[data-plsc]').forEach(e=>{sc[e.dataset.plsc]=e.scrollLeft});
   el.innerHTML=html;
   el.querySelectorAll('[data-plsc]').forEach(e=>{if(e.dataset.plsc in sc){e.scrollLeft=sc[e.dataset.plsc];e._cale=1}});
-  caleMaintenant(el)}
+  caleMaintenant(el);collerJours(el)}
 function render(bg){const r=render0(bg);syncHist();return r}
 function render0(bg){
   index();badge();
@@ -1519,6 +1544,7 @@ document.addEventListener('click',e=>{
   if(b.id==='iciNon'){if(sheet.autre){sheet.autre=false;render()}else closeSheet();return}
   if(b.id==='autreBtn'){sheet.autre=true;render();$('#sheet').scrollTop=0;return}
   if(b.dataset.vue){PSEL=null;set({vue:b.dataset.vue==='plan'?'plan':'liste'});return}
+  if(b.dataset.plgrp){PLG[b.dataset.plgrp]=b.getAttribute('aria-expanded')!=='true';PSEL=null;render();return}
   if(b.dataset.pbar){const n={pt:b.dataset.pt,p:b.dataset.pp,cle:b.dataset.pbar};PSEL=PSEL&&PSEL.pt===n.pt&&PSEL.p===n.p&&PSEL.cle===n.cle?null:n;render();return}
   if(b.id==='okBtn'){const p=sheet.plaque;record(p,[],faitsTexte(draft),'');closeSheet(p+' validé. Tout est OK.');return}
   if(b.id==='pbBtn'){sheet.step='probleme';render();$('#sheet').scrollTop=0;return}
@@ -1568,7 +1594,7 @@ document.addEventListener('wheel',e=>{const r=e.target.closest('.days');if(!r||M
 document.addEventListener('pointerdown',e=>{const r=e.target.closest('.days');dragged=false;if(r&&e.pointerType==='mouse')drag={r,x:e.clientX,l:r.scrollLeft}});
 document.addEventListener('pointermove',e=>{if(!drag)return;const dx=e.clientX-drag.x;if(Math.abs(dx)>5)dragged=true;drag.r.scrollLeft=drag.l-dx});
 document.addEventListener('pointerup',()=>{drag=null;setTimeout(()=>{dragged=false},0)});
-addEventListener('resize',()=>centerDays());addEventListener('load',()=>centerDays());
+addEventListener('resize',()=>{centerDays();collerJours(document)});if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>collerJours(document));addEventListener('load',()=>centerDays());
 function centerDays(){document.querySelectorAll('.days').forEach(r=>{const on=r.querySelector('.day.on');if(on)r.scrollLeft=on.offsetLeft-r.offsetLeft-(r.clientWidth-on.offsetWidth)/2})}
 window.addEventListener('online',()=>{S.offline=false;run(true)});
 /* v39 : mise à jour sans fermer l'appli. Elle regarde s'il y a une nouvelle version quand elle revient à l'écran
