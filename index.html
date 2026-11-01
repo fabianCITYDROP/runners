@@ -214,6 +214,41 @@ input.plateinput{font-family:var(--mono);text-transform:uppercase;font-size:22px
 .imp.normal{background:var(--yellow-soft);color:var(--yellow)}
 .imp.info{background:var(--red-soft);color:var(--red)}
 .imp.info .imp-t{color:var(--fg)}
+.imp.ici{background:var(--info-soft);color:var(--info)}
+/* v62 : vue planning (Fabian 1/11) : mêmes couleurs que le planning du BO */
+.vues{display:flex;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:3px;gap:3px}
+.vues button{flex:1;border:0;border-radius:9px;padding:9px;font:600 15px var(--sans);background:transparent;color:var(--muted)}
+.vues button[aria-pressed="true"]{background:var(--surface);color:var(--fg);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.pl{display:grid;grid-template-columns:104px minmax(0,1fr);background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.pl-lab{display:flex;flex-direction:column;justify-content:center;gap:2px;height:54px;padding:0 8px 0 10px;border-bottom:1px solid var(--line);background:var(--surface);text-align:left;border-left:0;border-right:0;border-top:0;font:inherit;color:inherit}
+.pl-lab.h{height:30px}
+.pl-lab .plate{font-size:12px;align-self:flex-start}
+.pl-lab small{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.pl-sc{overflow-x:auto;position:relative;-webkit-overflow-scrolling:touch}
+.pl-tr{position:relative}
+.pl-hd{position:relative;z-index:2;background:var(--surface);display:flex;height:30px;border-bottom:1px solid var(--line);font-size:11.5px;color:var(--muted)}
+.pl-hd div{flex:none;border-left:1px solid var(--line);padding:7px 0;white-space:nowrap}
+.pl-hd span{position:sticky;left:0;padding:0 6px;background:var(--surface)}
+.pl-hd div.auj{color:var(--fg);font-weight:700}
+.pl-ln{position:relative;height:54px;border-bottom:1px solid var(--line)}
+.pb{position:absolute;top:13px;height:28px;border-radius:6px;border:0;font:600 11.5px var(--sans);color:#fff;display:flex;align-items:center;padding:0 6px;white-space:nowrap;overflow:hidden;overflow:clip;text-align:left;min-width:12px}
+.pb>span{position:sticky;left:4px} /* le nom reste visible quand la barre commence avant l'écran */
+.pb:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
+.pb.pose{background:#8D6E63}.pb.ouest{background:#28B463}.pb.nord{background:#C75000}.pb.sud{background:#2E86C1}.pb.est{background:#D4AC0D;color:#2a2000}.pb.centre{background:#1C1C1C;box-shadow:inset 0 0 0 1px rgba(255,255,255,.35)}.pb.prov{background:#B400B4}
+.pb.caler{background:repeating-linear-gradient(90deg,#7F8C8D 0 6px,#5D6D7E 6px 12px)}
+.pb.meca{background:repeating-linear-gradient(135deg,#C0392B 0 6px,#8E2A20 6px 12px)}
+.pb.normal{background:repeating-linear-gradient(135deg,#D4AC0D 0 6px,#2a2000 6px 8px);color:#2a2000}
+.pb.normal>span{background:rgba(255,255,255,.88);border-radius:3px;padding:0 3px}
+.pb.ici{box-shadow:inset 0 0 0 2px #23477A}
+.pb.sel{box-shadow:0 0 0 2px var(--fg)} /* en dernier : gagne sur les autres contours */
+.pl-now{position:absolute;top:0;bottom:0;width:2px;background:#C0392B;z-index:1;pointer-events:none}
+.pl-det{display:flex;flex-direction:column;gap:6px;padding:12px 14px;border-radius:14px;background:var(--surface);border:1px solid var(--line)}
+.pl-det .dr{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:14px}
+.pl-det .dk{color:var(--muted)}.pl-det .dv{font-weight:600}
+.pl-leg{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:12px;color:var(--muted)}
+.pl-leg i.pb{position:static;display:inline-block;width:18px;min-width:0;height:10px;padding:0;border-radius:3px;vertical-align:-1px;margin-right:4px}
+.imp.ici .imp-t{color:var(--fg)}
+.pill.ici{background:var(--info-soft);color:var(--info)}
 .status{padding:12px 14px;border-radius:12px;font-weight:600;font-size:15px}
 .status.ok{background:var(--accent-soft);color:var(--accent)}
 .status.ko{background:var(--warn-soft);color:var(--warn)}
@@ -234,7 +269,7 @@ nav.tabs button{min-height:60px;border:none;border-radius:10px;background:transp
 nav.tabs button.on{background:var(--accent-soft);color:var(--accent)}
 .cnt{display:inline-block;min-width:22px;padding:1px 6px;margin-left:2px;border-radius:999px;background:var(--surface-2);color:var(--fg);font-size:12px}
 nav.tabs button.on .cnt{background:var(--accent);color:var(--accent-fg)}
-.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));width:max-content;max-width:min(440px,calc(100% - 32px));padding:10px 14px;border-radius:10px;background:var(--head);color:var(--head-fg);font-size:14px;z-index:30}
+.toast{pointer-events:none;position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));width:max-content;max-width:min(440px,calc(100% - 32px));padding:10px 14px;border-radius:10px;background:var(--head);color:var(--head-fg);font-size:14px;z-index:30}
 /* v19 : lisibilité sur petit téléphone, pour tous les âges */
 body{font-size:17px}
 .plate{font-size:21px}
@@ -330,6 +365,7 @@ nav.tabs button{font-size:16px}
 .row .consigne{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .psec>.row,.list>.row{content-visibility:auto;contain-intrinsic-size:auto 150px}
 .ph.demo{display:flex;align-items:center;justify-content:center;background:var(--surface-2);font-size:13px;color:var(--muted)}
+.fac{font-weight:400;color:var(--muted);font-size:.85em}.hrow{display:flex;gap:10px;align-items:center}.hrow input{flex:1;min-width:0}.hclear{min-height:44px;padding:0 14px;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--muted);font-weight:600;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -535,7 +571,7 @@ function load(){try{return JSON.parse(localStorage.getItem(STORE))||null}catch(e
 /* Le planning (gros) est rangé à part, dans la base du téléphone, et seulement quand il change (2 fois par jour).
    La sauvegarde de chaque action ne contient que le petit état : envois en attente, passages, rappels. */
 const IDB={db:null,
-  open(){if(this.p)return this.p;return this.p=new Promise(ok=>{try{const r=indexedDB.open('runners',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>ok(this.db=r.result);r.onerror=()=>ok(null)}catch(e){ok(null)}})},
+  open(){if(this.p)return this.p;return this.p=new Promise(ok=>{let fini=false;const fin=x=>{if(!fini){fini=true;ok(x)}};setTimeout(()=>fin(null),4000); /* v59 : base qui ne répond jamais (certains iPhone) : on continue sans ; si elle s'ouvre après, on ne s'en sert pas (tout est resté dans le stockage simple) */try{const r=indexedDB.open('runners',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>{if(fini){try{r.result.close()}catch(e){}return}this.db=r.result;fin(r.result)};r.onerror=()=>fin(null)}catch(e){fin(null)}})},
   get(k){return this.open().then(db=>db?new Promise(ok=>{try{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>ok(q.result||null);q.onerror=()=>ok(null)}catch(e){ok(null)}}):null)},
   set(k,v){return this.open().then(db=>new Promise(ok=>{try{if(!db)return ok(false);const t=db.transaction('kv','readwrite');t.objectStore('kv').put(v,k);t.oncomplete=()=>ok(true);t.onerror=t.onabort=()=>ok(false)}catch(e){ok(false)}}))},
   del(k){return this.open().then(db=>{try{if(db)db.transaction('kv','readwrite').objectStore('kv').delete(k)}catch(e){}})},
@@ -556,6 +592,8 @@ function savePassages(){IDB.set(STORE+'-pas',S.passages)}
 var QREADY=false;
 function lightQueue(all){return S.queue.map(q=>q.photos&&q.photos.length&&(q.phSaved||all)?Object.assign({},q,{photos:[],mini:'',phN:q.photos.length}):q)}
 function save(){
+  /* v59 : chaque envoi garde le lien (code) du runner qui l'a fait : ouvrir le lien d'un autre runner sur ce téléphone ne le change pas */
+  if(!DEMO&&CODE)(S.queue||[]).forEach(q=>{if(q&&!q.code)q.code=CODE});
   const q=!DEMO&&IDB.db&&QREADY?{queue:lightQueue()}:{};
   /* Les passages envoyés à l'instant restent aussi dans la petite sauvegarde : si l'appli est tuée avant que
      la base du téléphone soit à jour, le véhicule ne réapparaît pas dans « À faire » */
@@ -569,7 +607,7 @@ try{CODE=new URLSearchParams(location.search).get('c')||'';if(CODE)localStorage.
 let S=load();
 if(S&&DEMO&&S.day!==TODAY)S=null;
 if(!S)S=Object.assign({day:TODAY,loc:[],impros:[],passages:[],demandes:[],queue:[],who:'',myPoints:[],ptsSet:false,screen:'home',misAJour:'',synced:'',offline:false,blocked:''},DEMO?demoState():{});
-S.day=TODAY;S.queue=S.queue||[];
+S.day=TODAY;S.queue=S.queue||[];S.offline=false; /* v59 : une panne d'avant ne retarde plus l'ouverture */
 /* Ancienne version (planning dans la petite sauvegarde) : relu puis déplacé dans la base du téléphone */
 if(S.plan){try{const t=readPlan(S.plan);S.loc=t.loc;S.impros=t.impros;savePlan(S.plan);savePassages()}catch(e){S.plan=null;S.misAJour=''}}
 let ready=DEMO||!!S.plan;
@@ -583,7 +621,7 @@ if(!DEMO)(async()=>{
     const base=await IDB.open();
     for(let k=0;base&&k<4&&!(q.photos&&q.photos.length);k++){const f=await IDB.get(STORE+'-ph-'+q.id);if(f&&f.photos&&f.photos.length){q.photos=f.photos;q.mini=f.mini||''}else await new Promise(r=>setTimeout(r,300*(k+1)))}
     if(!(q.photos&&q.photos.length))q.phLost=1;
-  }})().catch(()=>{}).finally(()=>{QREADY=!!IDB.db;save();run()});
+  }})().catch(()=>{}).finally(()=>IDB.open().then(()=>{QREADY=!!IDB.db;save();run()})); /* v59 : attendre que la base soit ouverte (sinon les photos restaient dans la petite sauvegarde) */
 let sheet=null;            /* {plaque, step:'fiche'|'probleme'} ou {search:true} */
 let showReport=false,picker=false,query='';
 let draft={types:[],photos:[],comment:'',note:'',faits:[]};
@@ -594,8 +632,14 @@ const FAITS=['AdBlue effacé','Voyant effacé','Rétro changé','Ampoule changé
 function faitsChips(){return `<div class="mlabel">Fait sur place ? (facultatif)</div><div class="chips">${FAITS.map(f=>{const on=draft.faits.includes(f);return `<button type="button" class="chip ${on?'on':''}" data-fait="${esc(f)}" aria-pressed="${on}">${esc(f)}</button>`}).join('')}</div>`}
 function faitsTexte(dr){return dr.faits.concat(dr.note.trim()?[dr.note.trim()]:[]).join(', ')}
 function faitsDe(t){const l=String(t||'').split(/\s*,\s*/).filter(Boolean),f=l.filter(x=>FAITS.includes(x));return {faits:f,note:l.filter(x=>!FAITS.includes(x)).join(', ')}}
-let rdraft={date:'',note:'',other:false,point:''};
-function newRemind(p){const st=stayFor(p,DAY)||stayFor(p);return {date:'',note:'',other:false,point:st?st.point:(S.myPoints[0]||LOCAL[0])}}
+let rdraft={date:'',note:'',other:false,point:'',heure:''};
+function newRemind(p){const st=stayFor(p,DAY)||stayFor(p);return {date:'',note:'',other:false,heure:'',point:st?st.point:(S.myPoints[0]||LOCAL[0])}}
+/* v59 : heure facultative ; aujourd'hui, elle doit être encore à venir */
+function heurePassee(){return rdraft.date===TODAY&&rdraft.heure&&rdraft.heure<hm(new Date())} /* la minute en cours est acceptée (l'iPhone propose l'heure actuelle) */
+function remOk(){return !!rdraft.date&&!heurePassee()}
+function heureInfo(){return heurePassee()?'Cette heure est déjà passée : choisis une heure plus tard, ou un autre jour.':rdraft.heure?'Une alerte arrive sur ton téléphone vers '+rdraft.heure.replace(':','h')+' (si les alertes sont activées).':'Sans heure, le véhicule apparaît en rouge dans la liste ce jour-là.'}
+function majRem(){const b=$('#saveRem');if(b)b.disabled=!remOk();const c=$('#rSansHeure');if(c)c.hidden=!rdraft.heure;const i=$('#rHeureInfo');if(i)i.textContent=heureInfo()}
+function hhmm(h){return h?' · '+h.replace(':','h'):''}
 let DAY=TODAY;
 /* v41 : après une mise à jour automatique, on revient sur le jour qui était affiché */
 try{const j=JSON.parse(sessionStorage.getItem('runners-jour')||'null');sessionStorage.removeItem('runners-jour');if(j&&Date.now()-j.t<60000&&/^\d{4}-\d\d-\d\d$/.test(j.d)&&j.d>=dayOffset(-DAYS_BACK)&&j.d<=dayOffset(DAYS_AHEAD))DAY=j.d}catch(e){}
@@ -616,7 +660,7 @@ function toast(msg){const t=$('#toast');t.textContent=msg;t.hidden=false;clearTi
 function rapportEnAttente(){return !!S.rapportId&&S.queue.some(q=>q.id===S.rapportId)}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
 /* Résultats recalculés seulement quand le planning ou les points changent */
-function memo(fn){const c=new Map();let src;return function(day){const a=S.loc,b=S.myPoints.join('|')+'|'+S.impros.length+'|'+(day||'');if(a!==src){src=a;c.clear()}if(!c.has(b))c.set(b,fn(day));return c.get(b)}}
+function memo(fn){const c=new Map();let src;return function(day){const a=S.loc,b=S.myPoints.join('|')+'|'+S.impros.length+'|'+ICIK+'|'+(day||'');if(a!==src){src=a;c.clear()}if(!c.has(b))c.set(b,fn(day));return c.get(b)}}
 
 /* ---------- Planning ---------- */
 const vehicles=memo(()=>{const m=new Map();S.loc.forEach(r=>{const v=m.get(r.plaque);if(!v)m.set(r.plaque,{plaque:r.plaque,modele:r.modele||'',categorie:r.categorie,km:r.km,events:r.events.slice()});else r.events.forEach(e=>{if(!v.events.some(x=>x.label===e.label))v.events.push(e)})});return m});
@@ -635,8 +679,19 @@ const stays=memo(()=>{
       if(S.myPoints.includes(r.villeDep)){const pv=rs[i-1];if(!(pv&&pv.villeArr===r.villeDep))out.push({plaque:p,point:r.villeDep,from:'',fromCity:'',to:r.dep,toCity:r.villeArr,toCaler:!!r.caler})}
     });
   });
+  /* v60 (Fabian 31/10) : « Il est ici » : un runner a vu le véhicule sur un autre point que celui du BO (garage, convoyage
+     pas fait). Il y est depuis ce passage jusqu'à son prochain départ dans le BO, ou jusqu'à ce qu'un runner le voie ailleurs.
+     Sur le point du BO, le séjour est marqué « vu ailleurs » : il n'est plus à chercher. */
+  Object.keys(ICI).forEach(p=>{const c=ICI[p],x=c.x,from=c.from;
+    const nx=(lignesPar()[p]||[]).find(r=>r.dep>from&&r.villeDep);
+    let to=nx?nx.dep:'',toCity=nx?nx.villeArr:'';if(c.fin&&(!to||c.fin<to)){to=c.fin;toCity=''}
+    out.forEach(s=>{if(s.plaque===p&&s.point!==x.point&&!(s.from&&s.from>from)&&!(s.to&&s.to<=from)&&!(to&&s.from&&s.from>=to))s.ailleurs=x});
+    if(S.myPoints.includes(x.point))out.push({plaque:p,point:x.point,from,fromCity:'',to,toCity,ici:x});
+  });
   return out;
 });
+/* Point où le BO met le véhicule maintenant : arrivée de sa dernière location partie, sinon départ de la prochaine */
+function ouBO(p){const rs=lignesPar()[p]||[],now=nowStr();let pt='';for(const r of rs){if(r.dep<=now)pt=r.villeArr||pt;else{if(!pt)pt=r.villeDep||'';break}}return pt}
 /* Véhicules présents un jour donné, le départ le plus proche en premier */
 const staysAll=memo(day=>{
   const a=day+' 00:00',b=day+' 23:59';
@@ -654,7 +709,7 @@ function staysOn(day){
   if(c&&c.src===all)return c.v;
   const pick=new Map();
   /* triés par heure de départ : on passe au séjour suivant tant que celui retenu est déjà terminé */
-  all.forEach(s=>{const p=pick.get(s.plaque);if(!p||(now&&p.to&&p.to<now))pick.set(s.plaque,s)});
+  all.forEach(s=>{const p=pick.get(s.plaque);if(!p||(p.ailleurs&&!s.ailleurs)||(now&&p.to&&p.to<now&&!(s.ailleurs&&!p.ailleurs)))pick.set(s.plaque,s)}); /* v60 : le séjour « vu ailleurs » passe après */
   const v=all.filter(s=>pick.get(s.plaque)===s);
   if(SEL.size>30)SEL.clear();SEL.set(k,{src:all,v});return v;
 }
@@ -677,10 +732,10 @@ const lignesPar=memo(()=>{const by={};S.loc.forEach(r=>{(by[r.plaque]=by[r.plaqu
    planning (location annulée ou déplacée) est oubliée. */
 function noteArrivees(by){
   const now=nowStr(),lim=iso(new Date(Date.now()-15*864e5)),fut=iso(new Date(Date.now()+3*864e5))+' 23:59',vu=new Map(),out=[];
-  const ajoute=(p,pt,dep,arr)=>{if(p&&pt&&arr&&arr>=lim&&arr<=fut&&S.myPoints.includes(pt))vu.set(p+'|'+pt+'|'+arr,{p,pt,dep:dep||arr,arr})};
-  Object.keys(by).forEach(p=>by[p].forEach(r=>{if(vraie(r))ajoute(p,r.villeArr,r.dep,r.arr)}));
+  const ajoute=(p,pt,dep,arr,de)=>{if(p&&pt&&arr&&arr>=lim&&arr<=fut&&S.myPoints.includes(pt)){const k=p+'|'+pt+'|'+arr,o=vu.get(k);vu.set(k,{p,pt,dep:dep||arr,arr,de:de||(o&&o.de)||''})}};
+  Object.keys(by).forEach(p=>by[p].forEach(r=>{if(vraie(r))ajoute(p,r.villeArr,r.dep,r.arr,r.villeDep)}));
   const srv=S.plan&&Array.isArray(S.plan.arr)?S.plan.arr:[];
-  srv.forEach(a=>{if(Array.isArray(a)&&a[3]&&a[3]<=now)ajoute(String(a[0]),String(a[1]),String(a[2]||''),String(a[3]))});
+  srv.forEach(a=>{if(Array.isArray(a)&&a[3]&&a[3]<=now)ajoute(String(a[0]),String(a[1]),String(a[2]||''),String(a[3]),String(a[4]||''))}); /* a[4] : ville de départ (script v34) */
   (Array.isArray(S.arrivees)?S.arrivees:[]).forEach(a=>{if(!a||!a.arr)return;const k=a.p+'|'+a.pt+'|'+a.arr;if(a.arr>=lim&&a.arr<=now&&!vu.has(k))out.push(a)});
   vu.forEach(a=>out.push(a));
   out.sort((a,b)=>a.arr.localeCompare(b.arr));
@@ -717,24 +772,33 @@ function vuSejour(s){
 }
 
 /* ---------- Passages ---------- */
-function fromQueue(q){return {at:q.at,by:q.by,plaque:q.plaque,point:q.point,cle:q.cle,pb:q.problemes||[],comment:q.commentaire||'',faits:q.faits||'',photo:!!(q.photos&&q.photos.length),demande:q.demande_id||'',id:q.id,pending:true}}
-function fromServer(x){return {at:String(x.horodatage||'').replace('T',' ').slice(0,16),by:x.runner,plaque:String(x.plaque||'').toUpperCase(),point:x.point,cle:x.cle,pb:x.problemes?String(x.problemes).split(', ').filter(Boolean):[],comment:x.commentaire||'',faits:x.faits||'',photo:!!x.photo,demande:x.demande_id||'',id:x.id||''}}
-function removeLast(list,cle,plaque){for(let i=list.length-1;i>=0;i--)if(list[i].cle===cle&&list[i].plaque===plaque){list.splice(i,1);return true}return false}
+function fromQueue(q){return {at:q.at,by:q.by,plaque:q.plaque,point:q.point,cle:q.cle,pb:q.problemes||[],comment:q.commentaire||'',faits:q.faits||'',bo:q.bo||'',photo:!!(q.photos&&q.photos.length),demande:q.demande_id||'',id:q.id,pending:true}}
+function fromServer(x){return {at:String(x.fait_le||x.horodatage||'').replace('T',' ').slice(0,16), /* v59 : heure de la validation sur le téléphone si elle est partie plus tard */by:x.runner,plaque:String(x.plaque||'').toUpperCase(),point:x.point,cle:x.cle,pb:x.problemes?String(x.problemes).split(', ').filter(Boolean):[],comment:x.commentaire||'',faits:x.faits||'',bo:x.bo||'',photo:!!x.photo,demande:x.demande_id||'',id:x.id||''}}
+/* v59 : retire le passage visé (son identifiant), sinon le dernier de ce runner, sinon le dernier tout court.
+   Avant : toujours le dernier, même celui d'un autre runner repassé après (la validation annulée restait affichée) */
+function removeLast(list,cle,plaque,id,by){const f=t=>{for(let i=list.length-1;i>=0;i--)if(list[i].cle===cle&&list[i].plaque===plaque&&t(list[i])){list.splice(i,1);return true}return false};
+  return (id?f(x=>x.id===id):false)||(by?f(x=>x.by===by):false)||(!by&&f(()=>true))}
 /* Passages enregistrés + ceux pas encore envoyés */
 function allPassages(){
   const list=S.passages.slice();
-  S.queue.forEach(q=>{if(q.action==='passage')list.push(fromQueue(q));else if(q.action==='annuler')removeLast(list,q.cle,q.plaque)});
+  S.queue.forEach(q=>{if(q.action==='passage')list.push(fromQueue(q));else if(q.action==='annuler')removeLast(list,q.cle,q.plaque,q.cible,S.who)});
   return list;
 }
 /* v42 : FAITES = demandes déjà closes par un passage, calculé une fois ici (avant : relu pour chaque demande à chaque
    affichage, plus d'une seconde de calcul sur un téléphone lent avec un mois de passages) */
-let P={},PP={},PL=[],FAITES=new Set();
-function index(){PL=allPassages();P={};PP={};FAITES=new Set();PL.forEach(x=>{P[x.cle]=x;const kp=x.plaque+'|'+x.point;(PP[kp]=PP[kp]||[]).push(x);if(x.demande)String(x.demande).split(',').forEach(id=>{if(id)FAITES.add(id)})})}
+let P={},PP={},PL=[],FAITES=new Set(),ICI={},ICIK='';
+function index(){PL=allPassages();P={};PP={};FAITES=new Set();PL.forEach(x=>{P[x.cle]=x;const kp=x.plaque+'|'+x.point;(PP[kp]=PP[kp]||[]).push(x);if(x.demande)String(x.demande).split(',').forEach(id=>{if(id)FAITES.add(id)})});
+  /* v60 : dernier « Il est ici » de chaque véhicule (15 jours), et le premier passage d'un runner sur un autre point après lui */
+  ICI={};const lim=iso(new Date(Date.now()-15*864e5));
+  PL.forEach(x=>{if(x.bo&&x.point&&x.at>=lim&&(!ICI[x.plaque]||x.at>=ICI[x.plaque].x.at))ICI[x.plaque]={x,fin:''}});
+  PL.forEach(y=>{const c=ICI[y.plaque];if(c&&y.at>c.x.at&&y.point&&y.point!=='Hors liste'&&y.point!==c.x.point&&!y.pb.includes('Pas trouvé sur place')&&(!c.fin||y.at<c.fin))c.fin=y.at}); /* v61 : « pas sur place » ailleurs ne dit pas qu'il a bougé */
+  Object.keys(ICI).forEach(p=>{const c=ICI[p],k=String(c.x.cle||'').split('|');c.from=k.length===3&&k[0]===p&&k[2]===c.x.point&&k[1]?k[1]:c.x.at;if(c.fin&&c.fin<=c.from)delete ICI[p]});
+  ICIK=Object.keys(ICI).sort().map(p=>p+'>'+ICI[p].x.point+'@'+ICI[p].from+'-'+ICI[p].fin).join(',')}
 function passageOf(p){const s=stayFor(p);return s?vuSejour(s):P['manual|'+TODAY+'|'+p]||null}
 /* Demandes du bureau et rappels du runner, y compris ceux pas encore envoyés */
 function allAsks(){
   const list=S.demandes.map(d=>Object.assign({},d));
-  S.queue.forEach(q=>{if(q.action==='rappel')list.push({id:q.id,date:q.date,runner:S.who,plaque:q.plaque,point:q.point,consigne:q.consigne,statut:'à faire',auteur:S.who,pending:true});
+  S.queue.forEach(q=>{if(q.action==='rappel')list.push({id:q.id,date:q.date,runner:S.who,plaque:q.plaque,point:q.point,consigne:q.consigne,statut:'à faire',auteur:S.who,heure:q.heure||'',pending:true});
     else if(q.action==='rappel_suppr'){const d=list.find(x=>x.id===q.id);if(d)d.statut='supprimée'}});
   /* v48 : demande sur plusieurs jours (debut → fin) : elle compte pour aujourd'hui pendant toute la période,
      et après la période elle reste « prévue » à son dernier jour (comme une demande d'un seul jour oubliée) */
@@ -744,10 +808,13 @@ function allAsks(){
 /* « jusqu'au mer. 28 oct. » pour une demande sur plusieurs jours encore en cours ou à venir */
 function jusqua(d){if(!d.fin||d.fin<TODAY)return '';const l=dLabel(d.fin);return (d.debut>TODAY?'du '+(x=>x.dow.toLowerCase()+' '+x.num)(dLabel(d.debut))+' ':'')+"jusqu'au "+l.dow.toLowerCase()+' '+l.num}
 /* Aujourd'hui : ceux du jour et ceux oubliés les jours d'avant ; autre jour : ceux de ce jour-là */
-function openAsks(day){day=day||TODAY;return allAsks().filter(d=>day===TODAY?d.date<=TODAY:d.fin?d.debut<=day&&day<=d.fin:d.date===day).sort((a,b)=>a.date.localeCompare(b.date))}
+/* v59 (choix de Fabian 29/10) : une demande « Tous » d'un autre point n'est pas dans mes listes ni mes compteurs
+   (sauf si j'ai coché ce point) ; elle reste visible dans la fiche du véhicule et se ferme si je le valide */
+function pourMoi(d){return d.runner!=='Tous'||d.vise!==false||S.myPoints.includes(askPt(d))}
+function openAsks(day,tout){day=day||TODAY;return allAsks().filter(d=>(tout||pourMoi(d))&&(day===TODAY?d.date<=TODAY:d.fin?d.debut<=day&&day<=d.fin:d.date===day)).sort((a,b)=>a.date.localeCompare(b.date))}
 /* v36 : nouvelles demandes du bureau : bandeau, vibration, pastille sur l'icône de l'appli, notification si autorisée.
    « Nouvelle » = pas encore ouverte par le runner (bouton Rappels et demandes) */
-function newAsks(){const vus=S.vus||[];return allAsks().filter(d=>d.auteur!==S.who&&!d.pending&&!vus.includes(d.id))}
+function newAsks(){const vus=S.vus||[];return allAsks().filter(d=>pourMoi(d)&&d.auteur!==S.who&&!d.pending&&!vus.includes(d.id))}
 function badge(){const n=DEMO?0:newAsks().length;try{if(navigator.setAppBadge){if(n)navigator.setAppBadge(n);else navigator.clearAppBadge()}}catch(e){}return n}
 function markAsksSeen(){S.vus=allAsks().map(d=>d.id).concat(S.vus||[]).filter((x,i,a)=>a.indexOf(x)===i).slice(0,300);save();badge()}
 /* v44 : toucher la notification ouvre « Rappels et demandes » et va chercher la demande tout de suite ; en attendant
@@ -815,22 +882,28 @@ function alertesHtml(big){
   return big?carte(I.bell,'','Alertes du bureau','Soyez prévenu des nouvelles demandes, même téléphone verrouillé.','<button type="button" class="btn big primary notifbig" id="enableNotif">Activer les notifications</button>')
     :'<button type="button" class="btn notifbtn" id="enableNotif">'+(Notification.permission==='granted'?'Réactiver les alertes du bureau':'Recevoir les alertes du bureau')+'</button>';
 }
-function askFor(p){return openAsks().find(d=>d.plaque===p)||null}
-function asksFor(p){return openAsks().filter(d=>d.plaque===p)}
+function askFor(p){return openAsks(TODAY,true).find(d=>d.plaque===p)||null}
+function asksFor(p){return openAsks(TODAY,true).filter(d=>d.plaque===p)}
 function myReminders(p){return allAsks().filter(d=>d.plaque===p&&d.auteur===S.who)}
 /* v47 : un véhicule déjà reparti aujourd'hui (heure de départ passée) n'est plus « à voir » : il va dans « Déjà partis »,
    en bas de son point, et à part dans le récap (avant : il restait à chercher toute la journée, puis « Pas vu ») */
 function parti(s,day){return (day||TODAY)===TODAY&&!!s.to&&s.to<nowStr()}
-function restants(day){day=day||TODAY;const asks=new Set(openAsks(day).map(d=>d.plaque));return staysOn(day).filter(s=>!vuSejour(s)&&!asks.has(s.plaque))}
+function restants(day){day=day||TODAY;const asks=new Set(openAsks(day).map(d=>d.plaque));return staysOn(day).filter(s=>!vuSejour(s)&&!asks.has(s.plaque)&&!s.ailleurs)}
 function todo(day){return restants(day).filter(s=>!parti(s,day))}
 function partis(day){return restants(day).filter(s=>parti(s,day))}
-function doneOn(day){return Object.values(P).filter(x=>x.at.slice(0,10)===day&&x.by===S.who).sort((a,b)=>b.at.localeCompare(a.at))}
+/* v60 : véhicules de ce jour qu'un runner a vus sur un autre point (pas à chercher ici) */
+function ailleursOn(day){return staysOn(day||TODAY).filter(s=>s.ailleurs)}
+/* v59 : ses propres passages du jour, même si un autre runner a revalidé le véhicule après lui (un par séjour, le dernier) */
+function doneOn(day){const m={};PL.forEach(x=>{if(x.by===S.who&&String(x.at).slice(0,10)===day)m[x.plaque+'|'+(x.point||'')]=x /* v59 : un véhicule vu deux fois le même jour compte une fois (comme le récap Slack) */});return Object.values(m).sort((a,b)=>b.at.localeCompare(a.at))}
 function doneToday(){return doneOn(TODAY)}
 let DONE_DAY=TODAY;
 
+/* v60 : point choisi avec « Il est ici » pour ce véhicule (oublié à la prochaine ouverture de sa fiche) */
+const ICI_CHOIX={};
 function record(p,types,comment,photos,faits){
-  const st=stayFor(p),ask=askFor(p);
-  const q={id:uid(),action:'passage',cle:keyFor(p),plaque:p,point:st?st.point:(ask&&ask.point)||'Hors liste',problemes:types,commentaire:comment,faits:types.length&&faits?String(faits).slice(0,500):'',photos:(photos||[]).slice(0,MAX_PHOTOS),demande_id:asksFor(p).map(d=>d.id).join(','),at:nowStr(),by:S.who};
+  const st=stayFor(p),ask=askFor(p),ici=ICI_CHOIX[p]&&!types.includes('Pas trouvé sur place')?ICI_CHOIX[p]:'';delete ICI_CHOIX[p];
+  const at=nowStr(),bo=ici?(st&&st.point!==ici?st.point:ouBO(p))||'?':'';
+  const q={id:uid(),action:'passage',cle:ici?p+'|'+at+'|'+ici:keyFor(p),plaque:p,point:ici||(st?st.point:(ask&&ask.point)||'Hors liste'),problemes:types,commentaire:comment,faits:types.length&&faits?String(faits).slice(0,500):'',photos:(photos||[]).slice(0,MAX_PHOTOS),demande_id:asksFor(p).map(d=>d.id).join(','),at,by:S.who};if(bo)q.bo=bo;
   if(q.photos.length&&MINI.get(q.photos[0]))q.mini=MINI.get(q.photos[0]);
   if(DEMO){const x=fromQueue(q);delete x.pending;S.passages.push(x)}else{S.queue.push(q);savePhotos(q)}
   save();run();
@@ -849,10 +922,10 @@ function undo(p){
   save();run();
 }
 
-function remind(p,date,note,point){
+function remind(p,date,note,point,heure){
   const st=stayFor(p,date)||stayFor(p);
-  const q={id:'r'+uid(),action:'rappel',plaque:p,date,consigne:note,point:point||(st?st.point:'')};q.id='R'+q.id.slice(1);
-  if(DEMO)S.demandes.push({id:q.id,date,runner:S.who,plaque:p,point:q.point,consigne:note,statut:'à faire',auteur:S.who});else S.queue.push(q);
+  const q={id:'r'+uid(),action:'rappel',plaque:p,date,consigne:note,point:point||(st?st.point:'')};q.id='R'+q.id.slice(1);if(heure)q.heure=heure;
+  if(DEMO)S.demandes.push({id:q.id,date,runner:S.who,plaque:p,point:q.point,consigne:note,statut:'à faire',auteur:S.who,heure:heure||''});else S.queue.push(q);
   save();run();
 }
 function unremind(id){
@@ -885,7 +958,7 @@ window.addEventListener('storage',e=>{
   if(added){render(true)}
 });
 function baseOf(q){const b=bodyOf(q);delete b.photos;b.photos_attendues=q.photos.length;return b}
-function bodyOf(q){const body={code:CODE};['action','id','cle','plaque','point','problemes','commentaire','faits','photos','demande_id','date','consigne','cible','endpoint','fin','pasVus','partis','jour'].forEach(k=>{if(q[k]!==undefined)body[k]=q[k]});if(typeof body.commentaire==='string')body.commentaire=body.commentaire.slice(0,500);return body}
+function bodyOf(q){const body={code:q.code||CODE};if(q.action==='passage'&&q.at)body.at=q.at; /* v59 : heure de la validation (envoi parti plus tard) */['action','id','cle','plaque','point','bo','problemes','commentaire','faits','photos','demande_id','date','heure','consigne','cible','endpoint','fin','pasVus','partis','jour'].forEach(k=>{if(q[k]!==undefined)body[k]=q[k]});if(typeof body.commentaire==='string')body.commentaire=body.commentaire.slice(0,500);return body}
 /* Le runner ferme l'appli juste après avoir validé : on confie les envois sans photo au téléphone (keepalive),
    qui les termine même appli fermée. Ils restent aussi dans la file : au prochain envoi, Google reconnaît
    un doublon (même identifiant) et ne l'enregistre pas deux fois. */
@@ -925,6 +998,8 @@ function handled(q,r){
   /* Google occupé ou panne passagère : l'envoi reste dans la file, nouvel essai un peu plus tard */
   if(r.erreur&&r.reessayer){S.offline=true;return 'stop'}
   /* Lien désactivé : on garde tout sur le téléphone (rien n'est jeté), le service parc donnera un nouveau lien */
+  /* v59 : envoi fait avec l'ancien lien du runner (lien renouvelé par le bureau) : renvoyé avec le lien actuel */
+  if(r.erreur&&/^Lien inconnu/.test(r.erreur)&&q.code&&q.code!==CODE&&(!q.by||q.by===S.who)){S.queue.forEach(x=>{if(x.code===q.code)x.code=CODE});save();return 'suite'}
   if(r.erreur&&/^Lien inconnu/.test(r.erreur)){S.blocked=r.erreur;return 'stop'}
   S.offline=false;S.oldScript=false;
   /* Le runner a pu annuler pendant l'envoi : on retire cet envoi-là, pas le premier de la file */
@@ -933,8 +1008,8 @@ function handled(q,r){
   if(r.erreur&&q.action==='abonnement'){S.abonneRefus=S.abonne;S.abonne=''}
   else if(r.erreur){toast('Envoi refusé : '+r.erreur)}
   else if(q.action==='passage'){const x=fromQueue(q);delete x.pending;x.local=1;S.passages.push(x)}
-  else if(q.action==='annuler')removeLast(S.passages,q.cle,q.plaque);
-  else if(q.action==='rappel')S.demandes.push({id:r.id||q.id,date:q.date,runner:S.who,plaque:q.plaque,point:q.point,consigne:q.consigne,statut:'à faire',auteur:S.who});
+  else if(q.action==='annuler')removeLast(S.passages,q.cle,q.plaque,q.cible,S.who);
+  else if(q.action==='rappel')S.demandes.push({id:r.id||q.id,date:q.date,runner:S.who,plaque:q.plaque,point:q.point,consigne:q.consigne,statut:'à faire',auteur:S.who,heure:q.heure||''});
   else if(q.action==='rappel_suppr'){const d=S.demandes.find(x=>x.id===q.id);if(d)d.statut='supprimée'}
   else if(q.action==='rapport'&&!showReport)toast('Récapitulatif de la tournée envoyé au service parc.');
   return 'suite';
@@ -962,10 +1037,10 @@ async function run(force){
       const hasPh=q.photos&&q.photos.length;
       /* v32 : plusieurs envois sans photo d'un coup, en un seul appel (Google met ~2 s par appel, pas par envoi) */
       if(!hasPh&&S.srv>=12){
-        const grp=[];for(const x of S.queue){if((x.photos&&x.photos.length)||x.phN||grp.length>=10)break;grp.push(x)}
+        const grp=[],cq=q.code||CODE;for(const x of S.queue){if((x.photos&&x.photos.length)||x.phN||grp.length>=10||(x.code||CODE)!==cq)break;grp.push(x)}
         const part=lots(grp.map(x=>{const b=bodyOf(x);delete b.code;return b}))[0];const items=grp.slice(0,part.length);
-        let r;items.forEach(x=>{x.inflight=x.tried=true});
-        try{r=await call(null,{code:CODE,action:'lot',envois:part},60000)}catch(e){S.offline=true;break}finally{items.forEach(x=>{x.inflight=false})}
+        let r;items.forEach(x=>{x.inflight=x.tried=true});save(); /* v59 : noté avant l'envoi (appli fermée pendant l'envoi : « Annuler » prévient Google) */
+        try{r=await call(null,{code:cq,action:'lot',envois:part},60000)}catch(e){S.offline=true;break}finally{items.forEach(x=>{x.inflight=false})}
         if(!r||!Array.isArray(r.resultats)){if(handled(items[0],r)==='stop')break;continue}
         let stop=false;for(let i=0;i<items.length;i++){if(handled(items[i],r.resultats[i]||{erreur:'Pas de réponse',reessayer:true})==='stop'){stop=true;break}}
         save();savePassages();render(true);if(stop)break;continue
@@ -973,14 +1048,15 @@ async function run(force){
       const body=bodyOf(q);
       /* Signalement avec photos : d'abord le passage seul (léger, part tout de suite), puis les photos */
       if(q.action==='passage'&&hasPh&&!q.base){
-        const b=baseOf(q);let r0;q.inflight=q.tried=true;try{r0=await call(null,b,60000)}catch(e){S.offline=true;break}finally{q.inflight=false}
+        const b=baseOf(q);let r0;q.inflight=q.tried=true;save();try{r0=await call(null,b,60000)}catch(e){S.offline=true;break}finally{q.inflight=false}
         if(!r0||(!r0.ok&&!r0.erreur)){S.offline=true;S.oldScript=true;break}
         if(r0.erreur&&r0.reessayer){S.offline=true;break}
+        if(r0.erreur&&/^Lien inconnu/.test(r0.erreur)&&q.code&&q.code!==CODE&&(!q.by||q.by===S.who)){S.queue.forEach(x=>{if(x.code===q.code)x.code=CODE});save();continue}
         if(r0.erreur&&/^Lien inconnu/.test(r0.erreur)){S.blocked=r0.erreur;break}
         if(r0.erreur){drop(q);toast('Envoi refusé : '+r0.erreur);save();render(true);continue}
         q.base=true;save();continue}
       if(q.base)body.action='photos';
-      let r;q.inflight=q.tried=true;try{r=await call(null,body,hasPh?120000:60000)}catch(e){if(q.base&&photosPlusTard(q,passe))continue;S.offline=true;break}finally{q.inflight=false}
+      let r;q.inflight=q.tried=true;save();try{r=await call(null,body,hasPh?120000:60000)}catch(e){if(q.base&&photosPlusTard(q,passe))continue;S.offline=true;break}finally{q.inflight=false}
       /* v54 : le passage est déjà enregistré, seules ses photos coincent : la suite de la file part quand même */
       if(q.base&&r&&r.erreur&&r.reessayer&&photosPlusTard(q,passe))continue;
       if(handled(q,r)==='stop')break;
@@ -1008,7 +1084,7 @@ async function run(force){
         if(!r.partiel&&!got.length)S.depuis='';
         if(r.vp===undefined)S.depuis='';S.vp=r.vp;
         savePassages();
-        S.demandes=(r.demandes||[]).filter(d=>normDate(d.date)).map(d=>({id:d.id,date:normDate(d.date),runner:d.runner,plaque:String(d.plaque||'').toUpperCase(),point:d.point,consigne:d.consigne,statut:d.statut,auteur:d.auteur||'Service parc',fin:normDate(d.fin)||'',creneau:String(d.creneau||'').slice(0,40)}));
+        S.demandes=(r.demandes||[]).filter(d=>normDate(d.date)).map(d=>({id:d.id,date:normDate(d.date),runner:d.runner,plaque:String(d.plaque||'').toUpperCase(),point:d.point?city(d.point):'',consigne:d.consigne,statut:d.statut,auteur:d.auteur||'Service parc',fin:normDate(d.fin)||'',creneau:String(d.creneau||'').slice(0,40),heure:/^\d{2}:\d{2}/.test(String(d.heure||''))?String(d.heure).slice(0,5):'',vise:d.vise!==false}));
         const autreRunner=S.who&&S.who!==r.runner.prenom; /* v58 : autre lien ouvert sur ce téléphone : on reprend les points de ce runner */
         S.who=r.runner.prenom;
         if(!S.ptsSet||autreRunner){S.myPoints=(r.runner.points||[]).map(city).filter(Boolean);S.ptsSet=true}
@@ -1034,7 +1110,7 @@ function improBlock(i){
 }
 function askBlock(d){
   const mine=d.auteur===S.who;const late=d.date<TODAY?' · prévu '+dayWord(d.date):jusqua(d)?' · '+jusqua(d):d.date!==TODAY?' · '+dayWord(d.date):'';
-  return `<div class="imp ${mine?'mine':'info'}"><div class="imp-h"><i></i>${mine?'Mon rappel':'Demandé par le service parc'}${esc(late)}</div><div class="imp-t">${esc(d.consigne||'Passer voir ce véhicule.')}</div>${!mine&&d.point?`<div class="imp-p">${esc(d.point)}</div>`:''}${mine?`<button type="button" class="lnk" data-unremind="${esc(d.id)}">Supprimer ce rappel</button>`:''}</div>`;
+  return `<div class="imp ${mine?'mine':'info'}"><div class="imp-h"><i></i>${mine?'Mon rappel'+esc(hhmm(d.heure)):'Demandé par le service parc'}${esc(late)}</div><div class="imp-t">${esc(d.consigne||'Passer voir ce véhicule.')}</div>${!mine&&d.point?`<div class="imp-p">${esc(d.point)}</div>`:''}${mine?`<button type="button" class="lnk" data-unremind="${esc(d.id)}">Supprimer ce rappel</button>`:''}</div>`;
 }
 /* « aujourd'hui », « demain », « hier » ou « jeu. 22 oct. » */
 function dayWord(d){const n=dayDiff(d);return n===0?"aujourd'hui":n===1?'demain':n===-1?'hier':(l=>l.dow.toLowerCase()+' '+l.num)(dLabel(d))}
@@ -1062,6 +1138,61 @@ function dayChip(d,i,attr,sel){const l=dLabel(d);const n=dayDiff(d);const on=d==
 function rowHtml(p,inner,cls){return `<button type="button" class="row ${cls||''}" data-open="${esc(p)}"><span class="row-b">${inner}</span><span class="chev">${I.chev}</span></button>`}
 function gate(title,text,btn){return `<div class="gate"><b>${title}</b><p>${text}</p>${btn||''}</div>`}
 
+/* ---------- v62 : vue planning (Fabian 1/11, demande de runners habitués au planning du BO) ----------
+   Mêmes véhicules que la liste, sur 3 jours ; une barre par période (sur place, location, garage, improductif).
+   Toucher une barre montre le détail et ouvre la fiche. Couleurs des locations : celles du BO, selon le point parisien
+   d'où part ou où arrive le véhicule (zones données par Fabian le 1/11 ; Paris-Centre en noir, Meaux = Paris Est). */
+const ZONE={'La Def':'ouest','Saint-Cloud':'ouest','Coignières':'ouest','Aulnay':'nord','Paris-Centre':'centre','Meaux':'est'};
+const PL_H=7; /* pixels par heure */
+let PSEL=null; /* barre choisie : {pt, p, cle} */
+const cleBarre=r=>r.k+'|'+(r.a0||'')+'|'+(r.b0||'')+'|'+r.t;
+function enMs(t){const m=/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})/.exec(t||'');return m?new Date(+m[1],m[2]-1,+m[3],+m[4],+m[5]).getTime():NaN}
+/* Locations déjà rentrées sur ce point (gardées par le script, onglet « Arrivées », le BO les efface) : 7 jours au plus */
+function retoursDe(pt,p){const lim=plusDays(-7)+' 00:00';return (S.arrivees||[]).filter(a=>a.pt===pt&&(!p||a.p===p)&&a.dep&&a.dep<a.arr&&a.arr>=lim&&a.arr<=nowStr())}
+function fenetre(pt){const d=DAY.split('-').map(Number);let a=new Date(d[0],d[1]-1,d[2],DAY===TODAY&&new Date().getHours()<6?0:6).getTime();
+  /* Fabian 1/11 : 3 jours de base ; si une location rentrée ici a duré plus longtemps, le planning commence à son départ (7 jours au plus) */
+  if(pt){const min=new Date(d[0],d[1]-1,d[2]-7).getTime();retoursDe(pt).forEach(x=>{const t=enMs(x.dep);if(t<a&&enMs(x.arr)>a-3*864e5)a=Math.max(min,new Date(new Date(t).setHours(0,0,0,0)).getTime())})} /* la nuit, depuis minuit */return {a,b:new Date(d[0],d[1]-1,d[2]+3).getTime()}}
+function dureeTxt(ms){const h=Math.round(ms/36e5);return h<1?'moins d\'1 h':h<24?h+' h':Math.floor(h/24)+' j'+(h%24?' '+h%24+' h':'')}
+function barresDe(p,pt,W){
+  const out=[],coupe=(a,b)=>({a:Math.max(a,W.a),b:Math.min(b,W.b)}),dans=(a,b)=>b>W.a&&a<W.b;
+  stays().filter(s=>s.plaque===p&&s.point===pt).forEach(s=>{const a=s.from?enMs(s.from):W.a,b=s.to?enMs(s.to):W.b;
+    if(dans(a,b))out.push(Object.assign(coupe(a,b),{k:'pose',t:s.ailleurs?'Vu à '+full(s.ailleurs.point):s.ici?'Vu ici':'Sur place',a0:s.from,b0:s.to,s}))});
+  (lignesPar()[p]||[]).forEach(r=>{const a=enMs(r.dep),b=enMs(r.arr);if(!(a<b)||!dans(a,b))return;
+    const z=ZONE[r.villeDep]||ZONE[r.villeArr]||'prov' /* violet : autre point d'Île-de-France ajouté par un runner (le script ne garde pas les trajets province ↔ province) */,part=r.villeDep===pt; /* sens vu depuis ce point (un convoyage entre deux points a les deux villes dans LOCAL) */
+    out.push(Object.assign(coupe(a,b),{k:r.caler?'caler':z,t:r.caler?'Caler pro':part?'→ '+r.villeArr:'← de '+r.villeDep,a0:r.dep,b0:r.arr,r}))});
+  retoursDe(pt,p).forEach(x=>{if((lignesPar()[p]||[]).some(r=>r.arr===x.arr&&r.villeArr===pt))return;const a=enMs(x.dep),b=enMs(x.arr);
+    if(dans(a,b))out.push(Object.assign(coupe(a,b),{k:ZONE[pt]||'prov',t:'← de '+(x.de?full(x.de):'location'),a0:x.dep,b0:x.arr,r:{villeDep:x.de?full(x.de):'?',villeArr:pt}}))});
+  improsFor(p).forEach(i=>{const a=enMs(i.debut),b=i.fin?enMs(i.fin):W.b;if(dans(a,b))out.push(Object.assign(coupe(a,b),{k:i.type==='meca'?'meca':'normal',t:i.type==='meca'?'Garage':(i.libelle||'Improductif'),a0:i.debut,b0:i.fin,i}))});
+  return out;
+}
+function vPlanning(pt){
+  const W=fenetre(pt),x=ms=>Math.round((ms-W.a)/36e5*PL_H),larg=x(W.b),a=W.a,b=W.b;
+  const ps=[...new Set(stays().filter(s=>s.point===pt&&(!s.from||enMs(s.from)<b)&&(!s.to||enMs(s.to)>a)).map(s=>s.plaque))];
+  const prochain={};stays().forEach(y=>{if(y.point===pt&&y.to&&enMs(y.to)>Date.now()&&(!prochain[y.plaque]||y.to<prochain[y.plaque]))prochain[y.plaque]=y.to});
+  const cle=p=>prochain[p]||'9999';ps.sort((u,v)=>cle(u).localeCompare(cle(v))||u.localeCompare(v)); /* d'abord ceux qui partent bientôt */
+  if(!ps.length)return '<div class="empty small"><b>Aucun véhicule sur ce point ces 3 jours</b></div>';
+  let hd='';for(let t=a;t<b;){const d=new Date(t),n=new Date(d.getFullYear(),d.getMonth(),d.getDate()+1).getTime(),j=iso(d),l=dLabel(j);hd+=`<div class="${j===TODAY?'auj':''}" style="width:${x(Math.min(n,b))-x(t)}px"><span>${j===TODAY?"Aujourd'hui":esc(l.dow+' '+l.num)}</span></div>`;t=n}
+  const labs=ps.map(p=>{const v=vehicle(p)||{},st=stayFor(p,DAY),vu=st&&st.point===pt&&vuSejour(st);return `<button type="button" class="pl-lab" data-open="${esc(p)}"><span class="plate">${esc(p)}</span><small>${vu?'✓ Vu · ':''}${esc(v.modele||'')}</small></button>`}).join('');
+  const lanes=ps.map(p=>`<div class="pl-ln">${barresDe(p,pt,W).map((r,i)=>{const on=PSEL&&PSEL.pt===pt&&PSEL.p===p&&PSEL.cle===cleBarre(r);return `<button type="button" class="pb ${r.k}${r.s&&r.s.ici?' ici':''}${on?' sel':''}" style="left:${x(r.a)}px;width:${Math.max(x(r.b)-x(r.a),12)}px" data-pbar="${esc(cleBarre(r))}" data-pt="${esc(pt)}" data-pp="${esc(p)}" aria-label="${esc(p+' : '+r.t)}"><span>${esc(r.t)}</span></button>`}).join('')}</div>`).join('');
+  const now=Date.now(),nl=now>a&&now<b?`<div class="pl-now" style="left:${x(now)}px"></div>`:'';
+  return `<div class="pl"><div><div class="pl-lab h"></div>${labs}</div><div class="pl-sc" data-plsc="${esc(pt+'|'+DAY)}"><div class="pl-tr" style="width:${larg}px"><div class="pl-hd">${hd}</div>${lanes}${nl}</div></div></div>${PSEL&&PSEL.pt===pt?detailBarre(pt):''}`;
+}
+function detailBarre(pt){
+  const W=fenetre(pt),r=barresDe(PSEL.p,pt,W).find(x=>cleBarre(x)===PSEL.cle);if(!r)return '';
+  const a=enMs(r.a0),b=r.b0?enMs(r.b0):NaN,now=Date.now(),l=[];
+  if(a>now)l.push(['Commence dans',dureeTxt(a-now)]);else if(!(b<=now))l.push(['En cours depuis',r.a0?dureeTxt(now-a):'avant le planning']);
+  l.push(['Du',r.a0?when(r.a0):'avant le planning'],['Au',r.b0?when(r.b0):'pas de fin prévue']);
+  if(r.a0&&r.b0)l.push(['Durée',dureeTxt(b-a)]);
+  if(r.r)l.push(['Trajet',r.r.villeDep+' → '+r.r.villeArr]);
+  if(r.i&&r.i.type==='normal'&&r.i.libelle)l.push(['Motif',r.i.libelle]);
+  if(r.s&&r.s.ailleurs)l.push(['Vu par',r.s.ailleurs.by+' à '+full(r.s.ailleurs.point)]);
+  if(r.s&&r.s.ici)l.push(['Le BO le met à',full(r.s.ici.bo)]);
+  return `<div class="pl-det" aria-live="polite"><div class="dr"><span class="plate">${esc(PSEL.p)}</span><span class="dv">${esc(r.t)}</span></div>${l.map(([k,v])=>`<div class="dr"><span class="dk">${esc(k)}</span><span class="dv">${esc(v)}</span></div>`).join('')}<button type="button" class="btn wide primary" data-open="${esc(PSEL.p)}">Ouvrir la fiche</button></div>`;
+}
+const LEGENDE=`<div class="pl-leg">${[['pose','Sur place'],['ouest','Location Paris Ouest'],['nord','Location Paris Nord'],['centre','Location Paris-Centre'],['est','Location Paris Est (Meaux)'],['caler','Caler pro'],['meca','Garage'],['normal','Improductif']].map(([c,t])=>`<span><i class="pb ${c}"></i>${t}</span>`).join('')}</div>`;
+
+/* Planning : chaque point s'ouvre centré sur maintenant (une seule fois par affichage) */
+function caleMaintenant(el){(el||document).querySelectorAll('[data-plsc]').forEach(e=>{if(e._cale)return;e._cale=1;const n=e.querySelector('.pl-now');if(n)e.scrollLeft=Math.max(0,n.offsetLeft-70)})}
 function vHome(){
   const pts=LOCAL.concat(allPoints().filter(p=>S.myPoints.includes(p)&&!LOCAL.includes(p)));
   const order=S.myPoints.slice().sort((a,b)=>pts.indexOf(a)-pts.indexOf(b));
@@ -1070,28 +1201,31 @@ function vHome(){
   return `${alertesHtml(true)}
   <div class="days" role="group" aria-label="Jour">${days.map((d,i)=>dayChip(d,i,'data-day',DAY)).join('')}</div>
   <div class="pts" role="group" aria-label="Mes points">${pts.map(p=>{const on=S.myPoints.includes(p);return `<button type="button" class="pt ${on?'on':''}" data-point="${esc(p)}" aria-pressed="${on}" title="${esc(p)}">${esc(SHORT[p]||p)}</button>`}).join('')}</div>
+  <div class="vues" role="group" aria-label="Affichage"><button type="button" data-vue="liste" aria-pressed="${S.vue!=='plan'}">Liste</button><button type="button" data-vue="plan" aria-pressed="${S.vue==='plan'}">Planning</button></div>
   <button type="button" class="askbtn ${asks.length?'':'none'}" id="openAsks"><span>Rappels et demandes</span><span class="askn">${(()=>{const n=DEMO?0:newAsks().length;return n?`<span class="newn">${n} nouvelle${n>1?'s':''}</span>`:''})()}${asks.length?`<b>${asks.length}</b>`:'aucun'}${I.chev}</span></button>
   ${now?'':`<div class="later">${past?'Journée':'Planning'} ${esc(duWord(DAY))} : à consulter seulement. Les véhicules se valident le jour même.</div>`}
   ${!order.length?'<div class="empty"><b>Choisissez votre point</b><span>Touchez un point ci-dessus.</span></div>':''}
   ${(()=>{/* v45 : demandes sans point connu, ou sur un point non suivi : avant, comptées dans le total mais affichées nulle part */
     const ot=asks.filter((d,i,a)=>!order.includes(askPt(d))&&a.findIndex(x=>x.plaque===d.plaque)===i);if(!ot.length)return '';
     return `<section class="psec"><div class="pband"><h2>Autres demandes</h2><div class="pband-n"><b>${ot.length}</b> à voir</div></div>${ot.map(d=>askCard(d,stayFor(d.plaque,DAY),askPt(d)?'Point : '+full(askPt(d)):'Point non précisé')).join('')}</section>`})()}
+  ${S.vue==='plan'&&order.length?LEGENDE:''}
   ${order.map(p=>{const pa=asks.filter((d,i,a)=>askPt(d)===p&&a.findIndex(x=>x.plaque===d.plaque)===i);const l=list.filter(s=>s.point===p&&!pa.some(d=>d.plaque===s.plaque));return `
   <section class="psec">
     <div class="pband"><h2>${esc(full(p))}</h2><div class="pband-n"><b>${l.length+pa.length}</b> ${now?'à voir':'sur place'}</div></div>
     ${pa.map(d=>askCard(d,staysOn(DAY).find(s=>s.plaque===d.plaque&&s.point===p))).join('')}
-    ${l.length||pa.length?l.map(s=>{const v=vehicle(s.plaque)||{};const imp=s.impros[0];return rowHtml(s.plaque,`
-        <span class="row-t"><span class="plate">${esc(s.plaque)}</span>${past?(vuSejour(s)?'<span class="pill seen">Vu</span>':'<span class="pill unseen">Pas vu</span>'):s.leaves?`<span class="pill dep">${s.toCaler?'Caler pro prévu':now?'Part aujourd\'hui':'Part ce jour-là'}</span>`:s.arrives?`<span class="pill arr">${s.fromCaler?'Caler pro prévu':'Arrive'}</span>`:''}</span>
-        <span class="model">${esc(v.modele||'')}</span>
+    ${S.vue==='plan'?vPlanning(p):l.length||pa.length?l.map(s=>{const v=vehicle(s.plaque)||{};const imp=s.impros[0];return rowHtml(s.plaque,`
+        <span class="row-t"><span class="plate">${esc(s.plaque)}</span>${s.ici?'<span class="pill ici">Vu ici</span>':''}${past?(vuSejour(s)?'<span class="pill seen">Vu</span>':'<span class="pill unseen">Pas vu</span>'):s.leaves?`<span class="pill dep">${s.toCaler?'Caler pro prévu':now?'Part aujourd\'hui':'Part ce jour-là'}</span>`:s.arrives?`<span class="pill arr">${s.fromCaler?'Caler pro prévu':'Arrive'}</span>`:''}</span>
+        <span class="model">${esc(v.modele||'')}${s.ici?' · BO : '+esc(full(s.ici.bo)):''}</span>
         ${timesHtml(s)}
         ${s.impros.map(improMini).join('')}`)}).join(''):`<div class="empty small"><b>${now?'Tout est fait sur ce point':'Aucun véhicule prévu sur ce point'}</b></div>`}
+    ${(g=>g.length?`<details class="gone" open><summary>Vus sur un autre point <b>${g.length}</b></summary>${g.map(s=>{const v=vehicle(s.plaque)||{},x=s.ailleurs;return rowHtml(s.plaque,`<span class="row-t"><span class="plate">${esc(s.plaque)}</span><span class="pill ici">Vu à ${esc(full(x.point))}</span></span><span class="model">${esc(v.modele||'')}</span><span class="spec">${esc(x.by)} l'a vu à ${esc(full(x.point))} ${esc(when(x.at))}. Pas besoin de le chercher ici.</span>`)}).join('')}</details>`:'')(now?ailleursOn(DAY).filter(s=>s.point===p):[])}
     ${(g=>g.length?`<details class="gone"><summary>Déjà partis <b>${g.length}</b></summary>${g.map(s=>{const v=vehicle(s.plaque)||{};return rowHtml(s.plaque,`<span class="row-t"><span class="plate">${esc(s.plaque)}</span><span class="pill gone">Parti</span></span><span class="model">${esc(v.modele||'')}</span>${timesHtml(s)}`)}).join('')}</details>`:'')(gone.filter(s=>s.point===p))}
   </section>`}).join('')}`;
 }
 
 /* Point d'un rappel : celui choisi, sinon celui du planning ce jour-là */
 function askPt(d){return d.point||((stayFor(d.plaque,DAY)||{}).point)||''}
-function askPill(d){return d.date<TODAY?`<span class="pill late">Prévu ${esc(dayWord(d.date))}</span>`:d.auteur===S.who?'<span class="pill mine">Mon rappel</span>':'<span class="pill ask">Service parc</span>'}
+function askPill(d){return d.date<TODAY?`<span class="pill late">Prévu ${esc(dayWord(d.date))}</span>`:d.auteur===S.who?'<span class="pill mine">Mon rappel'+esc(hhmm(d.heure))+'</span>':'<span class="pill ask">Service parc</span>'}
 /* Rappel ou demande dans la liste du point, même si le planning ne met pas le véhicule ici */
 function askCard(d,s,ou){const v=vehicle(d.plaque)||{};return rowHtml(d.plaque,`<span class="row-t"><span class="plate">${esc(d.plaque)}</span>${askPill(d)}</span>${v.modele?`<span class="model">${esc(v.modele)}</span>`:''}<span class="consigne">${esc(d.consigne||'Passer voir ce véhicule.')}</span>${jusqua(d)?`<span class="spec periode">${esc(cap(jusqua(d)))}</span>`:''}${ou?`<span class="spec">${esc(ou)}</span>`:''}${s?timesHtml(s)+bloque(d,s)+improsDemande(d,s).map(improMini).join(''):'<span class="spec">Pas prévu ici dans le planning</span>'+bloque(d,s)}`,'ask')}
 function cap(t){return t.charAt(0).toUpperCase()+t.slice(1)}
@@ -1115,9 +1249,9 @@ function bloque(d,s){
   return `<span class="blq${l.some(m=>m.type==='meca')?' meca':''}"><small><i></i>Véhicule immobilisé</small>${l.map(m=>`<span class="l"><b>${esc(un(m))}</b><span class="m">${esc(m.type==='meca'?'Garage':m.libelle||'Improductif')}</span></span>`).join('')}</span>`}
 function vAsks(){
   const now=DAY===TODAY,cur=openAsks(DAY),from=DAY>TODAY?DAY:TODAY;
-  const later=allAsks().filter(d=>d.date>from).sort((a,b)=>a.date.localeCompare(b.date));
+  const later=allAsks().filter(d=>pourMoi(d)&&d.date>from).sort((a,b)=>a.date.localeCompare(b.date));
   /* v43 : horaires d'arrivée et de départ (planning Metabase) sur chaque demande, comme dans la liste des véhicules */
-  const row=d=>{const v=vehicle(d.plaque)||{};const st=stayFor(d.plaque,d.date<TODAY?TODAY:d.date);const pt=d.point||(st||{}).point||'';return rowHtml(d.plaque,`<span class="row-t"><span class="plate">${esc(d.plaque)}</span>${d.auteur===S.who?'<span class="pill mine">Mon rappel</span>':'<span class="pill ask">Service parc</span>'}${sheet&&sheet.nouv&&sheet.nouv.includes(d.id)?'<span class="pill new">Nouvelle</span>':''}</span>${v.modele?`<span class="model">${esc(v.modele)}</span>`:''}<span class="consigne">${esc(d.consigne||'Passer voir ce véhicule.')}</span><span class="spec">${esc((d.date<TODAY?'Prévu '+dayWord(d.date):jusqua(d)?cap(jusqua(d)):cap(dayWord(d.date)))+(pt?' · '+full(pt):''))}</span>${st?timesHtml(st)+bloque(d,st)+improsDemande(d,st).map(improMini).join(''):'<span class="spec">Pas dans le planning ce jour-là</span>'+bloque(d,st)}`,'ask')};
+  const row=d=>{const v=vehicle(d.plaque)||{};const st=stayFor(d.plaque,d.date<TODAY?TODAY:d.date);const pt=d.point||(st||{}).point||'';return rowHtml(d.plaque,`<span class="row-t"><span class="plate">${esc(d.plaque)}</span>${d.auteur===S.who?'<span class="pill mine">Mon rappel'+esc(hhmm(d.heure))+'</span>':'<span class="pill ask">Service parc</span>'}${sheet&&sheet.nouv&&sheet.nouv.includes(d.id)?'<span class="pill new">Nouvelle</span>':''}</span>${v.modele?`<span class="model">${esc(v.modele)}</span>`:''}<span class="consigne">${esc(d.consigne||'Passer voir ce véhicule.')}</span><span class="spec">${esc((d.date<TODAY?'Prévu '+dayWord(d.date):jusqua(d)?cap(jusqua(d)):cap(dayWord(d.date)))+(pt?' · '+full(pt):''))}</span>${st?timesHtml(st)+bloque(d,st)+improsDemande(d,st).map(improMini).join(''):'<span class="spec">Pas dans le planning ce jour-là</span>'+bloque(d,st)}`,'ask')};
   return `<div class="sh-top pad"><button type="button" class="back" id="closeSheet">${I.back}Retour</button></div>
   <div class="sh-body pad">
     <div class="q">Rappels et demandes</div>
@@ -1161,7 +1295,7 @@ function searchResults(){
   const raw=query.trim().toUpperCase();
   return `${res.map(v=>rowHtml(v.plaque,`<span class="plate">${esc(v.plaque)}</span><span class="model">${esc(v.modele||'')}</span>`)).join('')}
     ${q.length>=2&&!res.length?'<div class="meta">Aucun véhicule de la flotte ne correspond.</div>':''}
-    ${raw.length>=7&&!vehicles().has(raw)?`<button type="button" class="btn wide" data-open="${esc(raw)}">Continuer avec ${esc(raw)}</button>`:''}`;
+    ${q.length>=7&&!vehicles().has(raw)&&!res.some(v=>norm(v.plaque)===q)?(()=>{const p=/^[A-Z]{2}\d{3}[A-Z]{2}$/.test(q)?q.slice(0,2)+'-'+q.slice(2,5)+'-'+q.slice(5):raw;return `<button type="button" class="btn wide" data-open="${esc(p)}">Continuer avec ${esc(p)}</button>`})():''}`; /* v59 : seulement pour une plaque complète qui n'est pas dans la flotte */
 }
 function vSearch(){
   return `<div class="sh-top pad"><button type="button" class="back" id="closeSheet">${I.back}Retour</button></div>
@@ -1176,23 +1310,28 @@ function vSheet(){
   if(sheet.asks)return vAsks();
   const p=sheet.plaque;const v=vehicle(p)||{plaque:p,events:[]};const now=DAY===TODAY;const st=stayFor(p,DAY);
   const done=passageOf(p);const mine=done&&done.by===S.who;
+  /* v59 : un autre runner est repassé après moi : je peux quand même annuler ma propre validation du jour */
+  const moi=!mine&&done&&doneToday().find(x=>x.plaque===p&&x.cle===done.cle);
   const asks=allAsks().filter(d=>d.plaque===p).sort((a,b)=>a.date.localeCompare(b.date));
   const top=`<div class="sh-top pad"><button type="button" class="back" id="${sheet.step==='fiche'?'closeSheet':'backFiche'}">${I.back}Retour</button></div>
     <div class="sh-id pad"><span class="plate xl">${esc(p)}</span><span class="model">${esc(v.modele||'Véhicule hors liste')}</span>${v.categorie||v.km!=null?`<span class="spec">${esc([v.categorie,fmtKm(v.km)].filter(Boolean).join(' · '))}</span>`:''}</div>`;
   if(sheet.step==='rappel'){
-    const opts=[['Demain',1],['Après-demain',2],['Dans 1 semaine',7],['Dans 2 semaines',14]];
+    const opts=[["Aujourd'hui",0],['Demain',1],['Après-demain',2],['Dans 1 semaine',7],['Dans 2 semaines',14]]; /* v59 : « Aujourd'hui », utile avec une heure */
     return top+`
     <div class="sh-body pad">
       <div class="q">Me le rappeler quand ?</div>
       <div class="tiles">${opts.map(([t,n])=>{const d=plusDays(n);const on=!rdraft.other&&rdraft.date===d;const l=dLabel(d);return `<button type="button" class="tile pick ${on?'on':''}" data-rdate="${d}" aria-pressed="${on}">${t}<br><small>${esc(l.dow.toLowerCase()+' '+l.num)}</small></button>`}).join('')}
         <button type="button" class="tile pick ${rdraft.other?'on':''}" data-rother="1" aria-pressed="${rdraft.other}">Autre date</button></div>
       ${rdraft.other?`<label class="mlabel" for="rDate">Date du rappel</label><input type="date" id="rDate" class="dateinput" min="${plusDays(1)}" max="${plusDays(90)}" value="${esc(rdraft.date)}">`:''}
+      <div class="q">À quelle heure ? <span class="fac">(facultatif)</span></div>
+      <div class="hrow"><input type="time" id="rHeure" class="dateinput" step="300" value="${esc(rdraft.heure)}" aria-label="Heure du rappel (facultatif)"><button type="button" class="hclear" id="rSansHeure" ${rdraft.heure?'':'hidden'}>Sans heure</button></div>
+      <div class="meta" id="rHeureInfo">${esc(heureInfo())}</div>
       <div class="q">Sur quel point ?</div>
       <div class="tiles">${LOCAL.map(pt=>{const on=rdraft.point===pt;return `<button type="button" class="tile pick ${on?'on':''}" data-rpoint="${esc(pt)}" aria-pressed="${on}">${esc(full(pt))}</button>`}).join('')}</div>
       <textarea id="rNote" placeholder="Pourquoi ? (facultatif)" maxlength="200">${esc(rdraft.note)}</textarea>
       <div class="meta">Ce jour-là, le véhicule apparaît en rouge dans la liste de ce point. Vous seul le voyez, et le service parc.</div>
     </div>
-    <div class="sh-foot pad"><button type="button" class="btn big primary" id="saveRem" ${rdraft.date?'':'disabled'}>Enregistrer le rappel</button></div>`;
+    <div class="sh-foot pad"><button type="button" class="btn big primary" id="saveRem" ${remOk()?'':'disabled'}>Enregistrer le rappel</button></div>`;
   }
   if(sheet.step==='probleme')return top+`
     <div class="sh-body pad">
@@ -1206,13 +1345,29 @@ function vSheet(){
     </div>
     <div class="sh-foot pad"><button type="button" class="btn big warn" id="saveDmg" ${draft.types.length&&!draft.pending&&!draft.wantSave?'':'disabled'}>${draft.pending?'Photo en préparation…':'Valider le problème'}</button></div>`;
   const ev=v.events||[];
+  /* v60 : « Il est ici » : véhicule que le BO met sur un autre point (garage, convoyage pas fait) */
+  const choix=ICI_CHOIX[p]||'',bo=st?st.point:ouBO(p);
+  const cands=(()=>{const m=S.myPoints.filter(x=>LOCAL.includes(x)&&x!==bo);return m.length?m:LOCAL.filter(x=>x!==bo)})();
+  /* pas de question pour un véhicule attendu sur mes points (retour en avance) ou demain sur l'un d'eux */
+  const demander=now&&!choix&&!(st&&st.ici)&&(sheet.autre||(!st&&!!bo&&!done&&!S.myPoints.includes(bo)&&!stayFor(p,plusDays(1))));
+  const iciNote=choix?`<div class="imp ici"><div class="imp-h"><i></i>Vu sur un autre point</div><div class="imp-t">Tu le vois à <b>${esc(full(choix))}</b>. Le BO le met à <b>${esc(full(bo||'?'))}</b>. Valide-le ici : le service parc sera prévenu.</div></div>`
+    :demander?`<div class="imp ici"><div class="imp-h"><i></i>${st?'Sur un autre point ?':'Pas prévu sur ton point'}</div><div class="imp-t">Le BO met ce véhicule à <b>${esc(full(bo))}</b>. ${cands.length===1?'Il est devant toi, à '+esc(full(cands[0]))+' ?':'Il est devant toi ? Sur quel point ?'}</div></div>`
+    :st&&st.ici?`<div class="imp ici"><div class="imp-h"><i></i>Vu ici</div><div class="imp-t">Vu à ${esc(full(st.point))} par ${esc(st.ici.by)} ${esc(when(st.ici.at))}. Le BO le met à ${esc(full(st.ici.bo))}.</div></div>`
+    :st&&st.ailleurs?`<div class="imp ici"><div class="imp-h"><i></i>Vu sur un autre point</div><div class="imp-t">${esc(st.ailleurs.by)} l'a vu à ${esc(full(st.ailleurs.point))} ${esc(when(st.ailleurs.at))}. Pas besoin de le chercher ici.</div></div>`:'';
+  if(demander)return top+`
+    <div class="sh-body pad">${iciNote}${asks.map(askBlock).join('')}</div>
+    <div class="sh-foot pad">
+      ${cands.length<=2?cands.map(pt=>`<button type="button" class="btn big primary" data-ici="${esc(pt)}">Oui, il est ici à ${esc(full(pt))}</button>`).join(''):`<div class="tiles">${cands.map(pt=>`<button type="button" class="tile" data-ici="${esc(pt)}">${esc(full(pt))}</button>`).join('')}</div>`}
+      <button type="button" class="btn big" id="iciNon">${st?'Non, il est bien à '+esc(full(st.point)):'Non, je regardais juste'}</button>
+    </div>`;
   return top+`
-    <div class="sh-body pad">
-      ${done?`<div class="status ${done.pb.length?'ko':'ok'}">${done.pb.length?'Problème signalé : '+esc(done.pb.join(', ')):'Validé'}${mine?'':' par '+esc(done.by)} · ${esc(when(done.at))}</div>`:''}
+    <div class="sh-body pad">${iciNote}
+      ${done?`<div class="status ${done.pb.length?'ko':'ok'}">${done.pb.length?'Problème signalé : '+esc(done.pb.join(', ')):'Validé'}${mine?'':' par '+esc(done.by)} · ${esc(when(done.at))}</div>${moi?`<div class="meta">Tu l'avais aussi vu ${esc(when(moi.at))}.</div>`:''}`:''}
       ${now?'':`<div class="later">Vous regardez ${esc(leWord(DAY))}. La validation se fait le jour même.</div>`}
       ${asks.map(askBlock).join('')}
       ${st?`<div class="card0 times">${st.fromCaler?calerCell('Arrivée','de '+st.fromCity):timeCell('Arrivée',st.from,st.fromCity?'de '+st.fromCity:'','Déjà sur place')}<div class="sep" aria-hidden="true"></div>${st.toCaler?calerCell('Départ','vers '+st.toCity):timeCell('Départ',st.to,st.toCity?'vers '+st.toCity:'','Non planifié')}</div>`:''}
       ${st?st.impros.map(improBlock).join(''):''}
+      ${now&&st&&!st.ici&&!choix?'<button type="button" class="btn wide ghosttxt" id="autreBtn">Il est sur un autre point ?</button>':''}
       ${ev.length?`<div class="card0"><div class="sec"><div class="mlabel">Déjà signalé dans le BO</div><ul class="evl">${ev.map(e=>`<li><span>${esc(e.label)}</span>${e.status?`<em>${esc(e.status)}</em>`:''}</li>`).join('')}</ul></div></div>`:''}
     </div>
     <div class="sh-foot pad">
@@ -1220,9 +1375,9 @@ function vSheet(){
       <textarea id="okNote" class="oknote" maxlength="300" placeholder="Autre chose ? Écris-le ici">${esc(draft.note)}</textarea></div>
       <button type="button" class="btn big primary" id="okBtn">${I.tick}Tout est OK</button>
       <button type="button" class="btn big warn-o" id="pbBtn">Signaler un problème</button>
-      <div class="duo"><button type="button" class="btn" id="absentBtn">Véhicule pas sur place</button>
+      <div class="duo">${choix?'':'<button type="button" class="btn" id="absentBtn">Véhicule pas sur place</button>'}
       <button type="button" class="btn" id="remBtn">${I.clock}Me le rappeler</button></div>`:`<button type="button" class="btn wide" id="remBtn">${I.clock}Me le rappeler</button>`}
-      ${now&&mine?'<button type="button" class="btn wide ghosttxt" id="undo">Annuler la validation</button>':''}
+      ${now&&(mine||moi)?'<button type="button" class="btn wide ghosttxt" id="undo">Annuler la validation</button>':''}
     </div>`;
 }
 
@@ -1250,7 +1405,11 @@ function sourceLine(){
 }
 let lastCk='';
 /* Ne touche l'écran que si son contenu change : ouvrir une fiche ne redessine pas la liste derrière */
-function put(el,html){if(el._h!==html){el._h=html;el.innerHTML=html}}
+function put(el,html){if(el._h===html)return;el._h=html;
+  const sc={};el.querySelectorAll('[data-plsc]').forEach(e=>{sc[e.dataset.plsc]=e.scrollLeft});
+  el.innerHTML=html;
+  el.querySelectorAll('[data-plsc]').forEach(e=>{if(e.dataset.plsc in sc){e.scrollLeft=sc[e.dataset.plsc];e._cale=1}});
+  caleMaintenant(el)}
 function render(bg){const r=render0(bg);syncHist();return r}
 function render0(bg){
   index();badge();
@@ -1279,7 +1438,7 @@ function render0(bg){
     $('#source').hidden=!alert;
     put($('#view'),(picker?`<div class="picker" role="group" aria-label="Choisir le runner"><div class="mlabel">Qui fait la tournée ?</div><div class="choice">${RUNNERS.map(r=>`<button type="button" class="opt-row ${r===S.who?'on':''}" data-runner="${esc(r)}" aria-pressed="${r===S.who}"><span class="box">${r===S.who?I.tick:''}</span>${esc(r)}</button>`).join('')}</div><label for="csvFile" class="lnk2">Démonstration : charger un export Metabase</label></div>`:'')+(sc==='done'?vDone:vHome)());
     const ck=sc+DAY+DONE_DAY;if(ck!==lastCk){lastCk=ck;centerDays()}
-    const n=todo().length+openAsks().length,dn=doneToday().length;
+    const n=new Set(todo().map(x=>x.plaque).concat(openAsks().map(d=>d.plaque))).size,dn=doneToday().length; /* v59 : un véhicule compte une fois (comme sur les points) */
     put($('#tabs'),[['home','À faire',I.todo,n],['done','Ma tournée',I.done,dn]].map(([k,t,ic,c])=>`<button type="button" class="${k===sc?'on':''}" data-tab="${k}" aria-current="${k===sc?'page':'false'}">${ic}<span>${t} <b class="cnt">${c}</b></span></button>`).join(''));
   }
   /* Une mise à jour en arrière-plan ne redessine pas la fiche ouverte (on ne perd pas la saisie) */
@@ -1291,7 +1450,7 @@ function render0(bg){
   if(sheet){sh.innerHTML=sh._h=vSheet();sh.hidden=false;document.body.classList.add('noscroll')}else{sh.hidden=true;sh.innerHTML=sh._h='';document.body.classList.remove('noscroll')}
   ecranChange();
 }
-function openSheet(p){query='';MINI.clear(); /* v42 : aperçus des photos d'avant oubliés (gardés toute la journée avant) */const x=passageOf(p),pbs=x?x.pb.filter(t=>DAMAGES.includes(t)||t===OTHER):[]; /* v58 : « Pas trouvé sur place » n'est pas repris dans le brouillon */draft=x&&x.by===S.who&&pbs.length?{types:pbs,photos:[],comment:x.comment,note:'',faits:[]}:{types:[],photos:[],comment:'',note:'',faits:[]};if(x&&x.by===S.who)Object.assign(draft,faitsDe(x.pb.length?x.faits:x.comment)); /* v52 : le mot laissé sur « Tout est OK » est repris */sheet={plaque:p,step:'fiche'};render();$('#sheet').scrollTop=0}
+function openSheet(p){query='';MINI.clear();delete ICI_CHOIX[p]; /* v42 : aperçus des photos d'avant oubliés (gardés toute la journée avant) */const x=passageOf(p),pbs=x?x.pb.filter(t=>DAMAGES.includes(t)||t===OTHER):[]; /* v58 : « Pas trouvé sur place » n'est pas repris dans le brouillon */draft=x&&x.by===S.who&&pbs.length?{types:pbs,photos:[],comment:x.comment,note:'',faits:[]}:{types:[],photos:[],comment:'',note:'',faits:[]};if(x&&x.by===S.who)Object.assign(draft,faitsDe(x.pb.length?x.faits:x.comment)); /* v52 : le mot laissé sur « Tout est OK » est repris */sheet={plaque:p,step:'fiche'};render();$('#sheet').scrollTop=0}
 function saveDraft(dr){const p=dr.wantSave||(sheet&&sheet.plaque);dr.wantSave='';if(!p||dr.saved||!dr.types.length)return;dr.saved=true;record(p,dr.types.slice(),dr.comment.trim(),dr.photos.slice(),faitsTexte(dr)); /* v58 : avec ce qui a été fait sur place */
   if(sheet&&sheet.plaque===p&&draft===dr)closeSheet(p+' validé avec un problème. Le service parc sera prévenu.');else{render();toast(p+' validé avec un problème. Le service parc sera prévenu.')}}
 /* v54 : bouton retour du téléphone : ferme la fiche (ou revient d'une étape) au lieu de quitter l'appli */
@@ -1339,9 +1498,10 @@ document.addEventListener('click',e=>{
   if(d.day){if(dragged)return;DAY=d.day;render();window.scrollTo(0,0);return}
   if(d.doneday){if(dragged)return;DONE_DAY=d.doneday;showReport=false;render();return}
   if(b.id==='remBtn'){rdraft=newRemind(sheet.plaque);sheet.step='rappel';render();$('#sheet').scrollTop=0;return}
-  if(d.rdate){rdraft.date=d.rdate;rdraft.other=false;render();return}
+  if(d.rdate){rdraft.date=d.rdate;rdraft.other=false;render();majRem();return}
   if(d.rother){rdraft.other=true;rdraft.date='';render();return}
-  if(b.id==='saveRem'){const p=sheet.plaque,dt0=rdraft.date;remind(p,dt0,rdraft.note.trim(),rdraft.point);closeSheet('Rappel enregistré pour '+dayWord(dt0).replace(/\.$/,'')+'.');return}
+  if(b.id==='saveRem'){if(!remOk()){majRem();return}const p=sheet.plaque,dt0=rdraft.date,h=rdraft.heure;remind(p,dt0,rdraft.note.trim(),rdraft.point,h);closeSheet('Rappel enregistré pour '+(dt0===TODAY?"aujourd'hui":dayWord(dt0).replace(/\.$/,''))+(h?' à '+h.replace(':','h'):'')+'.');return}
+  if(b.id==='rSansHeure'){rdraft.heure='';const i=$('#rHeure');if(i)i.value='';majRem();return}
   if(d.unremind){unremind(d.unremind);render();toast('Rappel supprimé.');return}
   if(d.point){const p=d.point;set({myPoints:S.myPoints.includes(p)?S.myPoints.filter(x=>x!==p):S.myPoints.concat(p),ptsSet:true});return}
   if(d.open){const rem=sheet&&sheet.remind,back=sheet&&(sheet.asks||sheet.back==='asks')?'asks':'';openSheet(d.open);if(back)sheet.back=back;if(rem){rdraft=newRemind(d.open);sheet.step='rappel'}render();return}
@@ -1355,6 +1515,11 @@ document.addEventListener('click',e=>{
   if(b.id==='closeSheet'){closeSheet();return}
   if(b.id==='backFiche'){sheet.step='fiche';render();return}
   if(b.id==='themeBtn'){const t=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=t;try{localStorage.setItem('runners-theme',t)}catch(e){}render();return}
+  if(b.dataset.ici!==undefined&&sheet&&sheet.plaque){ICI_CHOIX[sheet.plaque]=b.dataset.ici;sheet.autre=false;render();$('#sheet').scrollTop=0;return}
+  if(b.id==='iciNon'){if(sheet.autre){sheet.autre=false;render()}else closeSheet();return}
+  if(b.id==='autreBtn'){sheet.autre=true;render();$('#sheet').scrollTop=0;return}
+  if(b.dataset.vue){PSEL=null;set({vue:b.dataset.vue==='plan'?'plan':'liste'});return}
+  if(b.dataset.pbar){const n={pt:b.dataset.pt,p:b.dataset.pp,cle:b.dataset.pbar};PSEL=PSEL&&PSEL.pt===n.pt&&PSEL.p===n.p&&PSEL.cle===n.cle?null:n;render();return}
   if(b.id==='okBtn'){const p=sheet.plaque;record(p,[],faitsTexte(draft),'');closeSheet(p+' validé. Tout est OK.');return}
   if(b.id==='pbBtn'){sheet.step='probleme';render();$('#sheet').scrollTop=0;return}
   if(d.rmphoto){draft.photos.splice(+d.rmphoto,1);render();return}
@@ -1366,7 +1531,7 @@ document.addEventListener('click',e=>{
      et même sans réseau). Le refaire le même jour met à jour le même message dans Slack. */
   if(b.id==='finish'){if(!DEMO){S.queue=S.queue.filter(q=>q.action!=='rapport'||q.inflight);const q={id:'t'+uid(),action:'rapport',pasVus:todo().map(x=>x.plaque).slice(0,150),partis:partis().map(x=>x.plaque).slice(0,150)};
       /* v54 : jour donné seulement si toutes les validations sont déjà chez Google (sinon elles arrivent datées du jour d'envoi) */
-      if(!S.queue.some(x=>x.action==='passage'))q.jour=TODAY;
+      q.jour=TODAY; /* v59 : toujours (avec le script v32, une validation envoyée plus tard garde son jour) */
       S.queue.push(q);S.rapportId=q.id;save();setTimeout(()=>run(),0)}
     showReport=true;render();window.scrollTo(0,0);return}
   if(b.id==='closeReport'||b.id==='closeReport2'){showReport=false;render();return}
@@ -1381,10 +1546,12 @@ document.addEventListener('input',e=>{
   if(e.target.id==='comment')draft.comment=e.target.value;
   if(e.target.id==='okNote')draft.note=e.target.value;
   if(e.target.id==='rNote')rdraft.note=e.target.value;
-  if(e.target.id==='rDate'){rdraft.date=/^\d{4}-\d{2}-\d{2}$/.test(e.target.value)&&e.target.value>TODAY?e.target.value:'';const b=$('#saveRem');if(b)b.disabled=!rdraft.date}
+  if(e.target.id==='rDate'){rdraft.date=/^\d{4}-\d{2}-\d{2}$/.test(e.target.value)&&e.target.value>TODAY?e.target.value:'';majRem()}
+  if(e.target.id==='rHeure'){const h=/^\d{2}:\d{2}/.test(e.target.value)?e.target.value.slice(0,5):'';rdraft.heure=h;majRem()}
 });
 document.addEventListener('change',e=>{
-  if(e.target.id==='rDate'){rdraft.date=/^\d{4}-\d{2}-\d{2}$/.test(e.target.value)&&e.target.value>TODAY?e.target.value:'';const b=$('#saveRem');if(b)b.disabled=!rdraft.date}
+  if(e.target.id==='rDate'){rdraft.date=/^\d{4}-\d{2}-\d{2}$/.test(e.target.value)&&e.target.value>TODAY?e.target.value:'';majRem()}
+  if(e.target.id==='rHeure'){const h=/^\d{2}:\d{2}/.test(e.target.value)?e.target.value.slice(0,5):'';rdraft.heure=h;majRem()}
   /* v54 : tant que la photo se prépare, « Valider le problème » attend (avant : validé sans la photo sur un téléphone lent) ;
      la photo va toujours au véhicule pour lequel elle a été prise */
   if(e.target.id==='photo'){const f=e.target.files[0];if(!f)return;$('#photoName').textContent='Préparation de la photo…';const dr=draft;dr.pending=(dr.pending||0)+1;render();
@@ -1437,7 +1604,7 @@ else{render(true);IDB.get(STORE+'-plan').then(pl=>{
   if(pl&&(pl.lignes||pl.loc)){try{const t=readPlan(pl);S.loc=t.loc;S.impros=t.impros;S.plan=pl}catch(e){}}
   if(!S.plan)S.misAJour='';
   return IDB.get(STORE+'-pas')}).then(pa=>{if(Array.isArray(pa)){const loc=S.passages.filter(x=>x.local);S.passages=pa;
-    loc.forEach(x=>{if(!pa.some(y=>y.at===x.at&&y.by===x.by&&y.cle===x.cle))S.passages.push(x)})}else if(S.passages.length)savePassages()}).finally(()=>{ready=true;(A_OUVRIR?ouvrirDemandes:run)()})}
+    loc.forEach(x=>{if(!pa.some(y=>y.at===x.at&&y.by===x.by&&y.cle===x.cle))S.passages.push(x)})}else{S.depuis='';S.fullAt=0;if(S.passages.length)savePassages()} /* v59 : base vide ou pas ouverte : tout relire chez Google (sinon les validations d'avant manquaient) */}).finally(()=>{ready=true;(A_OUVRIR?ouvrirDemandes:run)()})}
 })();
 </script>
 </body>

@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Runners · Bureau</title>
 <!-- Page bureau de l'appli Runners, v4 : liens des runners, demandes à n'importe quelle date, rappels des runners, passages du jour ; v4 : actualisation automatique, un passage peut clore plusieurs demandes ; v6 (suite de la v4, la v5 est la version pro à part) : envois passés dans l'adresse (GET) car certains appareils bloquaient les envois classiques ; v7 : un véhicule ajouté s'affiche tout de suite (envoi en arrière-plan) ; v8 : « Photos en cours d'envoi » quand les photos suivent le passage ; v9 : « aperçu » tant que seule la photo allégée est arrivée ; v10 : photo effacée au bout de 5 jours indiquée ; v11 : plus rapide (planning retéléchargé seulement s'il a changé), actualisée toutes les 30 secondes ; v12 : indique combien de téléphones ont reçu l'alerte d'une nouvelle demande ; v13 : mise à jour automatique sans recharger à la main ; v14 : page laissée ouverte la nuit remise au nouveau jour le matin, liens photo vérifiés, polices sans bloquer l'affichage ; v15 : demandes et rappels à faire modifiables (bouton Modifier, avec le script v20) ; v16 : onglet « Retours runners » (véhicules demandés vus par un runner, alerte avec bandeau, son et notification de l'ordinateur ; retiré si le runner annule), état de Slack (avec le script v21) ; v17 (appli v48) : demande sur un jour ou sur plusieurs jours (du … au …) ; v18 (appli v49) : « Date unique / Période », termes revus ; v19 (appli v51) : onglet « Planifier » (avant « Dernière minute »), tirets de la plaque mis tout seuls ; v20 (appli v53) : liste « à faire » seulement, la plus récente en haut, 7 jours au plus ; passages du jour rangés par runner ; v21 (appli v54) : panne passagère de Google sans perdre la page, ajout sans doublon si la réponse se perd, actualisation lente ne défait plus un ajout ou un retrait, modification annulée proprement si la demande est faite entre-temps, plaque à moitié tapée refusée, téléphone étroit -->
+<!-- v25 (29/10) : actualisation et annonces des retours même quand un champ a le curseur ; nouvel essai tout seul si Google ne répond pas à l'ouverture ; heures à la minute ; formulaire gardé entre onglets et remis si l'envoi échoue ; heure des rappels des runners -->
 <!-- v24 (26/10, Fabian, Mika) : passages : « Fait sur place » affiché sous un problème signalé -->
 <!-- v23 (25/10, Fabian) : pas encore d'impro dans le BO (l'export Metabase arrive toutes les heures) : on peut saisir les heures de l'immobilisation (toujours « Improductif » pour le runner, Fabian) ; le runner les voit sur sa demande -->
 <!-- v22 (25/10, Fabian) : demande : impro du BO affichée sous la plaque (créneau, ou « penser à bloquer le véhicule ») ; deux impros le même jour : on coche celle de la demande -->
@@ -116,7 +117,7 @@ button.bo-r{cursor:pointer}button.bo-r:hover{background:var(--surface-2)}
 .checks input{width:auto;min-height:0;accent-color:var(--accent)}
 .li{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:12px 16px}
 .li+.li{border-top:1px solid var(--line)}
-.li-b{min-width:0;display:flex;flex-direction:column;gap:3px}
+.li-b{min-width:0;display:flex;flex-direction:column;gap:3px;overflow-wrap:anywhere}.rc-h b{overflow-wrap:anywhere}
 .li-a{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
 .actions{display:flex;gap:8px;flex-wrap:wrap}
 .li.editing{background:var(--accent-soft,#e6f0ea)}
@@ -202,9 +203,16 @@ function qrSvg(text){
 
 /* ---------- Code bureau ---------- */
 let CODE='';
-try{CODE=new URLSearchParams(location.search).get('b')||'';if(CODE)localStorage.setItem('runners-bureau',CODE);else CODE=localStorage.getItem('runners-bureau')||''}catch(e){}
+try{CODE=new URLSearchParams(location.search).get('b')||'';if(CODE){localStorage.setItem('runners-bureau',CODE);history.replaceState(null,'',location.pathname+location.hash)}else CODE=localStorage.getItem('runners-bureau')||''}catch(e){}
 
 /* ---------- Données ---------- */
+/* v25 : actualisation jamais arrêtée par un champ qui a le curseur : seul l'affichage attend (RENDU_ATTENTE) */
+/* v25 : même règle que le script (« Non », « non », « faux », « 0 »… = inactif) */
+function estActif(r){return !/^(non|no|n|false|faux|0|inactif|désactivé|desactive)$/i.test(String(r.actif==null?'':r.actif).trim())}
+let RENDU_ATTENTE=false,BROUILLON=null,AVANT_EDIT=null,AJOUT_RUNNER=false;
+/* v25 : formulaire « Ajouter » en cours quand on passe à « Modifier » : remis après Annuler ou Enregistrer */
+function rendreBrouillon(){if(AVANT_EDIT&&!edit&&$('#dPlate')){const b=AVANT_EDIT;AVANT_EDIT=null;remettre(b);try{plateHint();recapDate()}catch(e){}}}
+function saisieEnCours(){const a=document.activeElement;return !!(a&&a.matches&&a.matches('input,textarea,select'))}
 let D=null,err='',tab='demandes',confirmCode='',loading=false,edit='',plage=false;
 /* v17 : demandes en cours de retrait (cachées tout de suite, en attendant la réponse de Google) */
 const RETRAIT=new Set();
@@ -213,10 +221,12 @@ const ENVOIS=new Map(),MODIFS=new Map();let viderForm='',DERNIER_ECHEC=null;
 /* v16 : retours déjà vus sur cet ordinateur (null = jamais ouvert ici : rien d'ancien n'est annoncé) */
 let VUS=null;try{const x=localStorage.getItem('bureau-retours-vus');if(x)VUS=new Set(JSON.parse(x))}catch(e){}
 const ANNONCES=new Set();
+/* v25 : deux onglets bureau ouverts : un retour vu dans l'un n'est plus annoncé dans l'autre */
+window.addEventListener('storage',e=>{if(e.key!=='bureau-retours-vus'||!e.newValue)return;try{VUS=new Set(JSON.parse(e.newValue));JSON.parse(e.newValue).forEach(k=>ANNONCES.add(k));if(D&&!saisieEnCours())render();annoncer()}catch(x){}});
 function nouveaux(){const l=retours().filter(r=>String(r.x.horodatage).slice(0,10)===TODAY);if(!VUS){VUS=new Set(l.map(r=>r.k));sauverVus()}return l.filter(r=>!VUS.has(r.k))}
 function sauverVus(){try{localStorage.setItem('bureau-retours-vus',JSON.stringify([...VUS].slice(-400)))}catch(e){}}
 function marquerVus(){if(!VUS)VUS=new Set();retours().forEach(r=>VUS.add(r.k));sauverVus()}
-function bip(){try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return;const c=new A(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=880;g.gain.setValueAtTime(.12,c.currentTime);g.gain.exponentialRampToValueAtTime(.001,c.currentTime+.5);o.start();o.stop(c.currentTime+.5)}catch(e){}}
+function bip(){try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return;const c=new A(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=880;g.gain.setValueAtTime(.12,c.currentTime);g.gain.exponentialRampToValueAtTime(.001,c.currentTime+.5);o.onended=()=>{try{c.close()}catch(e){}};o.start();o.stop(c.currentTime+.5)}catch(e){}}
 function libRetour(r){return r.x.plaque+' vu par '+r.x.runner+' à '+String(r.x.horodatage).slice(11,16).replace(':','h')+(r.x.resultat==='Problème'?' : problème signalé':' : OK')}
 function annoncer(){
   if(DEMO||!D)return;const n=nouveaux();
@@ -291,7 +301,7 @@ async function load(){
     const sig=JSON.stringify([r.runners,r.demandes,r.passages,r.misAJour,r.importErreur]);change=!D||!!r.planning||sig!==load.sig;load.sig=sig;
     if(!r.planning&&D&&D.planning)r.planning=D.planning;D=r}}
   catch(e){if(seq!==load.seq)return false;err=D?'':'Pas de réseau. Réessayez.';if(D)toast('Pas de réseau : données non actualisées.')}
-  loading=false;if(change)render();annoncer();return frais;
+  loading=false;if(change){if(saisieEnCours())RENDU_ATTENTE=true;else render()}annoncer();return frais;
 }
 function fleet(){
   const m=new Map();if(!D||!D.planning)return m;
@@ -305,7 +315,7 @@ function fleet(){
 
 /* ---------- Écrans ---------- */
 function vDemandes(){
-  const runners=D.runners.filter(r=>String(r.actif).toLowerCase()!=='non');
+  const runners=D.runners.filter(r=>estActif(r));
   /* v20 (Fabian) : seulement ce qui reste à faire (une demande faite part dans « Retours runners »), rien de plus de 7 jours,
      la plus récente en haut (celle qu'on vient d'ajouter, puis les autres par date de création) */
   const recente=d=>ENVOIS.has(d.id)?'~':String(d.cree_le||'');
@@ -340,8 +350,8 @@ function vDemandes(){
   </section>
   <section class="card" aria-labelledby="h-list">
     <div class="card-h"><h2 id="h-list">Demandes et rappels à faire</h2><span class="meta">${list.length}</span></div>
-    ${list.length?list.map(d=>`<div class="li${d.id===edit?' editing':''}"><div class="li-b"><div><span class="plate-t">${esc(d.plaque)}</span> <span class="pill ${d.statut==='faite'?'ok':finDe(d)<TODAY?'late':'wait'}">${d.statut==='faite'?'Faite':finDe(d)<TODAY?'En retard':d.date<=TODAY&&finDe(d)>TODAY?'En cours':'À faire'}</span>${d.auteur&&d.auteur!=='Service parc'?` <span class="pill mine">Rappel de ${esc(d.auteur)}</span>`:''}</div>
-      <div class="meta">${esc(periodeName(d))} · ${esc(d.runner==='Tous'?'Tous les runners':d.runner)}${d.point?' · '+esc(d.point):''}</div>${d.consigne?`<div>${esc(d.consigne)}</div>`:''}</div>
+    ${list.length?list.map(d=>`<div class="li${d.id===edit?' editing':''}"><div class="li-b"><div><span class="plate-t">${esc(d.plaque)}</span> <span class="pill ${d.statut==='faite'?'ok':finDe(d)<TODAY?'late':'wait'}">${d.statut==='faite'?'Faite':finDe(d)<TODAY?'En retard':d.date<=TODAY&&finDe(d)>TODAY?'En cours':'À faire'}</span>${d.auteur&&d.auteur!=='Service parc'?` <span class="pill mine">Rappel de ${esc(d.auteur)}${/^\d{2}:\d{2}/.test(d.heure||'')?' · '+esc(String(d.heure).slice(0,5).replace(':','h')):''}</span>`:''}</div>
+      <div class="meta">${esc(periodeName(d))} · ${esc(d.runner==='Tous'?(d.point?'Les runners de '+d.point:'Tous les runners'):d.runner+(d.point?' · '+d.point:''))}</div>${d.consigne?`<div style="white-space:pre-line">${esc(d.consigne)}</div>`:''}</div>
       ${d.statut==='faite'?'':`<div class="li-a">${ENVOIS.has(d.id)?'<span class="meta">Enregistrement…</span>':`<button type="button" class="btn small" data-edit="${esc(d.id)}">Modifier</button><button type="button" class="btn small danger" data-del="${esc(d.id)}">Retirer</button>`}</div>`}</div>`).join('')
     :'<div class="empty">Aucune demande ni rappel à faire.</div>'}
   </section></div>`;
@@ -349,8 +359,8 @@ function vDemandes(){
 /* Un passage (onglets Passages du jour et Retours runners) ; avant = ligne affichée au-dessus (la demande d'origine) */
 function passageRow(x,avant){return `<div class="li ${x.resultat==='Problème'?'ko':''}"><div class="li-b">
     <div><span class="plate-t">${esc(x.plaque)}</span> <span class="pill ${x.resultat==='Problème'?'ko':'ok'}">${x.resultat==='Problème'?'Problème':'OK'}</span></div>
-    <div class="meta">${(j=>j&&j!==TODAY&&!jourAffiche?esc(dayName(j))+' · ':'')(String(x.horodatage).slice(0,10))}${esc(String(x.horodatage).slice(11,16).replace(':','h'))} · ${esc(x.runner)} · ${esc(x.point||'Hors liste')}</div>${avant||''}
-    ${x.problemes?`<div><b>${esc(x.problemes)}</b>${x.commentaire?' · '+esc(x.commentaire):''}</div>`:x.commentaire?`<div>${esc(x.commentaire)}</div>`:''}${x.faits?`<div>Fait sur place : ${esc(x.faits)}</div>`:''}
+    <div class="meta">${(j=>j&&j!==TODAY&&!jourAffiche?esc(dayName(j))+' · ':'')(String(x.fait_le||x.horodatage).slice(0,10))}${esc(String(x.fait_le||x.horodatage).slice(11,16).replace(':','h'))}${x.fait_le?' (envoyé plus tard)':''} · ${esc(x.runner)} · ${esc(x.point||'Hors liste')}</div>${avant||''}
+    ${x.problemes?`<div><b>${esc(x.problemes)}</b>${x.commentaire?' · '+esc(x.commentaire):''}</div>`:x.commentaire?`<div>${esc(x.commentaire)}</div>`:''}${x.faits?`<div>Fait sur place : ${esc(x.faits)}</div>`:''}${x.bo?`<div><b>Vu à ${esc(x.point)}, le BO le met à ${esc(x.bo)}</b> : à corriger dans le BO si besoin.</div>`:''}
     ${x.photo&&/^https:\/\//.test(x.photo)?`<div>${String(x.photo).split(' ').filter(l=>/^https:\/\/[^\s"'<>]+$/.test(l)).map((l,i)=>`<a href="${esc(l)}" target="_blank" rel="noopener">Photo ${i+1}</a>`).join(' · ')}${x.apercu?' <span class="meta">(aperçu, la photo nette arrive)</span>':''}</div>`:x.photo==='en attente'?'<div class="meta">Photos en cours d\'envoi</div>':x.photo==='photo effacée'?'<div class="meta">Photo effacée (gardée 5 jours)</div>':x.photo?'<div class="meta">Photo jointe (démonstration)</div>':''}
   </div></div>`}
 /* v16 : retours des runners sur les véhicules demandés par le bureau (un passage a clos la demande). Un passage annulé
@@ -361,15 +371,17 @@ function retours(){
     const l=D.passages.filter(x=>String(x.demande_id||'').split(',').map(s=>s.trim()).includes(d.id));
     if(!l.length)return null;
     /* v20 : le runner est revenu sur le véhicule (photo, défaut oublié) : son dernier passage du jour sur cette plaque */
-    const p0=l[l.length-1],apres=D.passages.filter(x=>x.plaque===p0.plaque&&String(x.horodatage)>=String(p0.horodatage)).sort((a,b)=>String(a.horodatage).localeCompare(String(b.horodatage)));
+    const p0=l[l.length-1],apres=D.passages.filter(x=>x.plaque===p0.plaque&&String(x.horodatage)>=String(p0.horodatage)&&String(x.horodatage).slice(0,10)===String(p0.horodatage).slice(0,10)) /* v27 : le même jour seulement, comme le script */.sort((a,b)=>String(a.horodatage).localeCompare(String(b.horodatage)));
     const x=apres.length?apres[apres.length-1]:p0;
     return {d,x,k:d.id+'|'+(x.id||x.horodatage)}}).filter(Boolean)
     .sort((a,b)=>String(b.x.horodatage).localeCompare(String(a.x.horodatage)));
 }
 function vRetours(){
-  const l=retours();marquerVus();
+  const l=retours();if(document.visibilityState==='visible')marquerVus();
   const sl=DEMO?'':D.slack?(/ ok$/.test(D.slack)?'<span class="meta">Slack : relié, chaque demande est suivie dans son fil.</span>':/^pas encore/.test(D.slack)?'<span class="meta">Slack : réglé, en attente de la première demande.</span>':`<div class="slackerr">Slack ne répond pas comme prévu (${esc(D.slack.replace(/^\S+ /,''))}). Vérifiez slack_jeton et slack_canal dans l'onglet Réglages de la feuille, et que le bot est invité dans le canal.</div>`):'';
-  return `<section class="card"><div class="card-h"><h2>Retours des runners</h2><span class="meta">${l.length}</span></div>
+  /* v26 (appli v60) : véhicules vus par un runner sur un autre point que celui du BO (7 derniers jours) */
+  const ail=DEMO?[]:D.passages.filter(x=>x.bo).sort((a,b)=>String(b.horodatage).localeCompare(String(a.horodatage)));
+  return (ail.length?`<section class="card"><div class="card-h"><h2>Vus sur un autre point que dans le BO</h2><span class="meta">${ail.length}</span></div>${ail.map(x=>passageRow(x)).join('')}</section>`:'')+`<section class="card"><div class="card-h"><h2>Retours des runners</h2><span class="meta">${l.length}</span></div>
     <div class="card-b retours-top">${'Notification' in window&&Notification.permission==='default'&&!DEMO?'<button type="button" class="btn small" id="notifOn">Être prévenu sur cet ordinateur</button>':''}<span class="meta">Les véhicules demandés ici, une fois vus par un runner (7 derniers jours). Si le runner annule, le retour disparaît.</span>${sl}</div>
     ${l.length?l.map(r=>passageRow(r.x,`<div>Demande ${esc(periodeName(r.d).replace(/^./,c=>c.toLowerCase()))}${r.d.consigne?' : '+esc(r.d.consigne):''}</div>`)).join(''):'<div class="empty">Aucun retour pour l\'instant.</div>'}
   </section>`;
@@ -397,7 +409,7 @@ function vRunners(){
       <div class="field"><span class="mlabel">Ses points</span><div class="checks">${POINTS.map(p=>`<label><input type="checkbox" name="rPt" value="${esc(p)}">${esc(p)}</label>`).join('')}</div></div>
       <div><button type="submit" class="btn primary">Créer son lien</button></div>
     </form></section>
-  <div class="runners">${D.runners.filter(r=>String(r.actif).toLowerCase()!=='non').map(r=>{const url=linkFor(r.code);return `
+  <div class="runners">${D.runners.filter(r=>estActif(r)).map(r=>{const url=linkFor(r.code);return `
     <section class="card rc">
       <div class="rc-h"><b>${esc(r.prenom)}</b><span class="meta">${esc(r.points||'Aucun point')}</span>${D.slack&&!DEMO?(/\b[UW][A-Z0-9]{6,}\b/.test(String(r.slack||'').toUpperCase())?'<span class="meta no-print">Slack : identifié (@)</span>':'<span class="meta no-print">Slack : pas encore identifié</span>'):''}</div>
       ${qrOk?`<div class="qr" role="img" aria-label="QR code du lien de ${esc(r.prenom)}">${qrSvg(url)}</div>`:''}
@@ -414,28 +426,36 @@ function vRunners(){
 function gate(){
   return `<form class="card gate" id="fCode"><div class="card-b">
     <h2 style="margin:0;font-size:18px">Code du service parc</h2>
-    <div class="meta">${err?esc(err):'Collez le code bureau (onglet Réglages du Google Sheet). Il reste enregistré sur cet ordinateur.'}</div>
-    <input id="bCode" required autocomplete="off" spellcheck="false">
+    <div class="meta">${err&&err!=='Code bureau incorrect'&&CODE?'Google ne répond pas pour l\'instant ('+esc(err)+'). Nouvel essai tout seul toutes les 30 secondes, ou touchez « Ouvrir ».':err?esc(err):'Collez le code bureau (onglet Réglages du Google Sheet). Il reste enregistré sur cet ordinateur.'}</div>
+    <input id="bCode" required autocomplete="off" spellcheck="false" value="${err&&err!=='Code bureau incorrect'?esc(CODE):''}">
     <button type="submit" class="btn primary">Ouvrir</button></div></form>`;
 }
-function render(){
+function render(){RENDU_ATTENTE=false;
   $('#mode').textContent=DEMO?'Démonstration · données fictives':D&&D.misAJour?(()=>{const d=new Date(D.misAJour);return isNaN(d)?'':'Planning du '+d.getDate()+' '+MON[d.getMonth()]+' à '+String(d.getHours()).padStart(2,'0')+'h'+String(d.getMinutes()).padStart(2,'0')+(D.importErreur?' · Dernier export refusé ('+D.importErreur+')':'')})():'';
   $('#sub').textContent=dLabel(TODAY).replace(/^./,c=>c.toUpperCase());
   if(!D){$('#tabs').innerHTML='';$('#view').innerHTML=loading?'<div class="empty">Chargement…</div>':gate();return}
-  const nb={demandes:D.demandes.filter(d=>d.statut==='à faire'&&!RETRAIT.has(d.id)).length,passages:D.passages.filter(x=>String(x.horodatage).slice(0,10)===TODAY).length,runners:D.runners.filter(r=>String(r.actif).toLowerCase()!=='non').length};
-  if(tab==='retours'&&!DEMO)marquerVus();
+  const nb={demandes:D.demandes.filter(d=>d.statut==='à faire'&&!RETRAIT.has(d.id)).length,passages:D.passages.filter(x=>String(x.horodatage).slice(0,10)===TODAY).length,runners:D.runners.filter(r=>estActif(r)).length};
+  if(tab==='retours'&&!DEMO&&document.visibilityState==='visible')marquerVus(); /* v25 : onglet resté ouvert en arrière-plan : le son et la notification partent quand même */
   const nv=DEMO?0:nouveaux().length;nb.retours=nv||retours().length;
   $('#tabs').innerHTML=[['demandes','Planifier'],['retours','Retours runners'],['passages','Passages'],['runners','Runners et liens']].map(([k,t])=>`<button type="button" class="${k===tab?'on':''}" data-tab="${k}" aria-current="${k===tab?'page':'false'}">${t}<span class="cnt${k==='retours'&&nv?' hot':''}">${nb[k]}</span></button>`).join('')+(DEMO?'':'<button type="button" id="reload">Actualiser</button>');
-  const keep=['dPlate','dRunner','dDate','dFin','dPoint','dText','rName'].map(id=>[id,$('#'+id)&&$('#'+id).value]);
+  const keep=['dPlate','dRunner','dDate','dFin','dPoint','dText','rName','iDe','iA'].map(id=>[id,$('#'+id)&&$('#'+id).value]);
+  /* v59 (bureau v25) : le champ où l'on tape garde le curseur quand l'écran se redessine (réponse de Google pendant la frappe) */
+  const fa=document.activeElement,fid=fa&&fa.id&&keep.some(([id])=>id===fa.id)?fa.id:'';let sel=null;try{if(fid&&fa.selectionStart!=null)sel=[fa.selectionStart,fa.selectionEnd]}catch(e){}
   const coches=[...document.querySelectorAll('input[name=rPt]:checked')].map(x=>x.value);
   $('#view').innerHTML=bandeauRetours()+(tab==='passages'?vPassages():tab==='retours'?vRetours():tab==='runners'?vRunners():vDemandes());
   if(tab==='retours')document.title='Service parc · Runners';
   keep.forEach(([id,v])=>{if(v!=null&&$('#'+id))$('#'+id).value=v});
+  if(fid&&$('#'+fid)&&!viderForm){const el=$('#'+fid);try{el.focus({preventScroll:true});if(sel)el.setSelectionRange(sel[0],sel[1])}catch(e){}}
   if(viderForm&&$('#fDemande')){const m=viderForm;viderForm='';['dPlate','dText','dFin'].forEach(id=>{if($('#'+id))$('#'+id).value=''});$('#dPoint').value='';$('#dRunner').value='Tous';$('#dDate').value=TODAY;
     if(m==='perdue')toast('Cette demande vient d\'être faite ou retirée : modification annulée.')}
   document.querySelectorAll('input[name=rPt]').forEach(x=>{if(coches.includes(x.value))x.checked=true});
+  if(tab==='demandes'&&BROUILLON&&$('#dPlate')){const b=BROUILLON;BROUILLON=null;remettre(b)}
+  if(tab==='demandes'&&!edit)rendreBrouillon(); /* v25 : sortie du mode « Modifier » par un retrait ou une demande faite entre-temps */
   if(tab==='demandes'){plateHint();recapDate()}
 }
+/* v25 : formulaire gardé quand on change d'onglet, et remis si Google refuse l'envoi */
+function lireForm(){const v=id=>$('#'+id)?$('#'+id).value:'';return {plaque:v('dPlate'),runner:v('dRunner'),date:v('dDate'),fin:v('dFin'),point:v('dPoint'),consigne:v('dText')}}
+function remettre(c){if(!$('#dPlate'))return;const m={dPlate:c.plaque,dRunner:c.runner,dDate:c.date,dFin:c.fin,dPoint:c.point,dText:c.consigne};Object.keys(m).forEach(id=>{if($('#'+id)&&m[id]!=null&&m[id]!=='')$('#'+id).value=m[id]})}
 /* v17 : résumé de la période choisie, sous les dates */
 function recapDate(){improHint();const r=$('#dRecap');if(!r)return;const a=$('#dDate').value,f=$('#dFin')?$('#dFin').value:'';
   document.querySelectorAll('[data-duree]').forEach(b=>b.classList.toggle('on',plage&&!!a&&!!f&&nbJours(a,f)===+b.dataset.duree));
@@ -459,18 +479,18 @@ function improsBO(p){
 function heureBO(t,ref){if(!t)return '';const d=t.slice(0,10),h=t.slice(11,16);const hh=h?Number(h.slice(0,2))+'h'+(h.slice(3)==='00'?'':h.slice(3)):'';return (d===ref?'':dayName(d).toLowerCase()+' ')+hh}
 const ICO_BLOQUE='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
 const ICO_ALERTE='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>';
-let CRENEAU='',SAISIE=false;
+let CRENEAU='',SAISIE=false,CR_SRC=''; /* v25 : d'où vient le créneau : 'bo' (coché), 'main' (heures tapées), 'edit' (demande modifiée) */
 /* v23 : créneau saisi à la main (« 2026-10-25 20:00|2026-10-25 22:00 »), pour une impro pas encore dans l'export */
 const CR_MAIN=/^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2})\|(?:(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}))?(\|g)?$/;
 function creneauMain(){const a=($('#dDate')&&$('#dDate').value)||TODAY,de=($('#iDe')||{}).value||'',fi=($('#iA')||{}).value||'';
-  if(!/^\d{2}:\d{2}$/.test(de)){CRENEAU='';return}const jf=fi&&fi<=de?plusJours(a,1):a;CRENEAU=a+' '+de+'|'+(/^\d{2}:\d{2}$/.test(fi)?jf+' '+fi:'')}
+  CR_SRC='main';if(!/^\d{2}:\d{2}$/.test(de)){CRENEAU='';return}const jf=fi&&fi<=de?plusJours(a,1):a;CRENEAU=a+' '+de+'|'+(/^\d{2}:\d{2}$/.test(fi)?jf+' '+fi:'')}
 function creneauTxt(m,j){return heureBO(m.deb,j)+(m.fin?' → '+heureBO(m.fin,j):'')}
 function improHint(){
   const x=$('#dImpro'),i=$('#dPlate');if(!x||!i)return;const p=i.value.trim().toUpperCase();
   if(norm(p).length<7||!fleet().size){x.hidden=true;x.innerHTML='';CRENEAU='';SAISIE=false;return}
-  const a=($('#dDate')&&$('#dDate').value)||TODAY,f=($('#dFin')&&$('#dFin').value)||a;
+  const a=($('#dDate')&&$('#dDate').value)||TODAY,f=(plage&&$('#dFin')&&$('#dFin').value)||a; /* v25 : en « Date unique », l'ancienne fin ne compte plus */
   const l=improsBO(p).filter(m=>m.deb.slice(0,10)<=f&&(!m.fin||m.fin.slice(0,10)>=a));
-  const main=CR_MAIN.exec(CRENEAU);if(!l.length&&main)SAISIE=true;
+  const main=CR_MAIN.exec(CRENEAU);if(!l.length&&main){if(CR_SRC==='bo')CRENEAU='';else SAISIE=true} /* v25 : un créneau du BO coché n'est pas recopié sur un autre jour */
   if(l.length){SAISIE=false;if(!l.some(m=>m.deb+'|'+m.fin===CRENEAU))CRENEAU=''}
   x.hidden=false;x.setAttribute('role','status');
   const motif=m=>m.meca?'Garage':m.lib||'Improductif';
@@ -480,7 +500,7 @@ function improHint(){
   if(l.length){x.className='bo ok'+(l.some(m=>m.meca)?' meca':'');x.innerHTML='<div class="bo-h"><span class="bo-i">'+ICO_BLOQUE+'</span><div><div class="bo-t">'+(l.length>1?l.length+' impros dans le BO ce jour-là':'Véhicule immobilisé dans le BO')+'</div><div class="bo-s">'+(l.length>1?'Choisissez celle de la demande, sinon le runner voit tous les créneaux.':'Le runner verra ce créneau sur sa demande.')+'</div></div></div>'+l.map(m=>ligne(m,l.length>1)).join('')}
   else{x.className='bo warn';const m2=main||[],de=m2[2]||'',fi=m2[4]||'';
     x.innerHTML='<div class="bo-h"><span class="bo-i">'+ICO_ALERTE+'</span><div><div class="bo-t">Pas d\'impro dans le BO ce jour-là</div><div class="bo-s">Penser à bloquer le véhicule dans le BO, sinon il peut partir en location avant le passage du runner.</div></div></div>'+
-      '<div class="bo-sai">'+(SAISIE?'<div class="bo-st">Heures de l\'immobilisation <span>· le runner les verra sur sa demande</span></div><div class="bo-hrs"><label>De<input type="time" id="iDe" step="900" value="'+esc(de)+'"></label><label>À<input type="time" id="iA" step="900" value="'+esc(fi)+'"></label></div><button type="button" class="bo-lien" data-saisie="0">Retirer les heures</button>':'<button type="button" class="bo-lien" data-saisie="1">Impro posée à l\'instant ? Saisir ses heures</button><div class="bo-s" style="margin-top:-4px">Elle n\'apparaîtra ici qu\'au prochain export du BO (toutes les heures).</div>')+'</div>';
+      '<div class="bo-sai">'+(SAISIE?'<div class="bo-st">Heures de l\'immobilisation <span>· le runner les verra sur sa demande</span></div><div class="bo-hrs"><label>De<input type="time" id="iDe" step="60" value="'+esc(de)+'"></label><label>À<input type="time" id="iA" step="60" value="'+esc(fi)+'"></label></div><button type="button" class="bo-lien" data-saisie="0">Retirer les heures</button>':'<button type="button" class="bo-lien" data-saisie="1">Impro posée à l\'instant ? Saisir ses heures</button><div class="bo-s" style="margin-top:-4px">Elle n\'apparaîtra ici qu\'au prochain export du BO (toutes les heures).</div>')+'</div>';
     if(SAISIE)creneauMain();else CRENEAU=''}
 }
 function cap1(t){return t?t.charAt(0).toUpperCase()+t.slice(1):t}
@@ -492,9 +512,9 @@ function plateHint(){improHint();const i=$('#dPlate');if(!i)return;const p=i.val
 /* ---------- Événements ---------- */
 document.addEventListener('click',async e=>{
   const b=e.target.closest('button');if(!b)return;const d=b.dataset;
-  if(d.tab){tab=d.tab;confirmCode='';render();return}
+  if(d.tab){if(tab==='demandes'&&d.tab!=='demandes'&&$('#dPlate')&&($('#dPlate').value.trim()||$('#dText').value.trim()))BROUILLON=lireForm(); /* seulement s'il y a quelque chose à garder (sinon la mise à jour auto était bloquée) */tab=d.tab;confirmCode='';render();return}
   if(d.jourp){JOUR_P=d.jourp;render();return}
-  if(d.creneau!=null){CRENEAU=CRENEAU===d.creneau?'':d.creneau;improHint();return}
+  if(d.creneau!=null){CRENEAU=CRENEAU===d.creneau?'':d.creneau;CR_SRC='bo';improHint();return}
   if(d.saisie!=null){SAISIE=d.saisie==='1';CRENEAU='';improHint();if(SAISIE&&$('#iDe'))$('#iDe').focus();return}
   if(d.quick){$('#dDate').value=d.quick;recapDate();return}
   if(d.plage!=null){plage=d.plage==='1';if(plage){const a=$('#dDate').value||TODAY,f=$('#dFin');if(f&&(!f.value||f.value<=a))f.value=plusJours(a,2)}render();return}
@@ -502,12 +522,12 @@ document.addEventListener('click',async e=>{
   if(b.id==='reload'){load();return}
   if(b.id==='notifOn'){try{Notification.requestPermission().then(()=>render())}catch(err){}return}
   if(b.id==='print'){window.print();return}
-  if(d.edit){const x=D.demandes.find(y=>y.id===d.edit);if(!x)return;edit=x.id;
+  if(d.edit){const x=D.demandes.find(y=>y.id===d.edit);if(!x)return;if(!edit&&$('#dPlate')&&($('#dPlate').value.trim()||$('#dText').value.trim()))AVANT_EDIT=lireForm();edit=x.id;
     ['dPlate','dText'].forEach(id=>{if($('#'+id))$('#'+id).value=''});render();
     plage=finDe(x)>x.date&&finDe(x)>TODAY;render();
-    $('#dPlate').value=x.plaque||'';$('#dRunner').value=x.runner||'Tous';$('#dDate').value=x.date<TODAY?TODAY:x.date;$('#dFin').value=plage?finDe(x):'';$('#dPoint').value=x.point||'';$('#dText').value=x.consigne||'';CRENEAU=String(x.creneau||'');if($('#dDate').max&&x.date>$('#dDate').max)$('#dDate').removeAttribute('max');plateHint();recapDate();
+    $('#dPlate').value=x.plaque||'';$('#dRunner').value=x.runner||'Tous';$('#dDate').value=x.date<TODAY?TODAY:x.date;$('#dFin').value=plage?finDe(x):'';$('#dPoint').value=x.point||'';$('#dText').value=x.consigne||'';CRENEAU=String(x.creneau||'');CR_SRC='edit';if($('#dDate').max&&x.date>$('#dDate').max)$('#dDate').removeAttribute('max');plateHint();recapDate();
     try{$('#fDemande').scrollIntoView({block:'start',behavior:'smooth'})}catch(err){}$('#dText').focus();return}
-  if(b.id==='editCancel'){edit='';plage=false;CRENEAU='';SAISIE=false;['dPlate','dText','dFin'].forEach(id=>{if($('#'+id))$('#'+id).value=''});$('#dPoint').value='';$('#dRunner').value='Tous';$('#dDate').value=TODAY;render();return}
+  if(b.id==='editCancel'){edit='';plage=false;CRENEAU='';SAISIE=false;['dPlate','dText','dFin'].forEach(id=>{if($('#'+id))$('#'+id).value=''});$('#dPoint').value='';$('#dRunner').value='Tous';$('#dDate').value=TODAY;render();rendreBrouillon();return}
   /* v17 : retrait affiché tout de suite (avant : on attendait Google, Slack puis le rechargement complet, 5 à 10 s) ;
      si Google refuse ou s'il n'y a pas de réseau, la demande revient dans la liste avec un message */
   if(d.del){const id=d.del,x=D.demandes.find(y=>y.id===id);if(id===edit){edit='';plage=false;viderForm='retirée'}RETRAIT.add(id);render();toast((x?x.plaque+' : ':'')+'demande retirée.');
@@ -533,9 +553,14 @@ document.addEventListener('submit',async e=>{
       const id=edit,champs={id,plaque,runner:$('#dRunner').value,date,fin,point:$('#dPoint').value,consigne:$('#dText').value.trim(),creneau:CRENEAU};
       const x=D.demandes.find(y=>y.id===id),avant=x?Object.assign({},x):null;
       if(x&&!DEMO){Object.assign(x,champs);MODIFS.set(id,champs)}
-      edit='';plage=false;['dPlate','dText','dFin'].forEach(id=>{if($('#'+id))$('#'+id).value=''});$('#dPoint').value='';$('#dRunner').value='Tous';$('#dDate').value=TODAY;plateHint();render();
+      edit='';plage=false;['dPlate','dText','dFin'].forEach(id=>{if($('#'+id))$('#'+id).value=''});$('#dPoint').value='';$('#dRunner').value='Tous';$('#dDate').value=TODAY;plateHint();render();rendreBrouillon();
       toast(plaque+' modifié.');
-      act('demande_modif',champs).then(r=>{MODIFS.delete(id);if(r.erreur&&D){const y=D.demandes.find(z=>z.id===id);if(y&&avant)Object.assign(y,avant);render()}
+      act('demande_modif',champs).then(r=>{MODIFS.delete(id);if(r.erreur&&D){const y=D.demandes.find(z=>z.id===id);if(y&&avant)Object.assign(y,avant);
+          /* v25 : modification refusée : on revient en mode « Modifier » avec ce qui avait été tapé */
+          const fini=/déjà faite|retirée|introuvable/i.test(String(r.erreur)); /* v25 : faite ou retirée entre-temps : réessayer ne sert à rien */
+          if(fini){if(y)y.statut=/faite/i.test(r.erreur)?'faite':'supprimée';render();load();toast(plaque+' : '+r.erreur+' Modification non enregistrée.');return}
+          if(y&&y.statut==='à faire'&&!edit&&tab==='demandes'&&$('#dPlate')&&!$('#dPlate').value.trim()){edit=id;plage=!!champs.fin;render();remettre(champs);plateHint();recapDate()}else render();
+          toast(plaque+' : modification non enregistrée ('+(r.erreur==='réseau'?'pas de réseau':r.erreur)+'). Réessayez.')}
         else if(r.prevenus>0)toast(plaque+' : alerte envoyée sur '+r.prevenus+' téléphone'+(r.prevenus>1?'s':'')+'.')});
       return}
     /* Affiché tout de suite, envoyé à Google en arrière-plan (Google met 2 à 4 secondes à répondre) */
@@ -552,7 +577,7 @@ document.addEventListener('submit',async e=>{
       ENVOIS.delete(tmp);
       /* v21 : en échec, le même identifiant resservira si on renvoie la même demande (pas de doublon si Google l'a reçue tard) */
       DERNIER_ECHEC=r.erreur?{cle:cleDem,id:tmp}:null;
-      if(r.erreur&&D){D.demandes=(D.demandes||[]).filter(x=>x.id!==tmp);render();toast(plaque+' non enregistré : '+(r.erreur==='réseau'?'pas de réseau':r.erreur)+'. Réessayez.')}
+      if(r.erreur&&D){D.demandes=(D.demandes||[]).filter(x=>x.id!==tmp);render();if(tab==='demandes'&&$('#dPlate')&&!$('#dPlate').value.trim()&&!edit){remettre(champs);plateHint();recapDate()}else if(tab!=='demandes'&&!BROUILLON)BROUILLON=champs;toast(plaque+' non enregistré : '+(r.erreur==='réseau'?'pas de réseau':r.erreur)+'. Réessayez.')}
       else if(D)render();
       /* v12 : avec le script v15, nombre de téléphones prévenus par une alerte */
       if(r.prevenus>0)toast(plaque+' : alerte envoyée sur '+r.prevenus+' téléphone'+(r.prevenus>1?'s':'')+'.')});
@@ -560,19 +585,24 @@ document.addEventListener('submit',async e=>{
   if(f.id==='fRunner'){
     const prenom=$('#rName').value.trim();if(!prenom)return;
     const points=[...document.querySelectorAll('input[name=rPt]:checked')].map(x=>x.value).join(', ');
-    const r=await act('runner_ajout',{prenom,points});if(!r.erreur){toast('Lien créé pour '+prenom+'.');if($('#rName'))$('#rName').value='';document.querySelectorAll('input[name=rPt]').forEach(x=>{x.checked=false})}return}
+    if(AJOUT_RUNNER)return;AJOUT_RUNNER=true;let r;try{r=await act('runner_ajout',{prenom,points})}finally{AJOUT_RUNNER=false} /* v25 : pas de double envoi */
+    if(!r.erreur){toast('Lien créé pour '+prenom+'.');if($('#rName'))$('#rName').value='';document.querySelectorAll('input[name=rPt]').forEach(x=>{x.checked=false})}return}
 });
 /* Actualisation toute seule toutes les 3 minutes (sauf pendant la saisie d'une demande) */
 /* v11 : pas d'actualisation pendant qu'on écrit dans un champ (le texte tapé serait effacé) */
 /* v16 : page en arrière-plan actualisée aussi (une fois par minute) pour prévenir des retours des runners */
-let tic=0;setInterval(()=>{const a=document.activeElement;tic++;if(!DEMO&&CODE&&D&&(document.visibilityState==='visible'||tic%2===0)&&!(a&&a.matches&&a.matches('input,textarea,select')))load()},30000);
-document.addEventListener('visibilitychange',()=>{if(!DEMO&&CODE&&D&&document.visibilityState==='visible'&&tab!=='demandes')load()});
+let tic=0;setInterval(()=>{tic++;if(DEMO||!CODE)return;
+  /* v25 : Google ou le réseau en panne à l'ouverture : nouvel essai toutes les 30 s (avant : bloqué sur l'écran du code) */
+  if(!D){if(err&&err!=='Code bureau incorrect'&&!loading&&!saisieEnCours())load();return} /* pas pendant qu'on tape le code */
+  if(document.visibilityState==='visible'||tic%2===0)load()},30000);
+setInterval(()=>{if(RENDU_ATTENTE&&!saisieEnCours()){RENDU_ATTENTE=false;render()}},5000);
+document.addEventListener('visibilitychange',()=>{if(!DEMO&&CODE&&D&&document.visibilityState==='visible'&&tab!=='demandes')load();if(!DEMO&&D&&document.visibilityState==='visible'&&tab==='retours'&&!saisieEnCours())render()});
 /* v13 : mise à jour sans fermer la page. Toutes les 5 min, on regarde le numéro de version publié (dans sw.js) ;
    s'il a changé, la page se recharge seule, mais jamais pendant qu'on écrit ou avec une demande à moitié remplie. */
 let VERSION='',majPrete=false;
 function versionEnLigne(){return fetch('sw.js',{cache:'no-store'}).then(r=>r.ok?r.text():'').then(t=>(t.match(/runners-v\d+/)||[''])[0]).catch(()=>'')}
 function majSansRisque(){const a=document.activeElement;
-  return !confirmCode&&!edit&&!(a&&a.matches&&a.matches('input,textarea,select'))&&!['dPlate','dText','rName','bCode'].some(id=>$('#'+id)&&$('#'+id).value.trim())}
+  return !confirmCode&&!edit&&!BROUILLON&&!AVANT_EDIT&&!(a&&a.matches&&a.matches('input,textarea,select'))&&!['dPlate','dText','rName','bCode'].some(id=>$('#'+id)&&$('#'+id).value.trim())}
 function appliquerMaj(){if(!majPrete||document.visibilityState!=='visible'||!majSansRisque())return;
   try{const t=+sessionStorage.getItem('bureau-maj')||0;if(Date.now()-t<60000)return;sessionStorage.setItem('bureau-maj',String(Date.now()));sessionStorage.setItem('bureau-onglet',tab)}catch(e){}
   location.reload()}
@@ -582,7 +612,7 @@ setInterval(()=>{if(document.visibilityState==='visible')chercherMaj()},5*60*100
 setInterval(appliquerMaj,30000);
 /* v14 : page laissée ouverte la nuit : le lendemain, « aujourd'hui », le jour proposé et les retards étaient ceux de la veille
    (une demande pouvait partir pour hier). Elle se recharge seule au changement de jour, jamais pendant une saisie. */
-setInterval(()=>{if(dayOffset(0)!==TODAY&&majSansRisque()){try{sessionStorage.setItem('bureau-onglet',tab)}catch(e){}location.reload()}},60000);
+setInterval(()=>{if(dayOffset(0)!==TODAY&&!confirmCode&&!edit&&!BROUILLON&&!AVANT_EDIT&&!['dPlate','dText','rName','bCode'].some(id=>$('#'+id)&&$('#'+id).value.trim())){try{sessionStorage.setItem('bureau-onglet',tab)}catch(e){}location.reload()}},60000);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')chercherMaj()});
 load();
 })();

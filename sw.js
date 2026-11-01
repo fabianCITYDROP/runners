@@ -2,7 +2,7 @@
    Toujours la version en ligne d'abord ; la copie sert en cas de coupure, et depuis la v42 aussi quand le réseau
    est trop lent (plus de 3 s) : l'appli s'ouvre tout de suite et la version en ligne est rangée pour la fois suivante.
    Les données (Google) ne passent jamais par ici. */
-const CACHE = 'runners-v58';
+const CACHE = 'runners-v62';
 const ATTENTE_MAX = 3000; /* v42 : au-delà, on ouvre la copie du téléphone (avant : jusqu'à 30 s d'écran blanc sur un réseau faible) */
 const FICHIERS = ['./', './index.html', './bureau.html', './config.js', './manifest.json', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 self.addEventListener('install', e => {
@@ -48,20 +48,20 @@ self.addEventListener('notificationclick', e => {
    Une alerte est toujours affichée, même sans réseau (exigé par Apple). */
 self.addEventListener('push', e => {
   e.waitUntil((async () => {
-    let titre = 'Nouvelle demande du bureau', texte = 'Ouvrez l\'appli pour la voir.', n = 0;
+    let titre = 'Nouvelle demande du bureau', texte = 'Ouvrez l\'appli pour la voir.', n = 0, rappel = false;
     try {
       const cfg = await (await caches.open('runners-cfg')).match('./__cfg').then(r => r ? r.json() : null);
       if (cfg && cfg.api && cfg.code) {
         const ctl = new AbortController(); const tm = setTimeout(() => ctl.abort(), 8000);
         try {
           const d = await (await fetch(cfg.api + '?' + new URLSearchParams({ action: 'notif', code: cfg.code }), { signal: ctl.signal, cache: 'no-store' })).json();
-          if (d && d.titre) { titre = d.titre; texte = d.texte || texte; n = d.n || 0; }
+          if (d && d.titre) { titre = d.titre; texte = d.texte || texte; n = d.n || 0; rappel = !!d.rappel; }
           /* v44 : gardé pour l'afficher dans l'appli pendant qu'elle recharge les demandes */
-          if (n) await (await caches.open('runners-cfg')).put('./__notif', new Response(JSON.stringify({ texte, at: Date.now() })));
+          if (n && !rappel) await (await caches.open('runners-cfg')).put('./__notif', new Response(JSON.stringify({ texte, at: Date.now() })));
         } finally { clearTimeout(tm); }
       }
     } catch (err) {}
-    try { if (n && self.navigator && self.navigator.setAppBadge) await self.navigator.setAppBadge(n); } catch (err) {}
-    await self.registration.showNotification(titre, { body: texte, tag: 'demande', renotify: true, icon: 'icon-192.png', badge: 'icon-192.png' });
+    try { if (n && !rappel && self.navigator && self.navigator.setAppBadge) await self.navigator.setAppBadge(n); } catch (err) {}
+    await self.registration.showNotification(titre, { body: texte, tag: rappel ? 'rappel' : 'demande', renotify: true, /* v59 : un rappel ne remplace pas une demande pas lue */ icon: 'icon-192.png', badge: 'icon-192.png' });
   })());
 });
