@@ -344,7 +344,7 @@ function vDemandes(){
         <div class="quick ${plage?'':'hidden'}" role="group" aria-label="Durée de la période">${[['2 jours',2],['3 jours',3],['1 semaine',7],['2 semaines',14]].map(([t,n])=>`<button type="button" data-duree="${n}">${t}</button>`).join('')}</div>
         <div class="recap" id="dRecap" aria-live="polite"></div>
       </div>
-      <div class="field"><label for="dText">Demande au runner</label><textarea id="dText" placeholder="Exemple : faire le tour du véhicule et une photo du compteur." maxlength="200"></textarea></div>
+      <div class="field"><label for="dText">Demande au runner</label><textarea id="dText" placeholder="Exemple : faire le tour du véhicule et une photo du compteur." maxlength="500"></textarea></div>
       ${ed?'<div class="actions"><button type="submit" class="btn primary">Enregistrer</button><button type="button" class="btn" id="editCancel">Annuler</button></div>':'<button type="submit" class="btn primary">Ajouter</button>'}
       <div class="meta">Le jour venu, le véhicule apparaît en haut de l'appli du runner, avec le bandeau « Demandé par le service parc ». Sur une période, il y reste chaque jour jusqu'au passage d'un runner.</div>
     </form>
