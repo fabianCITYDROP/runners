@@ -576,7 +576,7 @@ function load(){try{return JSON.parse(localStorage.getItem(STORE))||null}catch(e
    La sauvegarde de chaque action ne contient que le petit état : envois en attente, passages, rappels. */
 const IDB={db:null,
   open(){if(this.p)return this.p;return this.p=new Promise(ok=>{let fini=false;const fin=x=>{if(!fini){fini=true;ok(x)}};setTimeout(()=>fin(null),4000); /* v59 : base qui ne répond jamais (certains iPhone) : on continue sans ; si elle s'ouvre après, on ne s'en sert pas (tout est resté dans le stockage simple) */try{const r=indexedDB.open('runners',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>{if(fini){try{r.result.close()}catch(e){}return}this.db=r.result;fin(r.result)};r.onerror=()=>fin(null)}catch(e){fin(null)}})},
-  get(k){return this.open().then(db=>db?new Promise(ok=>{try{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>ok(q.result||null);q.onerror=()=>ok(null)}catch(e){ok(null)}}):null)},
+  get(k){return this.open().then(db=>db?new Promise(ok=>{setTimeout(()=>ok(null),4000); /* v63.1 : lecture qui ne répond jamais : on continue sans (avant : « Chargement… » pour toujours) */try{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>ok(q.result||null);q.onerror=()=>ok(null)}catch(e){ok(null)}}):null)},
   set(k,v){return this.open().then(db=>new Promise(ok=>{try{if(!db)return ok(false);const t=db.transaction('kv','readwrite');t.objectStore('kv').put(v,k);t.oncomplete=()=>ok(true);t.onerror=t.onabort=()=>ok(false)}catch(e){ok(false)}}))},
   del(k){return this.open().then(db=>{try{if(db)db.transaction('kv','readwrite').objectStore('kv').delete(k)}catch(e){}})},
   keys(){return this.open().then(db=>db?new Promise(ok=>{try{const q=db.transaction('kv').objectStore('kv').getAllKeys();q.onsuccess=()=>ok(q.result||[]);q.onerror=()=>ok([])}catch(e){ok([])}}):[])}};
@@ -969,21 +969,22 @@ function bodyOf(q){const body={code:q.code||CODE};if(q.action==='passage'&&q.at)
 function flushOnHide(){
   if(DEMO||!CODE||!API)return;
   let budget=60000; /* le téléphone n'accepte qu'environ 64 Ko d'envois en cours une fois l'appli fermée */
-  const now=Date.now(),lot=[];
+  const now=Date.now(),parCode=new Map(); /* v63.1 : chaque envoi garde le lien du runner qui l'a fait (téléphone partagé) */
   S.queue.forEach((q,j)=>{
     /* Une annulation suivie d'une nouvelle validation du même véhicule attend la réouverture (l'ordre compte) */
     if(q.action==='annuler'&&!q.cible&&S.queue.slice(j+1).some(x=>x.action==='passage'&&x.cle===q.cle))return;
     /* v32 : le téléphone signale la fermeture deux fois (écran caché, page quittée) : un seul envoi */
     if(!q.base&&!(q.hidAt&&now-q.hidAt<10000)){const b=q.photos&&q.photos.length?baseOf(q):bodyOf(q);q.hid=true;q.hidAt=now;
-      if(S.srv>=12){delete b.code;lot.push(b)}
-      else try{fetch(API+'?'+new URLSearchParams({j:JSON.stringify(b),code:CODE}),{keepalive:true,cache:'no-store'}).catch(()=>{})}catch(e){}}
+      const cq=b.code||q.code||CODE;
+      if(S.srv>=12){delete b.code;if(!parCode.has(cq))parCode.set(cq,[]);parCode.get(cq).push(b)}
+      else try{fetch(API+'?'+new URLSearchParams({j:JSON.stringify(b),code:cq}),{keepalive:true,cache:'no-store'}).catch(()=>{})}catch(e){}}
     /* v31 : photo allégée (une seule, ~25 Ko) : le bureau la voit même si le runner ne rouvre pas l'appli */
     if(q.mini&&!q.miniSent){const b=baseOf(q);b.action='photos';b.allegee=true;b.photos=[q.mini];const txt=JSON.stringify(b);
       if(txt.length<budget){budget-=txt.length;q.miniSent=true;
         try{fetch(API,{method:'POST',body:txt,keepalive:true,mode:'no-cors'}).catch(()=>{})}catch(e){}}}
   });
   /* Tous les envois sans photo regroupés en un seul appel à Google (par paquets qui tiennent dans l'adresse) */
-  for(const part of lots(lot))try{fetch(API+'?'+new URLSearchParams({j:JSON.stringify({code:CODE,action:'lot',envois:part}),code:CODE}),{keepalive:true,cache:'no-store'}).catch(()=>{})}catch(e){}
+  parCode.forEach((lot,cq)=>{for(const part of lots(lot))try{fetch(API+'?'+new URLSearchParams({j:JSON.stringify({code:cq,action:'lot',envois:part}),code:cq}),{keepalive:true,cache:'no-store'}).catch(()=>{})}catch(e){}});
   save();
 }
 function lots(list){const out=[];let cur=[],len=0;list.forEach(b=>{const l=encodeURIComponent(JSON.stringify(b)).length;if(cur.length&&(cur.length>=10||len+l>5500)){out.push(cur);cur=[];len=0}cur.push(b);len+=l});if(cur.length)out.push(cur);return out}
@@ -1060,9 +1061,9 @@ async function run(force){
         if(r0.erreur){drop(q);toast('Envoi refusé : '+r0.erreur);save();render(true);continue}
         q.base=true;save();continue}
       if(q.base)body.action='photos';
-      let r;q.inflight=q.tried=true;save();try{r=await call(null,body,hasPh?120000:60000)}catch(e){if(q.base&&photosPlusTard(q,passe))continue;S.offline=true;break}finally{q.inflight=false}
+      let r;q.inflight=q.tried=true;save();try{r=await call(null,body,hasPh?120000:60000)}catch(e){if(q.base){if(photosPlusTard(q,passe))continue;passe.add(q);break}S.offline=true;break}finally{q.inflight=false}
       /* v54 : le passage est déjà enregistré, seules ses photos coincent : la suite de la file part quand même */
-      if(q.base&&r&&r.erreur&&r.reessayer&&photosPlusTard(q,passe))continue;
+      if(q.base&&r&&r.erreur&&r.reessayer){if(photosPlusTard(q,passe))continue;passe.add(q);break} /* v63.1 : seules ses photos coincent : l'actualisation (demandes, planning) se fait quand même */
       if(handled(q,r)==='stop')break;
       save();savePassages();render(true);
     }
@@ -1163,7 +1164,7 @@ function barresDe(p,pt,W){
     if(dans(a,b))out.push(Object.assign(coupe(a,b),{k:'pose',t:s.ailleurs?'Vu à '+full(s.ailleurs.point):s.ici?'Vu ici':'Sur place',a0:s.from,b0:s.to,s}))});
   (lignesPar()[p]||[]).forEach(r=>{const a=enMs(r.dep),b=enMs(r.arr);if(!(a<b)||!dans(a,b))return;
     const z=ZONE[r.villeDep]||ZONE[r.villeArr]||'prov' /* violet : autre point d'Île-de-France ajouté par un runner (le script ne garde pas les trajets province ↔ province) */,part=r.villeDep===pt; /* sens vu depuis ce point (un convoyage entre deux points a les deux villes dans LOCAL) */
-    out.push(Object.assign(coupe(a,b),{k:r.caler?'caler':z,t:r.caler?'Caler pro':part?'→ '+r.villeArr:'← de '+r.villeDep,a0:r.dep,b0:r.arr,r}))});
+    out.push(Object.assign(coupe(a,b),{k:r.caler?'caler':z,t:r.caler?'Caler pro':part?'→ '+r.villeArr:r.villeArr===pt?'← de '+r.villeDep:r.villeDep+' → '+r.villeArr, /* v63.1 : un trajet qui ne revient pas ici n'est plus écrit « ← de » */a0:r.dep,b0:r.arr,r}))});
   retoursDe(pt,p).forEach(x=>{if((lignesPar()[p]||[]).some(r=>r.arr===x.arr&&r.villeArr===pt))return;const a=enMs(x.dep),b=enMs(x.arr);
     if(dans(a,b))out.push(Object.assign(coupe(a,b),{k:ZONE[pt]||'prov',t:'← de '+(x.de?full(x.de):'location'),a0:x.dep,b0:x.arr,r:{villeDep:x.de?full(x.de):'?',villeArr:pt}}))});
   improsFor(p).forEach(i=>{const a=enMs(i.debut),b=i.fin?enMs(i.fin):W.b;if(dans(a,b))out.push(Object.assign(coupe(a,b),{k:i.type==='meca'?'meca':'normal',t:i.type==='meca'?'Garage':(i.libelle||'Improductif'),a0:i.debut,b0:i.fin,i}))});
@@ -1627,7 +1628,7 @@ if(!DEMO&&'serviceWorker' in navigator&&(location.protocol==='https:'||(location
   navigator.serviceWorker.register('sw.js').then(r=>{swReg=r}).catch(()=>{})}catch(e){}}
 if(ready)(A_OUVRIR?ouvrirDemandes:run)();
 else{render(true);IDB.get(STORE+'-plan').then(pl=>{
-  if(pl&&(pl.lignes||pl.loc)){try{const t=readPlan(pl);S.loc=t.loc;S.impros=t.impros;S.plan=pl}catch(e){}}
+  if(pl&&(pl.lignes||pl.loc)&&!lastSync){try{const t=readPlan(pl);S.loc=t.loc;S.impros=t.impros;S.plan=pl}catch(e){}} /* v63.1 : Google a déjà répondu : sa version est plus récente */
   if(!S.plan)S.misAJour='';
   return IDB.get(STORE+'-pas')}).then(pa=>{if(Array.isArray(pa)){const loc=S.passages.filter(x=>x.local);S.passages=pa;
     loc.forEach(x=>{if(!pa.some(y=>y.at===x.at&&y.by===x.by&&y.cle===x.cle))S.passages.push(x)})}else{S.depuis='';S.fullAt=0;if(S.passages.length)savePassages()} /* v59 : base vide ou pas ouverte : tout relire chez Google (sinon les validations d'avant manquaient) */}).finally(()=>{ready=true;(A_OUVRIR?ouvrirDemandes:run)()})}

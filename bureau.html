@@ -242,6 +242,7 @@ function bandeauRetours(){
 }
 /* v13 : après une mise à jour automatique, on revient sur le même onglet */
 try{const t=sessionStorage.getItem('bureau-onglet');if(t){sessionStorage.removeItem('bureau-onglet');if(/^(demandes|retours|passages|runners)$/.test(t))tab=t}}catch(e){}
+try{const b=JSON.parse(sessionStorage.getItem('bureau-brouillon')||'null');sessionStorage.removeItem('bureau-brouillon');if(b&&typeof b==='object'){if(!/^\d{4}-\d{2}-\d{2}$/.test(String(b.date||''))||b.date<dayOffset(0))b.date='';if(!/^\d{4}-\d{2}-\d{2}$/.test(String(b.fin||''))||b.fin<dayOffset(0))b.fin='';BROUILLON=b}}catch(e){} /* v63.1 : brouillon gardé au changement de jour */
 function demo(){
   const pl=['AA-101-CD','AA-102-CD','AA-103-CD','AA-104-CD','AA-105-CD','AA-106-CD','AA-107-CD','AA-108-CD','AA-109-CD','AA-110-CD','AA-111-CD','AA-112-CD','AA-113-CD','AA-114-CD','AA-115-CD','AA-116-CD'];
   const md=['Opel Movano 2023','Iveco Daily 2025','Iveco Daily 2024','Opel Movano 2024','Opel Movano 2023','MAN TGE 2024','Opel Movano 2025','Iveco Daily 2025','Opel Movano 2024','MAN TGE 2023','Opel Movano 2025','Iveco Daily 2024','MAN TGE 2025','Iveco Daily 2023','Opel Movano 2024','MAN TGE 2024'];
@@ -454,8 +455,10 @@ function render(){RENDU_ATTENTE=false;
   if(tab==='demandes'){plateHint();recapDate()}
 }
 /* v25 : formulaire gardé quand on change d'onglet, et remis si Google refuse l'envoi */
-function lireForm(){const v=id=>$('#'+id)?$('#'+id).value:'';return {plaque:v('dPlate'),runner:v('dRunner'),date:v('dDate'),fin:v('dFin'),point:v('dPoint'),consigne:v('dText')}}
-function remettre(c){if(!$('#dPlate'))return;const m={dPlate:c.plaque,dRunner:c.runner,dDate:c.date,dFin:c.fin,dPoint:c.point,dText:c.consigne};Object.keys(m).forEach(id=>{if($('#'+id)&&m[id]!=null&&m[id]!=='')$('#'+id).value=m[id]})}
+function lireForm(){const v=id=>$('#'+id)?$('#'+id).value:'';return {plaque:v('dPlate'),runner:v('dRunner'),date:v('dDate'),fin:v('dFin'),point:v('dPoint'),consigne:v('dText'),creneau:CRENEAU,saisie:SAISIE,src:CR_SRC}}
+function remettre(c){if(!$('#dPlate'))return;const m={dPlate:c.plaque,dRunner:c.runner,dDate:c.date,dFin:c.fin,dPoint:c.point,dText:c.consigne};Object.keys(m).forEach(id=>{if($('#'+id)&&m[id]!=null&&m[id]!=='')$('#'+id).value=m[id]});
+  /* v63.1 : le créneau (impro cochée ou heures tapées) revient aussi : avant, un envoi raté le perdait (et le renvoi créait un doublon) */
+  if(c.creneau!=null){CRENEAU=String(c.creneau||'');CR_SRC=c.src||(CRENEAU&&CR_MAIN.test(CRENEAU)?'main':CRENEAU?'bo':'');SAISIE=c.saisie!=null?!!c.saisie:CR_SRC==='main'&&!!CRENEAU}}
 /* v17 : résumé de la période choisie, sous les dates */
 function recapDate(){improHint();const r=$('#dRecap');if(!r)return;const a=$('#dDate').value,f=$('#dFin')?$('#dFin').value:'';
   document.querySelectorAll('[data-duree]').forEach(b=>b.classList.toggle('on',plage&&!!a&&!!f&&nbJours(a,f)===+b.dataset.duree));
@@ -487,7 +490,7 @@ function creneauMain(){const a=($('#dDate')&&$('#dDate').value)||TODAY,de=($('#i
 function creneauTxt(m,j){return heureBO(m.deb,j)+(m.fin?' → '+heureBO(m.fin,j):'')}
 function improHint(){
   const x=$('#dImpro'),i=$('#dPlate');if(!x||!i)return;const p=i.value.trim().toUpperCase();
-  if(norm(p).length<7||!fleet().size){x.hidden=true;x.innerHTML='';CRENEAU='';SAISIE=false;return}
+  if(norm(p).length<7||!fleet().size){x.hidden=true;x.innerHTML='';if(CR_SRC!=='edit'||norm(p).length<7){CRENEAU='';SAISIE=false}return} /* v63.1 : modifier une demande dont la plaque n'est pas dans l'export ne retire plus ses heures */
   const a=($('#dDate')&&$('#dDate').value)||TODAY,f=(plage&&$('#dFin')&&$('#dFin').value)||a; /* v25 : en « Date unique », l'ancienne fin ne compte plus */
   const l=improsBO(p).filter(m=>m.deb.slice(0,10)<=f&&(!m.fin||m.fin.slice(0,10)>=a));
   const main=CR_MAIN.exec(CRENEAU);if(!l.length&&main){if(CR_SRC==='bo')CRENEAU='';else SAISIE=true} /* v25 : un créneau du BO coché n'est pas recopié sur un autre jour */
@@ -550,7 +553,7 @@ document.addEventListener('submit',async e=>{
       if(nbJours(date,fin)>61){toast('Période trop longue : 60 jours au plus.');return}if(fin===date)fin=''}
     if(edit){
       /* v15 : modification d'une demande à faire (même identifiant, les téléphones la mettent à jour à l'actualisation suivante) */
-      const id=edit,champs={id,plaque,runner:$('#dRunner').value,date,fin,point:$('#dPoint').value,consigne:$('#dText').value.trim(),creneau:CRENEAU};
+      const id=edit,champs={id,plaque,runner:$('#dRunner').value,date,fin,point:$('#dPoint').value,consigne:$('#dText').value.trim(),creneau:CRENEAU},crSrc=CR_SRC,crSai=SAISIE;
       const x=D.demandes.find(y=>y.id===id),avant=x?Object.assign({},x):null;
       if(x&&!DEMO){Object.assign(x,champs);MODIFS.set(id,champs)}
       edit='';plage=false;['dPlate','dText','dFin'].forEach(id=>{if($('#'+id))$('#'+id).value=''});$('#dPoint').value='';$('#dRunner').value='Tous';$('#dDate').value=TODAY;plateHint();render();rendreBrouillon();
@@ -559,14 +562,14 @@ document.addEventListener('submit',async e=>{
           /* v25 : modification refusée : on revient en mode « Modifier » avec ce qui avait été tapé */
           const fini=/déjà faite|retirée|introuvable/i.test(String(r.erreur)); /* v25 : faite ou retirée entre-temps : réessayer ne sert à rien */
           if(fini){if(y)y.statut=/faite/i.test(r.erreur)?'faite':'supprimée';render();load();toast(plaque+' : '+r.erreur+' Modification non enregistrée.');return}
-          if(y&&y.statut==='à faire'&&!edit&&tab==='demandes'&&$('#dPlate')&&!$('#dPlate').value.trim()){edit=id;plage=!!champs.fin;render();remettre(champs);plateHint();recapDate()}else render();
+          if(y&&y.statut==='à faire'&&!edit&&tab==='demandes'&&$('#dPlate')&&!$('#dPlate').value.trim()){edit=id;plage=!!champs.fin;render();remettre(Object.assign({},champs,{src:crSrc,saisie:crSai}));plateHint();recapDate()}else render();
           toast(plaque+' : modification non enregistrée ('+(r.erreur==='réseau'?'pas de réseau':r.erreur)+'). Réessayez.')}
         else if(r.prevenus>0)toast(plaque+' : alerte envoyée sur '+r.prevenus+' téléphone'+(r.prevenus>1?'s':'')+'.')});
       return}
     /* Affiché tout de suite, envoyé à Google en arrière-plan (Google met 2 à 4 secondes à répondre) */
     const champs={plaque,runner:$('#dRunner').value,date,fin,point:$('#dPoint').value,consigne:$('#dText').value.trim(),auteur:'Service parc',creneau:CRENEAU};
     /* v21 : identifiant choisi ici et envoyé à Google : si la réponse se perd, un nouvel envoi ne crée pas de doublon */
-    const cleDem=JSON.stringify(champs);
+    const cleDem=JSON.stringify(champs),crSrc=CR_SRC,crSai=SAISIE;
     const tmp=DERNIER_ECHEC&&DERNIER_ECHEC.cle===cleDem?DERNIER_ECHEC.id:'D'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);champs.id=tmp;
     if(!DEMO&&D){const it=Object.assign({id:tmp,statut:'à faire'},champs);ENVOIS.set(tmp,it);D.demandes=(D.demandes||[]).concat([it])}
     ['dPlate','dText'].forEach(id=>{if($('#'+id))$('#'+id).value=''});plateHint();render();
@@ -577,10 +580,11 @@ document.addEventListener('submit',async e=>{
       ENVOIS.delete(tmp);
       /* v21 : en échec, le même identifiant resservira si on renvoie la même demande (pas de doublon si Google l'a reçue tard) */
       DERNIER_ECHEC=r.erreur?{cle:cleDem,id:tmp}:null;
-      if(r.erreur&&D){D.demandes=(D.demandes||[]).filter(x=>x.id!==tmp);render();if(tab==='demandes'&&$('#dPlate')&&!$('#dPlate').value.trim()&&!edit){remettre(champs);plateHint();recapDate()}else if(tab!=='demandes'&&!BROUILLON)BROUILLON=champs;toast(plaque+' non enregistré : '+(r.erreur==='réseau'?'pas de réseau':r.erreur)+'. Réessayez.')}
+      if(r.erreur&&D){D.demandes=(D.demandes||[]).filter(x=>x.id!==tmp);render();if(tab==='demandes'&&$('#dPlate')&&!$('#dPlate').value.trim()&&!edit){remettre(Object.assign({},champs,{src:crSrc,saisie:crSai}));plateHint();recapDate()}else if(tab!=='demandes'&&!BROUILLON)BROUILLON=Object.assign({},champs,{src:crSrc,saisie:crSai});toast(plaque+' non enregistré : '+(r.erreur==='réseau'?'pas de réseau':r.erreur)+'. Réessayez.')}
       else if(D)render();
       /* v12 : avec le script v15, nombre de téléphones prévenus par une alerte */
-      if(r.prevenus>0)toast(plaque+' : alerte envoyée sur '+r.prevenus+' téléphone'+(r.prevenus>1?'s':'')+'.')});
+      if(r.prevenus>0)toast(plaque+' : alerte envoyée sur '+r.prevenus+' téléphone'+(r.prevenus>1?'s':'')+'.');
+      else if(!r.erreur&&r.prevenus===0&&date===dayOffset(0))toast(plaque+' ajouté, mais aucun téléphone n\'a reçu de notification : si c\'est urgent, prévenez le runner.') /* v63.1 */});
     return}
   if(f.id==='fRunner'){
     const prenom=$('#rName').value.trim();if(!prenom)return;
@@ -601,8 +605,10 @@ document.addEventListener('visibilitychange',()=>{if(!DEMO&&CODE&&D&&document.vi
    s'il a changé, la page se recharge seule, mais jamais pendant qu'on écrit ou avec une demande à moitié remplie. */
 let VERSION='',majPrete=false;
 function versionEnLigne(){return fetch('sw.js',{cache:'no-store'}).then(r=>r.ok?r.text():'').then(t=>(t.match(/runners-v\d+/)||[''])[0]).catch(()=>'')}
+function envoiEnCours(){return ENVOIS.size>0||MODIFS.size>0||RETRAIT.size>0} /* v63.1 : réponse de Google pas encore arrivée */
+window.addEventListener('beforeunload',e=>{if(envoiEnCours()){e.preventDefault();e.returnValue=''}});
 function majSansRisque(){const a=document.activeElement;
-  return !confirmCode&&!edit&&!BROUILLON&&!AVANT_EDIT&&!(a&&a.matches&&a.matches('input,textarea,select'))&&!['dPlate','dText','rName','bCode'].some(id=>$('#'+id)&&$('#'+id).value.trim())}
+  return !envoiEnCours()&&!confirmCode&&!edit&&!BROUILLON&&!AVANT_EDIT&&!(a&&a.matches&&a.matches('input,textarea,select'))&&!['dPlate','dText','rName','bCode'].some(id=>$('#'+id)&&$('#'+id).value.trim())}
 function appliquerMaj(){if(!majPrete||document.visibilityState!=='visible'||!majSansRisque())return;
   try{const t=+sessionStorage.getItem('bureau-maj')||0;if(Date.now()-t<60000)return;sessionStorage.setItem('bureau-maj',String(Date.now()));sessionStorage.setItem('bureau-onglet',tab)}catch(e){}
   location.reload()}
@@ -612,7 +618,14 @@ setInterval(()=>{if(document.visibilityState==='visible')chercherMaj()},5*60*100
 setInterval(appliquerMaj,30000);
 /* v14 : page laissée ouverte la nuit : le lendemain, « aujourd'hui », le jour proposé et les retards étaient ceux de la veille
    (une demande pouvait partir pour hier). Elle se recharge seule au changement de jour, jamais pendant une saisie. */
-setInterval(()=>{if(dayOffset(0)!==TODAY&&!confirmCode&&!edit&&!BROUILLON&&!AVANT_EDIT&&!['dPlate','dText','rName','bCode'].some(id=>$('#'+id)&&$('#'+id).value.trim())){try{sessionStorage.setItem('bureau-onglet',tab)}catch(e){}location.reload()}},60000);
+/* v63.1 : un brouillon (plaque tapée puis autre onglet) bloquait ce rechargement toute la journée suivante (pas d'alerte
+   des retours, « aujourd'hui » = la veille). Le brouillon est maintenant gardé et remis après le rechargement. */
+let DERNIERE_FRAPPE=0;document.addEventListener('input',()=>{DERNIERE_FRAPPE=Date.now()},true);
+setInterval(()=>{if(dayOffset(0)===TODAY||confirmCode||edit||envoiEnCours()||Date.now()-DERNIERE_FRAPPE<120000)return; /* pas pendant qu'on tape (2 min) */
+  const f=$('#dPlate')&&($('#dPlate').value.trim()||$('#dText').value.trim())?lireForm():null,b=BROUILLON||AVANT_EDIT||f;
+  if(['rName','bCode'].some(id=>$('#'+id)&&$('#'+id).value.trim()))return;
+  try{sessionStorage.setItem('bureau-onglet',tab);if(b)sessionStorage.setItem('bureau-brouillon',JSON.stringify(b))}catch(e){if(b)return}
+  location.reload()},60000);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')chercherMaj()});
 load();
 })();
