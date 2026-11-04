@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Runners</title>
 <!-- Appli Runners City Drop, v22 : version reliée au Google Sheet (voir config.js) ; gros caractères, 3 photos, aujourd'hui au milieu, recherche en haut, page des rappels ; v22 : corrections après test complet ; v23 : planning compact (grosses flottes), dates avec le mois, longs textes coupés sur les cartes ; v24 : rapide sur téléphone lent avec une grosse flotte (planning préparé par Google et rangé à part, écran redessiné seulement s'il change) ; v25 : message de fin de tournée simplifié (date en entier, plaques les unes sous les autres, sans heure ni prénom) ; v27 : une validation faite pendant la réception du planning part tout de suite après (avant : jusqu'à 5 min d'attente) ; envois sans photo passés par l'adresse (GET) car l'iPhone bloquait les envois classiques ; v28 : actualisation toutes les 30 s ; v29 : une validation part même si le runner ferme l'appli juste après ; v30 : signalement avec photos envoyé en deux temps (le passage d'abord, même appli fermée, les photos ensuite) ; attente plus longue et message « Google ne répond pas » au lieu d'un faux « Pas de réseau » ; v31 : photo allégée envoyée même appli fermée (la vraie suit à la réouverture) ; un envoi n'est plus jeté quand Google est seulement occupé ; annuler un passage déjà parti l'annule aussi chez Google ; v32 : un lien désactivé ne jette plus les envois ; annulation sûre même quand les envois arrivent dans le désordre ; photos gardées tant que le téléphone n'a pas confirmé les avoir rangées ; un véhicule envoyé ne réapparaît plus si l'appli est tuée juste après ; v33 : envois groupés en un seul appel (avec le script v12), moins de relectures chez Google, deux onglets ouverts sans perte, mémoire pleine sans blocage, une panne de Google n'affiche plus « Lien non reconnu » ; v34 : page bureau v10 (photos effacées au bout de 5 jours, avec le script v13) ; v35 : page bureau v11 plus rapide (avec le script v14) ; v36 : nouvelles demandes du bureau signalées (pastille « 1 nouvelle », bandeau, vibration, chiffre sur l'icône, notification si autorisée) ; v37 : vraies notifications des nouvelles demandes, même écran verrouillé (avec le script v15) ; v38 : les alertes gardent leur détail après une mise à jour de l'appli ; v39 : mise à jour automatique sans fermer l'appli ; v40 : gros bouton ACTIVER LES NOTIFICATIONS en haut de l'accueil tant qu'elles ne sont pas actives ; v41 : encadré des notifications plus sobre, mise à jour repérée chaque minute et appliquée après 30 s sans geste ; v42 (revue de nuit) : ouverture immédiate sur réseau faible (copie du téléphone après 3 s, polices sans bloquer), fiche et « Tout est OK » 2 à 3 fois plus rapides, double appui sans effet sur l'écran suivant, véhicule parti le matin et revenu le soir affiché pour son retour, pas de rechargement à minuit pendant une saisie, panne de Google signalée sur la ligne d'état au lieu d'un message toutes les 30 s ; v43 : horaires d'arrivée et de départ sur chaque demande dans la page « Rappels et demandes », plaque jamais coupée sur deux lignes ; v44 : toucher la notification ouvre directement « Rappels et demandes » avec la demande (son texte s'affiche tout de suite, le détail arrive de Google juste après) ; v45 : demandes sans point (ou sur un point non suivi) affichées dans « Autres demandes » au lieu d'être comptées sans apparaître ; demandes modifiables depuis la page bureau (avec le script v20) ; v47 : véhicules déjà repartis aujourd'hui rangés dans « Déjà partis » (repliés en bas du point, hors du compte « à voir », à part dans le récap) ; v48 : demandes du bureau sur plusieurs jours (visibles chaque jour de la période, « jusqu'au … ») ; v50 : « Terminer ma tournée » envoie tout seul le récapitulatif au service parc (Slack), même sans réseau (part dès qu'il revient) ; v51 : tirets de la plaque mis tout seuls dans la recherche ; v52 : un mot possible sur « Tout est OK », liste des défauts revue, clair par défaut avec bouton mode sombre -->
+<!-- v63.4 (4/11, Fabian) : lavage ou garage prévu dans les 5 jours : badge (éponge rose ou clé + jour) dans la liste et bloc « À venir » dans la fiche (lieu, « inutile de le laver avant ») ; code autoradio à droite du km dans la fiche. Il faut le script v34.5 et les colonnes Metabase : sinon rien ne change -->
 <!-- v63.3 (2/11) : véhicule en panne (Garage dans le BO) retiré des véhicules à voir, sauf demande du bureau ou recherche ; page bureau : demande jusqu'à 500 caractères (v63.2) -->
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -371,9 +372,20 @@ nav.tabs button{font-size:16px}
 .psec>.row,.list>.row{content-visibility:auto;contain-intrinsic-size:auto 150px}
 .ph.demo{display:flex;align-items:center;justify-content:center;background:var(--surface-2);font-size:13px;color:var(--muted)}
 .fac{font-weight:400;color:var(--muted);font-size:.85em}.hrow{display:flex;gap:10px;align-items:center}.hrow input{flex:1;min-width:0}.hclear{min-height:44px;padding:0 14px;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--muted);font-weight:600;white-space:nowrap}
+.pill.lav{display:inline-flex;align-items:center;gap:4px;padding:2px 10px 2px 5px;background:#FCE4EF;color:#A3245E}
+.pill.lav svg{width:24px;height:24px;flex:none}
+.pill.gar{display:inline-flex;align-items:center;gap:4px;background:#E9ECEF;color:#3A4048}
+.pill.gar svg{width:14px;height:14px;flex:none}
+.imp.lav{background:#DDF1F2;color:#0B6670}
+.imp.lav .imp-t,.imp.avenir .imp-t{color:var(--fg)}
+.imp-s{font-size:13px;font-weight:500;color:var(--muted)}
+.sh-id .spec b{font-weight:600;color:var(--fg)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .pill.lav{background:#4A1A31;color:#FFB3D4}:root:not([data-theme="light"]) .pill.gar{background:#2A3036;color:#C9D1D9}:root:not([data-theme="light"]) .imp.lav{background:#123A3D;color:#7FD6DD}}
+:root[data-theme="dark"] .pill.lav{background:#4A1A31;color:#FFB3D4}:root[data-theme="dark"] .pill.gar{background:#2A3036;color:#C9D1D9}:root[data-theme="dark"] .imp.lav{background:#123A3D;color:#7FD6DD}
 </style>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><symbol id="eponge" viewBox="0 0 32 32"><defs> <linearGradient id="ep-fr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF86BF"/><stop offset=".55" stop-color="#F55FA3"/><stop offset="1" stop-color="#D93D85"/></linearGradient> <linearGradient id="ep-sd" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#D23C80"/><stop offset="1" stop-color="#A82464"/></linearGradient> <linearGradient id="ep-tp" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFD0E5"/><stop offset="1" stop-color="#FF9FCB"/></linearGradient> <radialGradient id="ep-mf" cx=".35" cy=".28" r=".85"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".65" stop-color="#F3FAFF"/><stop offset="1" stop-color="#C6E3F6"/></radialGradient> <radialGradient id="ep-bi" cx=".4" cy=".35" r=".7"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".15"/><stop offset=".75" stop-color="#E8F5FF" stop-opacity=".35"/><stop offset="1" stop-color="#BFE2FA" stop-opacity=".7"/></radialGradient> <linearGradient id="ep-br" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7EC8F2"/><stop offset=".45" stop-color="#B99BF0"/><stop offset=".75" stop-color="#FF9CCB"/><stop offset="1" stop-color="#7EC8F2"/></linearGradient> <filter id="ep-ms" x="-20%" y="-20%" width="140%" height="160%"><feDropShadow dx="0" dy=".9" stdDeviation=".7" flood-color="#8A1A50" flood-opacity=".28"/></filter> <radialGradient id="ep-sh" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#5A1236" stop-opacity=".28"/><stop offset="1" stop-color="#5A1236" stop-opacity="0"/></radialGradient> <clipPath id="ep-cf"><rect x="3" y="16" width="22" height="13" rx="3.6"/></clipPath> </defs> <ellipse cx="16.5" cy="29.4" rx="14" ry="2" fill="url(#ep-sh)"/> <path d="M21.5 16.4 L28.2 13 Q29.2 12.3 29.2 13.6 L29.2 24.4 Q29.2 25.6 28.3 26.3 L22.6 29 L21.5 29 Z" fill="url(#ep-sd)"/> <ellipse cx="28.32" cy="24.45" rx="0.51" ry="0.73" fill="#7E1446" opacity=".6"/><ellipse cx="27.74" cy="22.30" rx="0.40" ry="0.58" fill="#7E1446" opacity=".6"/><ellipse cx="25.86" cy="19.93" rx="0.34" ry="0.48" fill="#7E1446" opacity=".6"/><ellipse cx="26.36" cy="20.45" rx="0.45" ry="0.64" fill="#7E1446" opacity=".6"/><ellipse cx="27.72" cy="19.50" rx="0.54" ry="0.78" fill="#7E1446" opacity=".6"/><ellipse cx="25.82" cy="20.20" rx="0.42" ry="0.59" fill="#7E1446" opacity=".6"/><ellipse cx="26.95" cy="18.17" rx="0.56" ry="0.80" fill="#7E1446" opacity=".6"/> <path d="M3.2 16.6 L7.6 12.9 Q8.4 12.3 9.6 12.3 L27.4 12.3 Q29.4 12.4 27.8 13.6 L23.4 16.9 Z" fill="url(#ep-tp)"/> <rect x="3" y="16" width="22" height="13" rx="3.6" fill="url(#ep-fr)"/> <g clip-path="url(#ep-cf)"><ellipse cx="14.06" cy="23.86" rx="0.49" ry="0.36" fill="#A91E5E" opacity="0.73"/><ellipse cx="14.06" cy="24.02" rx="0.39" ry="0.12" fill="#FF9CC8" opacity=".5"/><ellipse cx="14.37" cy="20.20" rx="1.10" ry="0.91" fill="#A91E5E" opacity="0.71"/><ellipse cx="14.37" cy="20.61" rx="0.88" ry="0.32" fill="#FF9CC8" opacity=".5"/><ellipse cx="10.05" cy="25.54" rx="0.93" ry="0.62" fill="#A91E5E" opacity="0.75"/><ellipse cx="10.05" cy="25.82" rx="0.74" ry="0.22" fill="#FF9CC8" opacity=".5"/><ellipse cx="9.08" cy="24.71" rx="0.53" ry="0.43" fill="#A91E5E" opacity="0.74"/><ellipse cx="9.08" cy="24.90" rx="0.42" ry="0.15" fill="#FF9CC8" opacity=".5"/><ellipse cx="7.94" cy="19.98" rx="1.15" ry="1.08" fill="#A91E5E" opacity="0.60"/><ellipse cx="7.94" cy="20.47" rx="0.92" ry="0.38" fill="#FF9CC8" opacity=".5"/><ellipse cx="13.16" cy="26.86" rx="0.55" ry="0.43" fill="#A91E5E" opacity="0.77"/><ellipse cx="13.16" cy="27.06" rx="0.44" ry="0.15" fill="#FF9CC8" opacity=".5"/><ellipse cx="17.60" cy="21.73" rx="0.54" ry="0.51" fill="#A91E5E" opacity="0.73"/><ellipse cx="17.60" cy="21.96" rx="0.43" ry="0.18" fill="#FF9CC8" opacity=".5"/><ellipse cx="9.04" cy="23.76" rx="0.66" ry="0.46" fill="#A91E5E" opacity="0.86"/><ellipse cx="9.04" cy="23.97" rx="0.53" ry="0.16" fill="#FF9CC8" opacity=".5"/><ellipse cx="11.36" cy="22.26" rx="0.46" ry="0.43" fill="#A91E5E" opacity="0.65"/><ellipse cx="11.36" cy="22.45" rx="0.37" ry="0.15" fill="#FF9CC8" opacity=".5"/><ellipse cx="21.74" cy="23.18" rx="0.59" ry="0.49" fill="#A91E5E" opacity="0.71"/><ellipse cx="21.74" cy="23.40" rx="0.47" ry="0.17" fill="#FF9CC8" opacity=".5"/><ellipse cx="19.30" cy="24.56" rx="0.51" ry="0.36" fill="#A91E5E" opacity="0.73"/><ellipse cx="19.30" cy="24.73" rx="0.41" ry="0.13" fill="#FF9CC8" opacity=".5"/><ellipse cx="6.26" cy="19.96" rx="0.73" ry="0.62" fill="#A91E5E" opacity="0.81"/><ellipse cx="6.26" cy="20.24" rx="0.58" ry="0.22" fill="#FF9CC8" opacity=".5"/><ellipse cx="23.13" cy="22.07" rx="0.75" ry="0.60" fill="#A91E5E" opacity="0.73"/><ellipse cx="23.13" cy="22.34" rx="0.60" ry="0.21" fill="#FF9CC8" opacity=".5"/><ellipse cx="20.85" cy="23.03" rx="0.75" ry="0.55" fill="#A91E5E" opacity="0.64"/><ellipse cx="20.85" cy="23.27" rx="0.60" ry="0.19" fill="#FF9CC8" opacity=".5"/><ellipse cx="18.99" cy="20.60" rx="0.62" ry="0.54" fill="#A91E5E" opacity="0.89"/><ellipse cx="18.99" cy="20.85" rx="0.49" ry="0.19" fill="#FF9CC8" opacity=".5"/><rect x="3" y="16" width="22" height="2.2" fill="#fff" opacity=".18"/></g> <path d="M4.6 17.3 q9 -.9 18.4 0" stroke="#fff" stroke-width=".8" fill="none" opacity=".55" stroke-linecap="round"/> <g filter="url(#ep-ms)"><g fill="#A9D3EF"><circle cx="8" cy="14.6" r="3.6"/><circle cx="13.8" cy="12" r="4.8"/><circle cx="20.4" cy="12.799999999999999" r="4.4"/><circle cx="25.6" cy="14" r="2.9"/><circle cx="10.8" cy="15.799999999999999" r="2.9"/><circle cx="17.2" cy="15.6" r="3.1"/><circle cx="5.4" cy="16.2" r="2.3"/><circle cx="22.8" cy="15.799999999999999" r="2.6"/></g><g fill="url(#ep-mf)"><circle cx="8" cy="14" r="3.1"/><circle cx="13.8" cy="11.4" r="4.3"/><circle cx="20.4" cy="12.2" r="3.9"/><circle cx="25.6" cy="13.4" r="2.4"/><circle cx="10.8" cy="15.2" r="2.4"/><circle cx="17.2" cy="15" r="2.6"/><circle cx="5.4" cy="15.6" r="1.8"/><circle cx="22.8" cy="15.2" r="2.1"/></g></g><ellipse cx="6.822" cy="12.698" rx="0.9920000000000001" ry="0.5579999999999999" fill="#fff" transform="rotate(-28 6.822 12.698)"/><ellipse cx="12.166" cy="9.594000000000001" rx="1.376" ry="0.7739999999999999" fill="#fff" transform="rotate(-28 12.166 9.594000000000001)"/><ellipse cx="18.918" cy="10.562" rx="1.248" ry="0.702" fill="#fff" transform="rotate(-28 18.918 10.562)"/><ellipse cx="16.212" cy="13.908" rx="0.8320000000000001" ry="0.46799999999999997" fill="#fff" transform="rotate(-28 16.212 13.908)"/> <circle cx="25.4" cy="5.6" r="2.6" fill="url(#ep-bi)"/><circle cx="25.4" cy="5.6" r="2.4" fill="none" stroke="url(#ep-br)" stroke-width="0.5720000000000001"/><ellipse cx="24.412" cy="4.507999999999999" rx="0.8840000000000001" ry="0.52" fill="#fff" transform="rotate(-35 24.412 4.507999999999999)"/><circle cx="26.57" cy="6.77" r="0.312" fill="#fff" opacity=".8"/><circle cx="29.4" cy="9.6" r="1.4" fill="url(#ep-bi)"/><circle cx="29.4" cy="9.6" r="1.2" fill="none" stroke="url(#ep-br)" stroke-width="0.45"/><ellipse cx="28.868" cy="9.012" rx="0.476" ry="0.27999999999999997" fill="#fff" transform="rotate(-35 28.868 9.012)"/><circle cx="30.029999999999998" cy="10.23" r="0.16799999999999998" fill="#fff" opacity=".8"/><circle cx="20.6" cy="3.6" r="1.2" fill="url(#ep-bi)"/><circle cx="20.6" cy="3.6" r="1" fill="none" stroke="url(#ep-br)" stroke-width="0.45"/><ellipse cx="20.144000000000002" cy="3.096" rx="0.40800000000000003" ry="0.24" fill="#fff" transform="rotate(-35 20.144000000000002 3.096)"/><circle cx="21.14" cy="4.140000000000001" r="0.144" fill="#fff" opacity=".8"/><circle cx="29.2" cy="3.2" r="0.8" fill="url(#ep-bi)"/><circle cx="29.2" cy="3.2" r="0.6000000000000001" fill="none" stroke="url(#ep-br)" stroke-width="0.45"/><ellipse cx="28.896" cy="2.8640000000000003" rx="0.272" ry="0.16000000000000003" fill="#fff" transform="rotate(-35 28.896 2.8640000000000003)"/><circle cx="29.56" cy="3.56" r="0.096" fill="#fff" opacity=".8"/></symbol></svg>
 <div class="app">
   <header class="top pad">
     <div class="brand"><b>City Drop · Runners</b><span id="whoSlot"></span></div>
@@ -451,8 +463,11 @@ const COLS={
   villeDep:['ville_depart','ville départ'],dateDep:['date_depart','date départ','date'],heureDep:['heure_depart','heure départ'],
   villeArr:['ville_arrivee','ville arrivée'],dateArr:['date_arrivee','date arrivée'],heureArr:['heure_arrivee','heure arrivée'],
   events:['evenements_bo','événements bo','evenements bo','evenements'],
-  impro:['impro_type','improductif','impro'],improDeb:['impro_debut','impro début'],improFin:['impro_fin'],improLib:['impro_libelle','impro_libellé','impro libellé']
+  impro:['impro_type','improductif','impro'],improDeb:['impro_debut','impro début'],improFin:['impro_fin'],improLib:['impro_libelle','impro_libellé','impro libellé'],
+  radio:['code_radio','code radio','code autoradio'],improLieu:['impro_lieu'],improPresta:['impro_presta']
 };
+/* v63.4 : code autoradio par plaque (envoyé par le script v34.5) */
+var RADIO={};
 function city(s){s=String(s||'').trim();const k=s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[-_]/g,' ').replace(/\s+/g,' ');return ALIAS[k]||s}
 function normDate(s){
   s=String(s||'').trim();let m;
@@ -482,17 +497,19 @@ function parseTable(head,rows){
   const idx={};for(const k in COLS)idx[k]=head.findIndex(h=>COLS[k].includes(h));
   const missing=['plaque','dateDep','villeDep','villeArr'].filter(k=>idx[k]<0);
   if(missing.length)throw new Error('Colonnes manquantes : '+missing.map(k=>COLS[k][0]).join(', ')+'.');
-  const loc=[],impros=[];
+  const loc=[],impros=[],radio={};
   rows.forEach(c=>{
     const g=k=>idx[k]>=0?String(c[idx[k]]==null?'':c[idx[k]]).trim():'';
     const plaque=g('plaque').toUpperCase();if(!plaque)return;
+    if(g('radio'))radio[plaque]=g('radio');
     const type=normImpro(g('impro'));
-    if(type){const debut=dt(g('improDeb')),fin=dt(g('improFin'));if(debut)impros.push({plaque,type,debut,fin,libelle:g('improLib')});return}
+    if(type){const debut=dt(g('improDeb')),fin=dt(g('improFin'));if(debut)impros.push({plaque,type,debut,fin,libelle:g('improLib'),lieu:g('improLieu'),presta:g('improPresta')});return}
     const dep=dt(g('dateDep'),g('heureDep'));if(!dep)return;
     const arr=dt(g('dateArr')||g('dateDep'),g('heureArr'));
     const km=parseInt(g('km').replace(/\D/g,''),10);
     loc.push({plaque,modele:g('modele'),categorie:g('categorie'),km:isNaN(km)?null:km,villeDep:city(g('villeDep')),dep,villeArr:city(g('villeArr')),arr,events:parseEvents(g('events'))});
   });
+  RADIO=radio;
   return {loc,impros};
 }
 function splitLine(line,sep){
@@ -505,9 +522,9 @@ function splitLine(line,sep){
 /* Planning reçu de Google : déjà préparé par le script v6 (rapide), sinon tableau brut de l'export */
 function readPlan(pl){
   if(pl&&pl.erreur)throw new Error(pl.erreur);
-  if(pl&&pl.v===2)return {
+  if(pl&&pl.v===2){RADIO=pl.radio||{};return {
     loc:pl.loc.map(a=>({plaque:a[0],modele:a[1],categorie:a[2],km:a[3]===''||a[3]==null?null:+a[3],villeDep:a[4],dep:a[5],villeArr:a[6],arr:a[7],events:a[8]?parseEvents(a[8]):[],caler:!!a[9]})),
-    impros:pl.impros.map(a=>({plaque:a[0],type:a[1],debut:a[2],fin:a[3],libelle:a[4]}))};
+    impros:pl.impros.map(a=>({plaque:a[0],type:a[1],debut:a[2],fin:a[3],libelle:a[4],lieu:a[5]||'',presta:a[6]||''}))}}
   return parseTable(pl.entetes,pl.lignes);
 }
 function parseCsv(text){
@@ -1114,9 +1131,27 @@ async function run(force){
 }
 
 /* ---------- Écrans ---------- */
+/* v63.4 (Fabian 4/11) : lavage ou garage prévu bientôt. Un lavage = prestation « wash » dans le BO (ou garage dont le nom dit lavage). */
+const JOURS_A_VENIR=5;
+const PRESTA={wash:'lavage',maintenance:'entretien',mechanic:'mécanique',security:'sécurité',bodywork:'carrosserie',fluids:'niveaux'};
+function estLavage(i){return i.type==='meca'&&(/^wash/i.test(i.presta||'')||(!i.presta&&/lavage|wash/i.test(i.lieu||'')))}
+function aVenir(p){const now=nowStr();return S.impros.filter(i=>i.plaque===p&&i.type==='meca'&&i.debut>now&&dayDiff(i.debut.slice(0,10))<=JOURS_A_VENIR).sort((a,b)=>a.debut.localeCompare(b.debut))}
+function hTxt(t){const [hh,mm]=t.split(' ')[1].split(':');return Number(hh)+'h'+(mm==='00'?'':mm)}
+/* « Jeu. 5 nov. de 14h à 17h », « Demain de 8h30 à 18h », « Jeu. 5 nov. 14h → ven. 6 nov. 18h » */
+function plageTxt(i){const d=i.debut.slice(0,10);if(!i.fin)return cap(dayWord(d))+' à '+hTxt(i.debut);
+  return i.fin.slice(0,10)===d?cap(dayWord(d))+' de '+hTxt(i.debut)+' à '+hTxt(i.fin):cap(dayWord(d))+' '+hTxt(i.debut)+' → '+dayWord(i.fin.slice(0,10))+' '+hTxt(i.fin)}
+function lieuTxt(s){return String(s||'').replace(/\bST[- ]/g,'St-').replace(/\b([A-Z])([A-Z]{3,})\b/g,(m,a,b)=>a+b.toLowerCase())}
+function aVenirBlock(i){const lav=estLavage(i),pr=PRESTA[String(i.presta||'').toLowerCase()]||'';
+  const sous=[lieuTxt(i.lieu),lav?'inutile de le laver avant':pr].filter(Boolean).join(' · ');
+  return `<div class="imp avenir ${lav?'lav':'meca'}"><div class="imp-h"><i></i>À venir · ${lav?'Lavage':'Garage'}</div><div class="imp-t">${esc(plageTxt(i))}</div>${sous?`<div class="imp-s">${esc(sous)}</div>`:''}</div>`}
+const ICO_CLE='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.2L4 16.8V20h3.2l5.3-5.3a4 4 0 0 0 5.2-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/></svg>';
+/* Badge de la liste : « auj. », « dem. » ou le jour (« jeu. ») */
+function aVenirPill(p){const i=aVenir(p)[0];if(!i)return '';const n=dayDiff(i.debut.slice(0,10)),j=n===0?'auj.':n===1?'dem.':dLabel(i.debut.slice(0,10)).dow.toLowerCase();
+  return estLavage(i)?`<span class="pill lav" title="Lavage prévu"><svg aria-hidden="true"><use href="#eponge"/></svg>${j}</span>`:`<span class="pill gar" title="Garage prévu">${ICO_CLE}${j}</span>`}
 function improBlock(i){
+  if(i.type==='meca'&&i.debut>nowStr()&&(i.lieu||i.presta))return aVenirBlock(i);
   return i.type==='meca'
-    ?`<div class="imp meca"><div class="imp-h"><i></i>Immobilisé garage</div><div class="imp-p">${esc(when(i.debut))} <span>jusqu'à</span> ${esc(when(i.fin))}</div></div>`
+    ?`<div class="imp ${estLavage(i)?'lav':'meca'}"><div class="imp-h"><i></i>${estLavage(i)?'Au lavage':'Immobilisé garage'}</div><div class="imp-p">${esc(when(i.debut))} <span>jusqu'à</span> ${esc(when(i.fin))}</div>${i.lieu?`<div class="imp-s">${esc(lieuTxt(i.lieu))}</div>`:''}</div>`
     :`<div class="imp normal"><div class="imp-h"><i></i>Improductif</div><div class="imp-t">${esc(i.libelle||'Sans intitulé')}</div><div class="imp-p">${esc(when(i.debut))} <span>jusqu'à</span> ${esc(when(i.fin))}</div></div>`;
 }
 function askBlock(d){
@@ -1144,7 +1179,7 @@ function short(t){if(!t)return '';const [d,h]=t.split(' ');const n=dayDiff(d);co
 function calerCell(label,city){return `<div class="tc"><div class="mlabel">${label}</div><div class="tt">Caler pro</div><div class="td">Prévu ${esc(city)} · gestion ou convoyeur, pas encore de trajet</div></div>`}
 function timesHtml(s){return `<span class="tgrid"><span><small>Arrivée</small><b>${s.fromCaler?'Caler pro prévu':s.from?esc(short(s.from)):'Sur place'}</b></span><span><small>Départ</small><b>${s.toCaler?'Caler pro prévu':s.to?esc(short(s.to)):'Pas prévu'}</b></span></span>`}
 /* Texte d'improductif limité à 2 lignes sur la carte ; en entier dans la fiche */
-function improMini(i){return `<span class="bar ${i.type}"><i></i><span class="bl">${i.type==='meca'?'Garage':esc(i.libelle||'Improductif')}</span><span class="bd">${esc(short(i.debut))}${i.fin?' → '+esc(short(i.fin)):''}</span></span>`}
+function improMini(i){return `<span class="bar ${i.type}"><i></i><span class="bl">${i.type==='meca'?(estLavage(i)?'Lavage':'Garage'):esc(i.libelle||'Improductif')}</span><span class="bd">${esc(short(i.debut))}${i.fin?' → '+esc(short(i.fin)):''}</span></span>`}
 function dayChip(d,i,attr,sel){const l=dLabel(d);const n=dayDiff(d);const on=d===sel;return `<button type="button" class="day ${on?'on':''}" ${attr}="${d}" aria-pressed="${on}" aria-label="${esc(l.dow+' '+l.num)}"><small>${n===0?'Auj.':n===1?'Dem.':n===-1?'Hier':l.dow}</small><b>${Number(d.slice(8))}</b></button>`}
 function rowHtml(p,inner,cls){return `<button type="button" class="row ${cls||''}" data-open="${esc(p)}"><span class="row-b">${inner}</span><span class="chev">${I.chev}</span></button>`}
 function gate(title,text,btn){return `<div class="gate"><b>${title}</b><p>${text}</p>${btn||''}</div>`}
@@ -1246,10 +1281,10 @@ function vHome(){
     <div class="pband"><h2>${esc(full(p))}</h2><div class="pband-n"><b>${l.length+pa.length}</b> ${now?'à voir':'sur place'}</div></div>
     ${pa.map(d=>askCard(d,staysOn(DAY).find(s=>s.plaque===d.plaque&&s.point===p))).join('')}
     ${S.vue==='plan'?vPlanning(p):l.length||pa.length?l.map(s=>{const v=vehicle(s.plaque)||{};const imp=s.impros[0];return rowHtml(s.plaque,`
-        <span class="row-t"><span class="plate">${esc(s.plaque)}</span>${s.ici?'<span class="pill ici">Vu ici</span>':''}${past?(vuSejour(s)?'<span class="pill seen">Vu</span>':'<span class="pill unseen">Pas vu</span>'):s.leaves?`<span class="pill dep">${s.toCaler?'Caler pro prévu':now?'Part aujourd\'hui':'Part ce jour-là'}</span>`:s.arrives?`<span class="pill arr">${s.fromCaler?'Caler pro prévu':'Arrive'}</span>`:''}</span>
+        <span class="row-t"><span class="plate">${esc(s.plaque)}</span>${s.ici?'<span class="pill ici">Vu ici</span>':''}${past?(vuSejour(s)?'<span class="pill seen">Vu</span>':'<span class="pill unseen">Pas vu</span>'):s.leaves?`<span class="pill dep">${s.toCaler?'Caler pro prévu':now?'Part aujourd\'hui':'Part ce jour-là'}</span>`:s.arrives?`<span class="pill arr">${s.fromCaler?'Caler pro prévu':'Arrive'}</span>`:''}${aVenirPill(s.plaque)}</span>
         <span class="model">${esc(v.modele||'')}${s.ici?' · BO : '+esc(full(s.ici.bo)):''}</span>
         ${timesHtml(s)}
-        ${s.impros.map(improMini).join('')}`)}).join(''):`<div class="empty small"><b>${now?'Tout est fait sur ce point':'Aucun véhicule prévu sur ce point'}</b></div>`}
+        ${(av=>s.impros.filter(i=>i!==av).map(improMini).join(''))(aVenir(s.plaque)[0])}`)}).join(''):`<div class="empty small"><b>${now?'Tout est fait sur ce point':'Aucun véhicule prévu sur ce point'}</b></div>`}
     ${(g=>g.length?`<details class="gone" open><summary>Vus sur un autre point <b>${g.length}</b></summary>${g.map(s=>{const v=vehicle(s.plaque)||{},x=s.ailleurs;return rowHtml(s.plaque,`<span class="row-t"><span class="plate">${esc(s.plaque)}</span><span class="pill ici">Vu à ${esc(full(x.point))}</span></span><span class="model">${esc(v.modele||'')}</span><span class="spec">${esc(x.by)} l'a vu à ${esc(full(x.point))} ${esc(when(x.at))}. Pas besoin de le chercher ici.</span>`)}).join('')}</details>`:'')(now?ailleursOn(DAY).filter(s=>s.point===p):[])}
     ${(g=>g.length?`<details class="gone"><summary>Déjà partis <b>${g.length}</b></summary>${g.map(s=>{const v=vehicle(s.plaque)||{};return rowHtml(s.plaque,`<span class="row-t"><span class="plate">${esc(s.plaque)}</span><span class="pill gone">Parti</span></span><span class="model">${esc(v.modele||'')}</span>${timesHtml(s)}`)}).join('')}</details>`:'')(gone.filter(s=>s.point===p))}
   </section>`}).join('')}`;
@@ -1346,7 +1381,7 @@ function vSheet(){
   const moi=!mine&&done&&doneToday().find(x=>x.plaque===p&&x.cle===done.cle);
   const asks=allAsks().filter(d=>d.plaque===p).sort((a,b)=>a.date.localeCompare(b.date));
   const top=`<div class="sh-top pad"><button type="button" class="back" id="${sheet.step==='fiche'?'closeSheet':'backFiche'}">${I.back}Retour</button></div>
-    <div class="sh-id pad"><span class="plate xl">${esc(p)}</span><span class="model">${esc(v.modele||'Véhicule hors liste')}</span>${v.categorie||v.km!=null?`<span class="spec">${esc([v.categorie,fmtKm(v.km)].filter(Boolean).join(' · '))}</span>`:''}</div>`;
+    <div class="sh-id pad"><span class="plate xl">${esc(p)}</span><span class="model">${esc(v.modele||'Véhicule hors liste')}</span>${v.categorie||v.km!=null||RADIO[p]?`<span class="spec">${esc([v.categorie,fmtKm(v.km)].filter(Boolean).join(' · '))}${RADIO[p]?`${v.categorie||v.km!=null?' · ':''}<b>Code radio ${esc(RADIO[p])}</b>`:''}</span>`:''}</div>`;
   if(sheet.step==='rappel'){
     const opts=[["Aujourd'hui",0],['Demain',1],['Après-demain',2],['Dans 1 semaine',7],['Dans 2 semaines',14]]; /* v59 : « Aujourd'hui », utile avec une heure */
     return top+`
@@ -1399,6 +1434,7 @@ function vSheet(){
       ${asks.map(askBlock).join('')}
       ${st?`<div class="card0 times">${st.fromCaler?calerCell('Arrivée','de '+st.fromCity):timeCell('Arrivée',st.from,st.fromCity?'de '+st.fromCity:'','Déjà sur place')}<div class="sep" aria-hidden="true"></div>${st.toCaler?calerCell('Départ','vers '+st.toCity):timeCell('Départ',st.to,st.toCity?'vers '+st.toCity:'','Non planifié')}</div>`:''}
       ${st?st.impros.map(improBlock).join(''):''}
+      ${aVenir(p).filter(i=>!(st&&st.impros.includes(i))).map(aVenirBlock).join('')}
       ${now&&st&&!st.ici&&!choix?'<button type="button" class="btn wide ghosttxt" id="autreBtn">Il est sur un autre point ?</button>':''}
       ${ev.length?`<div class="card0"><div class="sec"><div class="mlabel">Déjà signalé dans le BO</div><ul class="evl">${ev.map(e=>`<li><span>${esc(e.label)}</span>${e.status?`<em>${esc(e.status)}</em>`:''}</li>`).join('')}</ul></div></div>`:''}
     </div>
