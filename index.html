@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Runners</title>
 <!-- Appli Runners City Drop, v22 : version reliée au Google Sheet (voir config.js) ; gros caractères, 3 photos, aujourd'hui au milieu, recherche en haut, page des rappels ; v22 : corrections après test complet ; v23 : planning compact (grosses flottes), dates avec le mois, longs textes coupés sur les cartes ; v24 : rapide sur téléphone lent avec une grosse flotte (planning préparé par Google et rangé à part, écran redessiné seulement s'il change) ; v25 : message de fin de tournée simplifié (date en entier, plaques les unes sous les autres, sans heure ni prénom) ; v27 : une validation faite pendant la réception du planning part tout de suite après (avant : jusqu'à 5 min d'attente) ; envois sans photo passés par l'adresse (GET) car l'iPhone bloquait les envois classiques ; v28 : actualisation toutes les 30 s ; v29 : une validation part même si le runner ferme l'appli juste après ; v30 : signalement avec photos envoyé en deux temps (le passage d'abord, même appli fermée, les photos ensuite) ; attente plus longue et message « Google ne répond pas » au lieu d'un faux « Pas de réseau » ; v31 : photo allégée envoyée même appli fermée (la vraie suit à la réouverture) ; un envoi n'est plus jeté quand Google est seulement occupé ; annuler un passage déjà parti l'annule aussi chez Google ; v32 : un lien désactivé ne jette plus les envois ; annulation sûre même quand les envois arrivent dans le désordre ; photos gardées tant que le téléphone n'a pas confirmé les avoir rangées ; un véhicule envoyé ne réapparaît plus si l'appli est tuée juste après ; v33 : envois groupés en un seul appel (avec le script v12), moins de relectures chez Google, deux onglets ouverts sans perte, mémoire pleine sans blocage, une panne de Google n'affiche plus « Lien non reconnu » ; v34 : page bureau v10 (photos effacées au bout de 5 jours, avec le script v13) ; v35 : page bureau v11 plus rapide (avec le script v14) ; v36 : nouvelles demandes du bureau signalées (pastille « 1 nouvelle », bandeau, vibration, chiffre sur l'icône, notification si autorisée) ; v37 : vraies notifications des nouvelles demandes, même écran verrouillé (avec le script v15) ; v38 : les alertes gardent leur détail après une mise à jour de l'appli ; v39 : mise à jour automatique sans fermer l'appli ; v40 : gros bouton ACTIVER LES NOTIFICATIONS en haut de l'accueil tant qu'elles ne sont pas actives ; v41 : encadré des notifications plus sobre, mise à jour repérée chaque minute et appliquée après 30 s sans geste ; v42 (revue de nuit) : ouverture immédiate sur réseau faible (copie du téléphone après 3 s, polices sans bloquer), fiche et « Tout est OK » 2 à 3 fois plus rapides, double appui sans effet sur l'écran suivant, véhicule parti le matin et revenu le soir affiché pour son retour, pas de rechargement à minuit pendant une saisie, panne de Google signalée sur la ligne d'état au lieu d'un message toutes les 30 s ; v43 : horaires d'arrivée et de départ sur chaque demande dans la page « Rappels et demandes », plaque jamais coupée sur deux lignes ; v44 : toucher la notification ouvre directement « Rappels et demandes » avec la demande (son texte s'affiche tout de suite, le détail arrive de Google juste après) ; v45 : demandes sans point (ou sur un point non suivi) affichées dans « Autres demandes » au lieu d'être comptées sans apparaître ; demandes modifiables depuis la page bureau (avec le script v20) ; v47 : véhicules déjà repartis aujourd'hui rangés dans « Déjà partis » (repliés en bas du point, hors du compte « à voir », à part dans le récap) ; v48 : demandes du bureau sur plusieurs jours (visibles chaque jour de la période, « jusqu'au … ») ; v50 : « Terminer ma tournée » envoie tout seul le récapitulatif au service parc (Slack), même sans réseau (part dès qu'il revient) ; v51 : tirets de la plaque mis tout seuls dans la recherche ; v52 : un mot possible sur « Tout est OK », liste des défauts revue, clair par défaut avec bouton mode sombre -->
+<!-- v63.5 (4/11, Fabian) : vue planning : lavage en rose « Lavage », garage en rouge « Garage » (avant : tout en Garage) ; détail de la barre : lieu et type ; type de presta lu aussi en « lg.ref…wash » -->
 <!-- v63.4 (4/11, Fabian) : lavage ou garage prévu dans les 5 jours : badge (éponge rose ou clé + jour) dans la liste et bloc « À venir » dans la fiche (lieu, « inutile de le laver avant ») ; code autoradio à droite du km dans la fiche. Il faut le script v34.5 et les colonnes Metabase : sinon rien ne change -->
 <!-- v63.3 (2/11) : véhicule en panne (Garage dans le BO) retiré des véhicules à voir, sauf demande du bureau ou recherche ; page bureau : demande jusqu'à 500 caractères (v63.2) -->
 <link rel="manifest" href="manifest.json">
@@ -243,6 +244,7 @@ input.plateinput{font-family:var(--mono);text-transform:uppercase;font-size:22px
 .pb.pose{background:#8D6E63}.pb.ouest{background:#28B463}.pb.nord{background:#C75000}.pb.sud{background:#2E86C1}.pb.est{background:#D4AC0D;color:#2a2000}.pb.centre{background:#1C1C1C;box-shadow:inset 0 0 0 1px rgba(255,255,255,.35)}.pb.prov{background:#B400B4}
 .pb.caler{background:repeating-linear-gradient(90deg,#7F8C8D 0 6px,#5D6D7E 6px 12px)}
 .pb.meca{background:repeating-linear-gradient(135deg,#C0392B 0 6px,#8E2A20 6px 12px)}
+.pb.lav{background:repeating-linear-gradient(135deg,#E0569A 0 6px,#B8306F 6px 12px)}
 .pb.normal{background:repeating-linear-gradient(135deg,#D4AC0D 0 6px,#2a2000 6px 8px);color:#2a2000}
 .pb.normal>span{background:rgba(255,255,255,.88);border-radius:3px;padding:0 3px}
 .pb.ici{box-shadow:inset 0 0 0 2px #23477A}
@@ -1134,14 +1136,15 @@ async function run(force){
 /* v63.4 (Fabian 4/11) : lavage ou garage prévu bientôt. Un lavage = prestation « wash » dans le BO (ou garage dont le nom dit lavage). */
 const JOURS_A_VENIR=5;
 const PRESTA={wash:'lavage',maintenance:'entretien',mechanic:'mécanique',security:'sécurité',bodywork:'carrosserie',fluids:'niveaux'};
-function estLavage(i){return i.type==='meca'&&(/^wash/i.test(i.presta||'')||(!i.presta&&/lavage|wash/i.test(i.lieu||'')))}
+function typePresta(p){return String(p||'').split('.').pop().toLowerCase()}
+function estLavage(i){return i.type==='meca'&&(typePresta(i.presta)==='wash'||(!i.presta&&/lavage|wash/i.test(i.lieu||'')))}
 function aVenir(p){const now=nowStr();return S.impros.filter(i=>i.plaque===p&&i.type==='meca'&&i.debut>now&&dayDiff(i.debut.slice(0,10))<=JOURS_A_VENIR).sort((a,b)=>a.debut.localeCompare(b.debut))}
 function hTxt(t){const [hh,mm]=t.split(' ')[1].split(':');return Number(hh)+'h'+(mm==='00'?'':mm)}
 /* « Jeu. 5 nov. de 14h à 17h », « Demain de 8h30 à 18h », « Jeu. 5 nov. 14h → ven. 6 nov. 18h » */
 function plageTxt(i){const d=i.debut.slice(0,10);if(!i.fin)return cap(dayWord(d))+' à '+hTxt(i.debut);
   return i.fin.slice(0,10)===d?cap(dayWord(d))+' de '+hTxt(i.debut)+' à '+hTxt(i.fin):cap(dayWord(d))+' '+hTxt(i.debut)+' → '+dayWord(i.fin.slice(0,10))+' '+hTxt(i.fin)}
 function lieuTxt(s){return String(s||'').replace(/\bST[- ]/g,'St-').replace(/\b([A-Z])([A-Z]{3,})\b/g,(m,a,b)=>a+b.toLowerCase())}
-function aVenirBlock(i){const lav=estLavage(i),pr=PRESTA[String(i.presta||'').toLowerCase()]||'';
+function aVenirBlock(i){const lav=estLavage(i),pr=PRESTA[typePresta(i.presta)]||'';
   const sous=[lieuTxt(i.lieu),lav?'inutile de le laver avant':pr].filter(Boolean).join(' · ');
   return `<div class="imp avenir ${lav?'lav':'meca'}"><div class="imp-h"><i></i>À venir · ${lav?'Lavage':'Garage'}</div><div class="imp-t">${esc(plageTxt(i))}</div>${sous?`<div class="imp-s">${esc(sous)}</div>`:''}</div>`}
 const ICO_CLE='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.2L4 16.8V20h3.2l5.3-5.3a4 4 0 0 0 5.2-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/></svg>';
@@ -1208,7 +1211,7 @@ function barresDe(p,pt,W){
     out.push(Object.assign(coupe(a,b),{k:r.caler?'caler':z,t:r.caler?'Caler pro':part?'→ '+r.villeArr:r.villeArr===pt?'← de '+r.villeDep:r.villeDep+' → '+r.villeArr, /* v63.1 : un trajet qui ne revient pas ici n'est plus écrit « ← de » */a0:r.dep,b0:r.arr,r}))});
   retoursDe(pt,p).forEach(x=>{if((lignesPar()[p]||[]).some(r=>r.arr===x.arr&&r.villeArr===pt))return;const a=enMs(x.dep),b=enMs(x.arr);
     if(dans(a,b))out.push(Object.assign(coupe(a,b),{k:ZONE[pt]||'prov',t:'← de '+(x.de?full(x.de):'location'),a0:x.dep,b0:x.arr,r:{villeDep:x.de?full(x.de):'?',villeArr:pt}}))});
-  improsFor(p).forEach(i=>{const a=enMs(i.debut),b=i.fin?enMs(i.fin):W.b;if(dans(a,b))out.push(Object.assign(coupe(a,b),{k:i.type==='meca'?'meca':'normal',t:i.type==='meca'?'Garage':(i.libelle||'Improductif'),a0:i.debut,b0:i.fin,i}))});
+  improsFor(p).forEach(i=>{const a=enMs(i.debut),b=i.fin?enMs(i.fin):W.b;if(dans(a,b))out.push(Object.assign(coupe(a,b),{k:estLavage(i)?'lav':i.type==='meca'?'meca':'normal',t:estLavage(i)?'Lavage':i.type==='meca'?'Garage':(i.libelle||'Improductif'),a0:i.debut,b0:i.fin,i}))});
   return out;
 }
 /* v63 (Fabian 1/11) : en haut les véhicules sur place le jour choisi (du premier qui part au dernier) ; en dessous
@@ -1246,12 +1249,14 @@ function detailBarre(pt){
   if(r.a0&&r.b0)l.push(['Durée',dureeTxt(b-a)]);
   if(r.r)l.push(['Trajet',r.r.villeDep+' → '+r.r.villeArr]);
   if(r.i&&r.i.type==='normal'&&r.i.libelle)l.push(['Motif',r.i.libelle]);
+  if(r.i&&r.i.type==='meca'&&r.i.lieu)l.push(['Où',lieuTxt(r.i.lieu)]);
+  if(r.i&&r.i.type==='meca'&&PRESTA[typePresta(r.i.presta)])l.push(['Type',cap(PRESTA[typePresta(r.i.presta)])]);
   if(r.s&&r.s.ailleurs)l.push(['Vu par',r.s.ailleurs.by+' à '+full(r.s.ailleurs.point)]);
   if(r.s&&r.s.ici)l.push(['Le BO le met à',full(r.s.ici.bo)]);
   return `<div class="pl-det" aria-live="polite"><div class="dr"><span class="plate">${esc(PSEL.p)}</span><span class="dv">${esc(r.t)}</span></div>${l.map(([k,v])=>`<div class="dr"><span class="dk">${esc(k)}</span><span class="dv">${esc(v)}</span></div>`).join('')}<button type="button" class="btn wide primary" data-open="${esc(PSEL.p)}">Ouvrir la fiche</button></div>`;
 }
 /* v63 (Fabian) : légende réduite à ce qui est dessiné sur le planning du point */
-const LEG=[['pose','Sur place'],['ouest','Location Paris Ouest'],['nord','Location Paris Nord'],['centre','Location Paris-Centre'],['est','Location Paris Est (Meaux)'],['prov','Location autre point'],['caler','Caler pro'],['meca','Garage'],['normal','Improductif']];
+const LEG=[['pose','Sur place'],['ouest','Location Paris Ouest'],['nord','Location Paris Nord'],['centre','Location Paris-Centre'],['est','Location Paris Est (Meaux)'],['prov','Location autre point'],['caler','Caler pro'],['meca','Garage'],['lav','Lavage'],['normal','Improductif']];
 function legende(ks){const l=LEG.filter(([c])=>ks.has(c));return l.length?`<div class="pl-leg">${l.map(([c,t])=>`<span><i class="pb ${c}"></i>${t}</span>`).join('')}</div>`:''}
 
 /* Planning : chaque point s'ouvre centré sur maintenant (une seule fois par affichage) */
@@ -1313,7 +1318,7 @@ function bloque(d,s){
   const hh=t=>{const [x,h]=t.split(' ');const v=Number(h.slice(0,2))+'h'+(h.slice(3)==='00'?'':h.slice(3));return x===day?v:short(t)};
   /* toujours les heures du BO (Fabian : « toute la journée » ne dit rien au runner, il doit savoir s'il passe avant ou après) */
   const un=m=>hh(m.debut)+' → '+(m.fin?hh(m.fin):'fin non prévue');
-  return `<span class="blq${l.some(m=>m.type==='meca')?' meca':''}"><small><i></i>Véhicule immobilisé</small>${l.map(m=>`<span class="l"><b>${esc(un(m))}</b><span class="m">${esc(m.type==='meca'?'Garage':m.libelle||'Improductif')}</span></span>`).join('')}</span>`}
+  return `<span class="blq${l.some(m=>m.type==='meca')?' meca':''}"><small><i></i>Véhicule immobilisé</small>${l.map(m=>`<span class="l"><b>${esc(un(m))}</b><span class="m">${esc(m.type==='meca'?(estLavage(m)?'Lavage':'Garage'):m.libelle||'Improductif')}</span></span>`).join('')}</span>`}
 function vAsks(){
   const now=DAY===TODAY,cur=openAsks(DAY),from=DAY>TODAY?DAY:TODAY;
   const later=allAsks().filter(d=>pourMoi(d)&&d.date>from).sort((a,b)=>a.date.localeCompare(b.date));
