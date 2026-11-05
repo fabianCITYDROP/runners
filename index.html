@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Runners</title>
 <!-- Appli Runners City Drop, v22 : version reliée au Google Sheet (voir config.js) ; gros caractères, 3 photos, aujourd'hui au milieu, recherche en haut, page des rappels ; v22 : corrections après test complet ; v23 : planning compact (grosses flottes), dates avec le mois, longs textes coupés sur les cartes ; v24 : rapide sur téléphone lent avec une grosse flotte (planning préparé par Google et rangé à part, écran redessiné seulement s'il change) ; v25 : message de fin de tournée simplifié (date en entier, plaques les unes sous les autres, sans heure ni prénom) ; v27 : une validation faite pendant la réception du planning part tout de suite après (avant : jusqu'à 5 min d'attente) ; envois sans photo passés par l'adresse (GET) car l'iPhone bloquait les envois classiques ; v28 : actualisation toutes les 30 s ; v29 : une validation part même si le runner ferme l'appli juste après ; v30 : signalement avec photos envoyé en deux temps (le passage d'abord, même appli fermée, les photos ensuite) ; attente plus longue et message « Google ne répond pas » au lieu d'un faux « Pas de réseau » ; v31 : photo allégée envoyée même appli fermée (la vraie suit à la réouverture) ; un envoi n'est plus jeté quand Google est seulement occupé ; annuler un passage déjà parti l'annule aussi chez Google ; v32 : un lien désactivé ne jette plus les envois ; annulation sûre même quand les envois arrivent dans le désordre ; photos gardées tant que le téléphone n'a pas confirmé les avoir rangées ; un véhicule envoyé ne réapparaît plus si l'appli est tuée juste après ; v33 : envois groupés en un seul appel (avec le script v12), moins de relectures chez Google, deux onglets ouverts sans perte, mémoire pleine sans blocage, une panne de Google n'affiche plus « Lien non reconnu » ; v34 : page bureau v10 (photos effacées au bout de 5 jours, avec le script v13) ; v35 : page bureau v11 plus rapide (avec le script v14) ; v36 : nouvelles demandes du bureau signalées (pastille « 1 nouvelle », bandeau, vibration, chiffre sur l'icône, notification si autorisée) ; v37 : vraies notifications des nouvelles demandes, même écran verrouillé (avec le script v15) ; v38 : les alertes gardent leur détail après une mise à jour de l'appli ; v39 : mise à jour automatique sans fermer l'appli ; v40 : gros bouton ACTIVER LES NOTIFICATIONS en haut de l'accueil tant qu'elles ne sont pas actives ; v41 : encadré des notifications plus sobre, mise à jour repérée chaque minute et appliquée après 30 s sans geste ; v42 (revue de nuit) : ouverture immédiate sur réseau faible (copie du téléphone après 3 s, polices sans bloquer), fiche et « Tout est OK » 2 à 3 fois plus rapides, double appui sans effet sur l'écran suivant, véhicule parti le matin et revenu le soir affiché pour son retour, pas de rechargement à minuit pendant une saisie, panne de Google signalée sur la ligne d'état au lieu d'un message toutes les 30 s ; v43 : horaires d'arrivée et de départ sur chaque demande dans la page « Rappels et demandes », plaque jamais coupée sur deux lignes ; v44 : toucher la notification ouvre directement « Rappels et demandes » avec la demande (son texte s'affiche tout de suite, le détail arrive de Google juste après) ; v45 : demandes sans point (ou sur un point non suivi) affichées dans « Autres demandes » au lieu d'être comptées sans apparaître ; demandes modifiables depuis la page bureau (avec le script v20) ; v47 : véhicules déjà repartis aujourd'hui rangés dans « Déjà partis » (repliés en bas du point, hors du compte « à voir », à part dans le récap) ; v48 : demandes du bureau sur plusieurs jours (visibles chaque jour de la période, « jusqu'au … ») ; v50 : « Terminer ma tournée » envoie tout seul le récapitulatif au service parc (Slack), même sans réseau (part dès qu'il revient) ; v51 : tirets de la plaque mis tout seuls dans la recherche ; v52 : un mot possible sur « Tout est OK », liste des défauts revue, clair par défaut avec bouton mode sombre -->
+<!-- v63.6 (5/11, Fabian, cas GP-563-XK) : vue planning : « Caler pro » dessiné en bleu rayé sur la plage du BO (avant : invisible, trajet de 0 minute) ; trajets hors de nos points montrés (script v34.8) ; Meaux en jaune comme dans le BO -->
 <!-- v63.5 (4/11, Fabian) : vue planning : lavage en rose « Lavage », garage en rouge « Garage » (avant : tout en Garage) ; détail de la barre : lieu et type ; type de presta lu aussi en « lg.ref…wash » -->
 <!-- v63.4 (4/11, Fabian) : lavage ou garage prévu dans les 5 jours : badge (éponge rose ou clé + jour) dans la liste et bloc « À venir » dans la fiche (lieu, « inutile de le laver avant ») ; code autoradio à droite du km dans la fiche. Il faut le script v34.5 et les colonnes Metabase : sinon rien ne change -->
 <!-- v63.3 (2/11) : véhicule en panne (Garage dans le BO) retiré des véhicules à voir, sauf demande du bureau ou recherche ; page bureau : demande jusqu'à 500 caractères (v63.2) -->
@@ -242,7 +243,7 @@ input.plateinput{font-family:var(--mono);text-transform:uppercase;font-size:22px
 .pb>span{position:sticky;left:4px} /* le nom reste visible quand la barre commence avant l'écran */
 .pb:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
 .pb.pose{background:#8D6E63}.pb.ouest{background:#28B463}.pb.nord{background:#C75000}.pb.sud{background:#2E86C1}.pb.est{background:#D4AC0D;color:#2a2000}.pb.centre{background:#1C1C1C;box-shadow:inset 0 0 0 1px rgba(255,255,255,.35)}.pb.prov{background:#B400B4}
-.pb.caler{background:repeating-linear-gradient(90deg,#7F8C8D 0 6px,#5D6D7E 6px 12px)}
+.pb.caler{background:repeating-linear-gradient(135deg,#2E86C1 0 6px,#1B4F72 6px 12px);top:34px;height:17px;font-size:10.5px;z-index:1} /* v63.6 (Fabian) : bleu rayé, en bande basse comme la 2e ligne du BO : « Sur place » reste lisible au-dessus */
 .pb.meca{background:repeating-linear-gradient(135deg,#C0392B 0 6px,#8E2A20 6px 12px)}
 .pb.lav{background:repeating-linear-gradient(135deg,#E0569A 0 6px,#B8306F 6px 12px)}
 .pb.normal{background:repeating-linear-gradient(135deg,#D4AC0D 0 6px,#2a2000 6px 8px);color:#2a2000}
@@ -525,7 +526,7 @@ function splitLine(line,sep){
 function readPlan(pl){
   if(pl&&pl.erreur)throw new Error(pl.erreur);
   if(pl&&pl.v===2){RADIO=pl.radio||{};return {
-    loc:pl.loc.map(a=>({plaque:a[0],modele:a[1],categorie:a[2],km:a[3]===''||a[3]==null?null:+a[3],villeDep:a[4],dep:a[5],villeArr:a[6],arr:a[7],events:a[8]?parseEvents(a[8]):[],caler:!!a[9]})),
+    loc:pl.loc.map(a=>({plaque:a[0],modele:a[1],categorie:a[2],km:a[3]===''||a[3]==null?null:+a[3],villeDep:a[4],dep:a[5],villeArr:a[6],arr:a[7],events:a[8]?parseEvents(a[8]):[],caler:!!a[9],calerP:Array.isArray(a[9])&&a[9].length===2?a[9].map(String):null})),
     impros:pl.impros.map(a=>({plaque:a[0],type:a[1],debut:a[2],fin:a[3],libelle:a[4],lieu:a[5]||'',presta:a[6]||''}))}}
   return parseTable(pl.entetes,pl.lignes);
 }
@@ -696,7 +697,7 @@ const stays=memo(()=>{
   const by={};S.loc.forEach(r=>{(by[r.plaque]=by[r.plaque]||[]).push(r)});
   const out=[];
   Object.keys(by).forEach(p=>{
-    const rs=by[p].slice().sort((a,b)=>a.dep.localeCompare(b.dep));
+    const rs=by[p].slice().sort(parDepart);
     rs.forEach((r,i)=>{
       if(S.myPoints.includes(r.villeArr)){const nx=rs[i+1];const leaves=nx&&nx.villeDep===r.villeArr?nx:null;
         out.push({plaque:p,point:r.villeArr,from:r.arr,fromCity:r.villeDep,to:leaves?leaves.dep:'',toCity:leaves?leaves.villeArr:'',fromCaler:!!r.caler,toCaler:!!(leaves&&leaves.caler)})}
@@ -749,7 +750,9 @@ function keyFor(p){const s=stayFor(p);return s?sid(s):'manual|'+TODAY+'|'+p}
    le véhicule (départ = arrivée) ne comptent pas, sauf s'il vient d'un autre point : c'est alors un nouveau séjour. */
 function vraie(r){return !!(r.dep&&r.arr&&r.dep<r.arr)}
 const lignesPar=memo(()=>{const by={};S.loc.forEach(r=>{(by[r.plaque]=by[r.plaque]||[]).push(r)});
-  Object.keys(by).forEach(p=>by[p].sort((a,b)=>a.dep.localeCompare(b.dep)));noteArrivees(by);return by});
+  Object.keys(by).forEach(p=>by[p].sort(parDepart));noteArrivees(by);return by});
+/* v63.6 : à heure de départ égale, le déplacement ajouté (départ = arrivée, « caler pro ») passe avant le trajet suivant */
+function parDepart(a,b){return a.dep.localeCompare(b.dep)||String(a.arr||'').localeCompare(String(b.arr||''))}
 /* Vraies arrivées sur mes points gardées 15 jours : le BO efface les locations finies, celle rentrée hier disparaît de
    l'export ; son retour doit quand même remettre le véhicule « à voir ». Le script v29 envoie aussi celles qu'il a
    gardées (plan.arr), pour un téléphone qui n'a pas vu la location. Une arrivée encore à venir qui n'est plus au
@@ -1191,7 +1194,7 @@ function gate(title,text,btn){return `<div class="gate"><b>${title}</b><p>${text
    Mêmes véhicules que la liste, sur 3 jours ; une barre par période (sur place, location, garage, improductif).
    Toucher une barre montre le détail et ouvre la fiche. Couleurs des locations : celles du BO, selon le point parisien
    d'où part ou où arrive le véhicule (zones données par Fabian le 1/11 ; Paris-Centre en noir, Meaux = Paris Est). */
-const ZONE={'La Def':'ouest','Saint-Cloud':'ouest','Coignières':'ouest','Aulnay':'nord','Paris-Centre':'centre','Meaux':'est'};
+const ZONE={'La Def':'ouest','Saint-Cloud':'ouest','Coignières':'ouest','Aulnay':'nord','Paris-Centre':'centre','Meaux':'est','Paris - Meaux':'est'}; /* v63.6 : nom de Meaux dans l'export */
 const PL_H=7; /* pixels par heure */
 let PSEL=null; /* barre choisie : {pt, p, cle} */
 const cleBarre=r=>r.k+'|'+(r.a0||'')+'|'+(r.b0||'')+'|'+r.t;
@@ -1206,9 +1209,13 @@ function barresDe(p,pt,W){
   const out=[],coupe=(a,b)=>({a:Math.max(a,W.a),b:Math.min(b,W.b)}),dans=(a,b)=>b>W.a&&a<W.b;
   stays().filter(s=>s.plaque===p&&s.point===pt).forEach(s=>{const a=s.from?enMs(s.from):W.a,b=s.to?enMs(s.to):W.b;
     if(dans(a,b))out.push(Object.assign(coupe(a,b),{k:'pose',t:s.ailleurs?'Vu à '+full(s.ailleurs.point):s.ici?'Vu ici':'Sur place',a0:s.from,b0:s.to,s}))});
-  (lignesPar()[p]||[]).forEach(r=>{const a=enMs(r.dep),b=enMs(r.arr);if(!(a<b)||!dans(a,b))return;
+  (lignesPar()[p]||[]).forEach(r=>{let a=enMs(r.dep),b=enMs(r.arr);
+    /* v63.6 (Fabian 5/11, GP-563-XK) : « Caler pro » n'a pas de durée (départ = arrivée) : barre sur la plage du BO
+       (script v34.8), sinon sur les 6 h avant l'heure prévue là-bas */
+    if(r.caler&&!(a<b)){const c=r.calerP&&enMs(r.calerP[0])<enMs(r.calerP[1]);a=c?enMs(r.calerP[0]):b-6*36e5;b=c?enMs(r.calerP[1]):b}
+    if(!(a<b)||!dans(a,b))return;
     const z=ZONE[r.villeDep]||ZONE[r.villeArr]||'prov' /* violet : autre point d'Île-de-France ajouté par un runner (le script ne garde pas les trajets province ↔ province) */,part=r.villeDep===pt; /* sens vu depuis ce point (un convoyage entre deux points a les deux villes dans LOCAL) */
-    out.push(Object.assign(coupe(a,b),{k:r.caler?'caler':z,t:r.caler?'Caler pro':part?'→ '+r.villeArr:r.villeArr===pt?'← de '+r.villeDep:r.villeDep+' → '+r.villeArr, /* v63.1 : un trajet qui ne revient pas ici n'est plus écrit « ← de » */a0:r.dep,b0:r.arr,r}))});
+    out.push(Object.assign(coupe(a,b),{k:r.caler?'caler':z,t:r.caler?'Caler pro '+(part?'→ '+r.villeArr:r.villeArr===pt?'← de '+r.villeDep:r.villeDep+' → '+r.villeArr):part?'→ '+r.villeArr:r.villeArr===pt?'← de '+r.villeDep:r.villeDep+' → '+r.villeArr, /* v63.1 : un trajet qui ne revient pas ici n'est plus écrit « ← de » */a0:r.caler&&r.calerP?r.calerP[0]:r.dep,b0:r.caler&&r.calerP?r.calerP[1]:r.arr,r}))});
   retoursDe(pt,p).forEach(x=>{if((lignesPar()[p]||[]).some(r=>r.arr===x.arr&&r.villeArr===pt))return;const a=enMs(x.dep),b=enMs(x.arr);
     if(dans(a,b))out.push(Object.assign(coupe(a,b),{k:ZONE[pt]||'prov',t:'← de '+(x.de?full(x.de):'location'),a0:x.dep,b0:x.arr,r:{villeDep:x.de?full(x.de):'?',villeArr:pt}}))});
   improsFor(p).forEach(i=>{const a=enMs(i.debut),b=i.fin?enMs(i.fin):W.b;if(dans(a,b))out.push(Object.assign(coupe(a,b),{k:estLavage(i)?'lav':i.type==='meca'?'meca':'normal',t:estLavage(i)?'Lavage':i.type==='meca'?'Garage':(i.libelle||'Improductif'),a0:i.debut,b0:i.fin,i}))});
@@ -1248,6 +1255,7 @@ function detailBarre(pt){
   l.push(['Du',r.a0?when(r.a0):'avant le planning'],['Au',r.b0?when(r.b0):'pas de fin prévue']);
   if(r.a0&&r.b0)l.push(['Durée',dureeTxt(b-a)]);
   if(r.r)l.push(['Trajet',r.r.villeDep+' → '+r.r.villeArr]);
+  if(r.k==='caler')l.push(['Qui','gestion ou convoyeur, pas encore de trajet']); /* v63.6 */
   if(r.i&&r.i.type==='normal'&&r.i.libelle)l.push(['Motif',r.i.libelle]);
   if(r.i&&r.i.type==='meca'&&r.i.lieu)l.push(['Où',lieuTxt(r.i.lieu)]);
   if(r.i&&r.i.type==='meca'&&PRESTA[typePresta(r.i.presta)])l.push(['Type',cap(PRESTA[typePresta(r.i.presta)])]);
