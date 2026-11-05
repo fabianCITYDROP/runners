@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Runners</title>
 <!-- Appli Runners City Drop, v22 : version reliée au Google Sheet (voir config.js) ; gros caractères, 3 photos, aujourd'hui au milieu, recherche en haut, page des rappels ; v22 : corrections après test complet ; v23 : planning compact (grosses flottes), dates avec le mois, longs textes coupés sur les cartes ; v24 : rapide sur téléphone lent avec une grosse flotte (planning préparé par Google et rangé à part, écran redessiné seulement s'il change) ; v25 : message de fin de tournée simplifié (date en entier, plaques les unes sous les autres, sans heure ni prénom) ; v27 : une validation faite pendant la réception du planning part tout de suite après (avant : jusqu'à 5 min d'attente) ; envois sans photo passés par l'adresse (GET) car l'iPhone bloquait les envois classiques ; v28 : actualisation toutes les 30 s ; v29 : une validation part même si le runner ferme l'appli juste après ; v30 : signalement avec photos envoyé en deux temps (le passage d'abord, même appli fermée, les photos ensuite) ; attente plus longue et message « Google ne répond pas » au lieu d'un faux « Pas de réseau » ; v31 : photo allégée envoyée même appli fermée (la vraie suit à la réouverture) ; un envoi n'est plus jeté quand Google est seulement occupé ; annuler un passage déjà parti l'annule aussi chez Google ; v32 : un lien désactivé ne jette plus les envois ; annulation sûre même quand les envois arrivent dans le désordre ; photos gardées tant que le téléphone n'a pas confirmé les avoir rangées ; un véhicule envoyé ne réapparaît plus si l'appli est tuée juste après ; v33 : envois groupés en un seul appel (avec le script v12), moins de relectures chez Google, deux onglets ouverts sans perte, mémoire pleine sans blocage, une panne de Google n'affiche plus « Lien non reconnu » ; v34 : page bureau v10 (photos effacées au bout de 5 jours, avec le script v13) ; v35 : page bureau v11 plus rapide (avec le script v14) ; v36 : nouvelles demandes du bureau signalées (pastille « 1 nouvelle », bandeau, vibration, chiffre sur l'icône, notification si autorisée) ; v37 : vraies notifications des nouvelles demandes, même écran verrouillé (avec le script v15) ; v38 : les alertes gardent leur détail après une mise à jour de l'appli ; v39 : mise à jour automatique sans fermer l'appli ; v40 : gros bouton ACTIVER LES NOTIFICATIONS en haut de l'accueil tant qu'elles ne sont pas actives ; v41 : encadré des notifications plus sobre, mise à jour repérée chaque minute et appliquée après 30 s sans geste ; v42 (revue de nuit) : ouverture immédiate sur réseau faible (copie du téléphone après 3 s, polices sans bloquer), fiche et « Tout est OK » 2 à 3 fois plus rapides, double appui sans effet sur l'écran suivant, véhicule parti le matin et revenu le soir affiché pour son retour, pas de rechargement à minuit pendant une saisie, panne de Google signalée sur la ligne d'état au lieu d'un message toutes les 30 s ; v43 : horaires d'arrivée et de départ sur chaque demande dans la page « Rappels et demandes », plaque jamais coupée sur deux lignes ; v44 : toucher la notification ouvre directement « Rappels et demandes » avec la demande (son texte s'affiche tout de suite, le détail arrive de Google juste après) ; v45 : demandes sans point (ou sur un point non suivi) affichées dans « Autres demandes » au lieu d'être comptées sans apparaître ; demandes modifiables depuis la page bureau (avec le script v20) ; v47 : véhicules déjà repartis aujourd'hui rangés dans « Déjà partis » (repliés en bas du point, hors du compte « à voir », à part dans le récap) ; v48 : demandes du bureau sur plusieurs jours (visibles chaque jour de la période, « jusqu'au … ») ; v50 : « Terminer ma tournée » envoie tout seul le récapitulatif au service parc (Slack), même sans réseau (part dès qu'il revient) ; v51 : tirets de la plaque mis tout seuls dans la recherche ; v52 : un mot possible sur « Tout est OK », liste des défauts revue, clair par défaut avec bouton mode sombre -->
+<!-- v63.7 (5/11, Fabian) : Caler pro avec ses heures (départ = début de la plage BO, arrivée = fin) dans la liste et la fiche ; motif du garage (codes du BO : DIAG, E3F…) ; « Ticket BO » + début du texte dans la carte de la liste dans « À venir », « Immobilisé garage » et le détail du planning ; événements BO (dégâts, pannes, retours clients des 30 derniers jours) dans « Déjà signalé dans le BO » (script v34.9 + 2e question Metabase) -->
 <!-- v63.6 (5/11, Fabian, cas GP-563-XK) : vue planning : « Caler pro » dessiné en bleu rayé sur la plage du BO (avant : invisible, trajet de 0 minute) ; trajets hors de nos points montrés (script v34.8) ; Meaux en jaune comme dans le BO -->
 <!-- v63.5 (4/11, Fabian) : vue planning : lavage en rose « Lavage », garage en rouge « Garage » (avant : tout en Garage) ; détail de la barre : lieu et type ; type de presta lu aussi en « lg.ref…wash » -->
 <!-- v63.4 (4/11, Fabian) : lavage ou garage prévu dans les 5 jours : badge (éponge rose ou clé + jour) dans la liste et bloc « À venir » dans la fiche (lieu, « inutile de le laver avant ») ; code autoradio à droite du km dans la fiche. Il faut le script v34.5 et les colonnes Metabase : sinon rien ne change -->
@@ -124,6 +125,7 @@ main{flex:1;padding-top:16px;padding-bottom:calc(96px + env(safe-area-inset-bott
 .times2 b{font-weight:600;color:var(--fg)}
 .days{cursor:grab;user-select:none}
 .row-b{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.tkt{display:flex;align-items:baseline;gap:8px;min-width:0;margin-top:4px;font-size:14px;color:var(--fg)}.tkt b{flex:none;padding:1px 7px;border-radius:6px;background:var(--warn-soft);color:var(--warn);font-size:12.5px;font-weight:700}.tkt span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .row-t{display:flex;align-items:center;justify-content:space-between;gap:6px 8px;flex-wrap:wrap}
 .chev{color:var(--muted);flex:none}
 .pill{padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:600;white-space:nowrap}
@@ -252,6 +254,21 @@ input.plateinput{font-family:var(--mono);text-transform:uppercase;font-size:22px
 .pb.sel{box-shadow:0 0 0 2px var(--fg)} /* en dernier : gagne sur les autres contours */
 .pl-now{position:absolute;top:0;bottom:0;width:2px;background:#C0392B;z-index:1;pointer-events:none}
 .pl-det{display:flex;flex-direction:column;gap:6px;padding:12px 14px;border-radius:14px;background:var(--surface);border:1px solid var(--line)}
+/* v63.7 (Fabian 5/11) : bulle façon iPhone sur le planning ; toucher à côté la ferme */
+.pl-pop{position:fixed;inset:0;z-index:40}
+.pl-bg{position:absolute;inset:0;width:100%;height:100%;border:0;padding:0;margin:0;background:transparent;cursor:default}
+.bulle{position:fixed;left:-999px;top:-999px;width:max-content;min-width:180px;max-width:min(290px,calc(100vw - 24px));padding:11px 14px 10px;border-radius:14px;
+  background:var(--surface);background:color-mix(in srgb,var(--surface) 92%,transparent);-webkit-backdrop-filter:saturate(1.6) blur(18px);backdrop-filter:saturate(1.6) blur(18px);
+  border:.5px solid var(--line-strong);box-shadow:0 10px 30px rgba(0,0,0,.18),0 2px 6px rgba(0,0,0,.08);color:var(--fg);opacity:0;transform:scale(.96);transform-origin:50% 0;transition:opacity .14s ease,transform .14s ease}
+.bulle.vu{opacity:1;transform:none}.bulle.haut{transform-origin:50% 100%}
+.bu-fl{position:absolute;top:-6px;width:12px;height:12px;margin-left:-6px;background:inherit;border-left:.5px solid var(--line-strong);border-top:.5px solid var(--line-strong);transform:rotate(45deg)}
+.bulle.haut .bu-fl{top:auto;bottom:-6px;transform:rotate(225deg)}
+.bu-h{display:flex;align-items:baseline;justify-content:space-between;gap:12px}.bu-h b{font-size:15px;font-weight:700}.bu-h .plate{font-size:12.5px;color:var(--muted)}
+.k-meca .bu-h b{color:var(--red,#B3261E)}.k-caler .bu-h b{color:#2F5FA8}
+.bu-q{margin-top:2px;font-size:17px;font-weight:600;letter-spacing:-.01em}
+.bu-l{margin-top:4px;font-size:14px}.bu-s{margin-top:3px;font-size:12.5px;color:var(--muted)}
+.bu-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}.bu-chips span{padding:2px 8px;border-radius:7px;background:var(--surface-2);border:.5px solid var(--line-strong);font-size:13px;font-weight:700;letter-spacing:.02em}
+.bu-f{display:block;margin:8px -4px -2px auto;padding:4px;border:0;background:none;color:var(--accent);font:inherit;font-size:14px;font-weight:600;cursor:pointer}
 .pl-det .dr{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:14px}
 .pl-det .dk{color:var(--muted)}.pl-det .dv{font-weight:600}
 .pl-leg{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:12px;color:var(--muted)}
@@ -467,7 +484,7 @@ const COLS={
   villeArr:['ville_arrivee','ville arrivée'],dateArr:['date_arrivee','date arrivée'],heureArr:['heure_arrivee','heure arrivée'],
   events:['evenements_bo','événements bo','evenements bo','evenements'],
   impro:['impro_type','improductif','impro'],improDeb:['impro_debut','impro début'],improFin:['impro_fin'],improLib:['impro_libelle','impro_libellé','impro libellé'],
-  radio:['code_radio','code radio','code autoradio'],improLieu:['impro_lieu'],improPresta:['impro_presta']
+  radio:['code_radio','code radio','code autoradio'],improLieu:['impro_lieu'],improPresta:['impro_presta'],improMotif:['impro_motif']
 };
 /* v63.4 : code autoradio par plaque (envoyé par le script v34.5) */
 var RADIO={};
@@ -506,7 +523,7 @@ function parseTable(head,rows){
     const plaque=g('plaque').toUpperCase();if(!plaque)return;
     if(g('radio'))radio[plaque]=g('radio');
     const type=normImpro(g('impro'));
-    if(type){const debut=dt(g('improDeb')),fin=dt(g('improFin'));if(debut)impros.push({plaque,type,debut,fin,libelle:g('improLib'),lieu:g('improLieu'),presta:g('improPresta')});return}
+    if(type){const debut=dt(g('improDeb')),fin=dt(g('improFin'));if(debut)impros.push({plaque,type,debut,fin,libelle:g('improLib'),lieu:g('improLieu'),presta:g('improPresta'),motif:g('improMotif')});return}
     const dep=dt(g('dateDep'),g('heureDep'));if(!dep)return;
     const arr=dt(g('dateArr')||g('dateDep'),g('heureArr'));
     const km=parseInt(g('km').replace(/\D/g,''),10);
@@ -527,7 +544,7 @@ function readPlan(pl){
   if(pl&&pl.erreur)throw new Error(pl.erreur);
   if(pl&&pl.v===2){RADIO=pl.radio||{};return {
     loc:pl.loc.map(a=>({plaque:a[0],modele:a[1],categorie:a[2],km:a[3]===''||a[3]==null?null:+a[3],villeDep:a[4],dep:a[5],villeArr:a[6],arr:a[7],events:a[8]?parseEvents(a[8]):[],caler:!!a[9],calerP:Array.isArray(a[9])&&a[9].length===2?a[9].map(String):null})),
-    impros:pl.impros.map(a=>({plaque:a[0],type:a[1],debut:a[2],fin:a[3],libelle:a[4],lieu:a[5]||'',presta:a[6]||''}))}}
+    impros:pl.impros.map(a=>({plaque:a[0],type:a[1],debut:a[2],fin:a[3],libelle:a[4],lieu:a[5]||'',presta:a[6]||'',motif:a[7]||''}))}}
   return parseTable(pl.entetes,pl.lignes);
 }
 function parseCsv(text){
@@ -700,8 +717,8 @@ const stays=memo(()=>{
     const rs=by[p].slice().sort(parDepart);
     rs.forEach((r,i)=>{
       if(S.myPoints.includes(r.villeArr)){const nx=rs[i+1];const leaves=nx&&nx.villeDep===r.villeArr?nx:null;
-        out.push({plaque:p,point:r.villeArr,from:r.arr,fromCity:r.villeDep,to:leaves?leaves.dep:'',toCity:leaves?leaves.villeArr:'',fromCaler:!!r.caler,toCaler:!!(leaves&&leaves.caler)})}
-      if(S.myPoints.includes(r.villeDep)){const pv=rs[i-1];if(!(pv&&pv.villeArr===r.villeDep))out.push({plaque:p,point:r.villeDep,from:'',fromCity:'',to:r.dep,toCity:r.villeArr,toCaler:!!r.caler})}
+        out.push({plaque:p,point:r.villeArr,from:r.arr,fromCity:r.villeDep,to:leaves?leaves.dep:'',toCity:leaves?leaves.villeArr:'',fromCaler:!!r.caler,toCaler:!!(leaves&&leaves.caler),fromCalerP:r.calerP||null,toCalerP:leaves&&leaves.calerP||null})}
+      if(S.myPoints.includes(r.villeDep)){const pv=rs[i-1];if(!(pv&&pv.villeArr===r.villeDep))out.push({plaque:p,point:r.villeDep,from:'',fromCity:'',to:r.dep,toCity:r.villeArr,toCaler:!!r.caler,toCalerP:r.calerP||null})}
     });
   });
   /* v60 (Fabian 31/10) : « Il est ici » : un runner a vu le véhicule sur un autre point que celui du BO (garage, convoyage
@@ -1147,17 +1164,20 @@ function hTxt(t){const [hh,mm]=t.split(' ')[1].split(':');return Number(hh)+'h'+
 function plageTxt(i){const d=i.debut.slice(0,10);if(!i.fin)return cap(dayWord(d))+' à '+hTxt(i.debut);
   return i.fin.slice(0,10)===d?cap(dayWord(d))+' de '+hTxt(i.debut)+' à '+hTxt(i.fin):cap(dayWord(d))+' '+hTxt(i.debut)+' → '+dayWord(i.fin.slice(0,10))+' '+hTxt(i.fin)}
 function lieuTxt(s){return String(s||'').replace(/\bST[- ]/g,'St-').replace(/\b([A-Z])([A-Z]{3,})\b/g,(m,a,b)=>a+b.toLowerCase())}
+/* v63.7 (Fabian 5/11) : motif du BO « DIAG:Diagnostic;E3F:Entretien 3 filtres » → « DIAG · E3F » (les codes du BO, connus de tous) */
+function motifTxt(m){return String(m||'').split(';').map(x=>x.split(':')[0].trim().toUpperCase()).filter(Boolean).join(' · ')}
+function motifLigne(i){const m=estLavage(i)?'':motifTxt(i.motif); /* lavage : pas de codes, ils savent (Fabian) */return m?`<div class="imp-s"><b>Motif :</b> ${esc(m)}</div>`:''}
 function aVenirBlock(i){const lav=estLavage(i),pr=PRESTA[typePresta(i.presta)]||'';
   const sous=[lieuTxt(i.lieu),lav?'inutile de le laver avant':pr].filter(Boolean).join(' · ');
-  return `<div class="imp avenir ${lav?'lav':'meca'}"><div class="imp-h"><i></i>À venir · ${lav?'Lavage':'Garage'}</div><div class="imp-t">${esc(plageTxt(i))}</div>${sous?`<div class="imp-s">${esc(sous)}</div>`:''}</div>`}
+  return `<div class="imp avenir ${lav?'lav':'meca'}"><div class="imp-h"><i></i>À venir · ${lav?'Lavage':'Garage'}</div><div class="imp-t">${esc(plageTxt(i))}</div>${sous?`<div class="imp-s">${esc(sous)}</div>`:''}${motifLigne(i)}</div>`}
 const ICO_CLE='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.2L4 16.8V20h3.2l5.3-5.3a4 4 0 0 0 5.2-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/></svg>';
 /* Badge de la liste : « auj. », « dem. » ou le jour (« jeu. ») */
 function aVenirPill(p){const i=aVenir(p)[0];if(!i)return '';const n=dayDiff(i.debut.slice(0,10)),j=n===0?'auj.':n===1?'dem.':dLabel(i.debut.slice(0,10)).dow.toLowerCase();
   return estLavage(i)?`<span class="pill lav" title="Lavage prévu"><svg aria-hidden="true"><use href="#eponge"/></svg>${j}</span>`:`<span class="pill gar" title="Garage prévu">${ICO_CLE}${j}</span>`}
 function improBlock(i){
-  if(i.type==='meca'&&i.debut>nowStr()&&(i.lieu||i.presta))return aVenirBlock(i);
+  if(i.type==='meca'&&i.debut>nowStr()&&(i.lieu||i.presta||i.motif))return aVenirBlock(i);
   return i.type==='meca'
-    ?`<div class="imp ${estLavage(i)?'lav':'meca'}"><div class="imp-h"><i></i>${estLavage(i)?'Au lavage':'Immobilisé garage'}</div><div class="imp-p">${esc(when(i.debut))} <span>jusqu'à</span> ${esc(when(i.fin))}</div>${i.lieu?`<div class="imp-s">${esc(lieuTxt(i.lieu))}</div>`:''}</div>`
+    ?`<div class="imp ${estLavage(i)?'lav':'meca'}"><div class="imp-h"><i></i>${estLavage(i)?'Au lavage':'Immobilisé garage'}</div><div class="imp-p">${esc(when(i.debut))} <span>jusqu'à</span> ${esc(when(i.fin))}</div>${i.lieu?`<div class="imp-s">${esc(lieuTxt(i.lieu))}</div>`:''}${motifLigne(i)}</div>`
     :`<div class="imp normal"><div class="imp-h"><i></i>Improductif</div><div class="imp-t">${esc(i.libelle||'Sans intitulé')}</div><div class="imp-p">${esc(when(i.debut))} <span>jusqu'à</span> ${esc(when(i.fin))}</div></div>`;
 }
 function askBlock(d){
@@ -1182,11 +1202,19 @@ function full(p){return FULL[p]||p}
 function short(t){if(!t)return '';const [d,h]=t.split(' ');const n=dayDiff(d);const l=dLabel(d);const day=n===0?'Auj.':n===1?'Dem.':n===-1?'Hier':l.dow+' '+l.num+' à';const [hh,mm]=h.split(':');return day+' '+Number(hh)+'h'+(mm==='00'?'':mm)}
 /* v55 : « Caler pro » (plage CALER_PRO du BO) : le véhicule doit changer de ville, par une gestion ou un convoyeur,
    mais il n'y a pas encore de trajet : pas d'heure affichée, seulement « Caler pro prévu » */
-function calerCell(label,city){return `<div class="tc"><div class="mlabel">${label}</div><div class="tt">Caler pro</div><div class="td">Prévu ${esc(city)} · gestion ou convoyeur, pas encore de trajet</div></div>`}
-function timesHtml(s){return `<span class="tgrid"><span><small>Arrivée</small><b>${s.fromCaler?'Caler pro prévu':s.from?esc(short(s.from)):'Sur place'}</b></span><span><small>Départ</small><b>${s.toCaler?'Caler pro prévu':s.to?esc(short(s.to)):'Pas prévu'}</b></span></span>`}
+/* v63.7 (Fabian 5/11) : avec la plage CALER_PRO du BO (script v34.8), comme dans le BO « du 06/11 à 13:00 au 09/11 à 10:00 » :
+   départ = début de la plage, arrivée = fin de la plage (en général juste avant la location suivante) */
+function calerCell(label,city,p,fin){const t=p&&p[fin?1:0],o=p&&p[fin?0:1];
+  if(t){const [d,h]=t.split(' '),n=dayDiff(d),day=n===0?"Aujourd'hui":n===1?'Demain':n===-1?'Hier':(l=>l.dow+' '+l.num)(dLabel(d));
+    return `<div class="tc"><div class="mlabel">${label} · Caler pro</div><div class="tt">${Number(h.slice(0,2))+'h'+(h.slice(3)==='00'?'':h.slice(3))}</div><div class="td">${day} · ${esc(city)}</div>${o?`<div class="td">${fin?'Parti':'Arrivée'} ${esc(short(o).replace(' à ',' ').toLowerCase())} · gestion ou convoyeur</div>`:''}</div>`}
+  return `<div class="tc"><div class="mlabel">${label}</div><div class="tt">Caler pro</div><div class="td">Prévu ${esc(city)} · gestion ou convoyeur, pas encore de trajet</div></div>`}
+function timesHtml(s){return `<span class="tgrid"><span><small>Arrivée</small><b>${s.fromCaler?(s.fromCalerP?'Caler pro · '+esc(short(s.fromCalerP[1]).replace(' à ',' ')):'Caler pro prévu'):s.from?esc(short(s.from)):'Sur place'}</b></span><span><small>Départ</small><b>${s.toCaler?(s.toCalerP?'Caler pro · '+esc(short(s.toCalerP[0]).replace(' à ',' ')):'Caler pro prévu'):s.to?esc(short(s.to)):'Pas prévu'}</b></span></span>`}
 /* Texte d'improductif limité à 2 lignes sur la carte ; en entier dans la fiche */
 function improMini(i){return `<span class="bar ${i.type}"><i></i><span class="bl">${i.type==='meca'?(estLavage(i)?'Lavage':'Garage'):esc(i.libelle||'Improductif')}</span><span class="bd">${esc(short(i.debut))}${i.fin?' → '+esc(short(i.fin)):''}</span></span>`}
 function dayChip(d,i,attr,sel){const l=dLabel(d);const n=dayDiff(d);const on=d===sel;return `<button type="button" class="day ${on?'on':''}" ${attr}="${d}" aria-pressed="${on}" aria-label="${esc(l.dow+' '+l.num)}"><small>${n===0?'Auj.':n===1?'Dem.':n===-1?'Hier':l.dow}</small><b>${Number(d.slice(8))}</b></button>`}
+/* v63.7 (Fabian 5/11) : ticket BO (dégât, panne, retour client) visible dans la carte : nombre + début du plus récent */
+function ticketMini(v){const ev=(v&&v.events)||[];if(!ev.length)return '';
+  return `<span class="tkt"><b>${ev.length>1?ev.length+' tickets BO':'Ticket BO'}</b><span>${esc(ev[0].label)}</span></span>`}
 function rowHtml(p,inner,cls){return `<button type="button" class="row ${cls||''}" data-open="${esc(p)}"><span class="row-b">${inner}</span><span class="chev">${I.chev}</span></button>`}
 function gate(title,text,btn){return `<div class="gate"><b>${title}</b><p>${text}</p>${btn||''}</div>`}
 
@@ -1248,21 +1276,38 @@ function vPlanning(pt){
   const tete=`<div class="pl-hdw"><div class="pl-lab h"></div><div class="pl-sc pl-hsc" data-plsc="${esc(cle)}" data-nowx="${nx}"><div class="pl-tr" style="width:${larg}px"><div class="pl-hd">${hd}</div></div></div></div>`;
   return legende(ks)+tete+corps;
 }
+/* v63.7 (Fabian 5/11) : petite bulle façon iPhone, collée à la barre touchée : quoi, quand (« Demain · 8h30 → 18h30 »),
+   motif ou trajet, lieu. Toucher à côté la ferme (fond transparent), « Fiche › » ouvre la fiche du véhicule. */
+function quandCourt(a0,b0){if(!a0)return b0?"Jusqu'à "+short(b0).replace(' à ',' '):'';
+  const d=a0.slice(0,10),j=cap(dayWord(d));if(!b0)return j+' · dès '+hTxt(a0);
+  return b0.slice(0,10)===d?j+' · '+hTxt(a0)+' → '+hTxt(b0):short(a0).replace(' à ',' ')+' → '+short(b0).replace(' à ',' ')}
 function detailBarre(pt){
   const W=fenetre(pt),r=barresDe(PSEL.p,pt,W).find(x=>cleBarre(x)===PSEL.cle);if(!r)return '';
-  const a=enMs(r.a0),b=r.b0?enMs(r.b0):NaN,now=Date.now(),l=[];
-  if(a>now)l.push(['Commence dans',dureeTxt(a-now)]);else if(!(b<=now))l.push(['En cours depuis',r.a0?dureeTxt(now-a):'avant le planning']);
-  l.push(['Du',r.a0?when(r.a0):'avant le planning'],['Au',r.b0?when(r.b0):'pas de fin prévue']);
-  if(r.a0&&r.b0)l.push(['Durée',dureeTxt(b-a)]);
-  if(r.r)l.push(['Trajet',r.r.villeDep+' → '+r.r.villeArr]);
-  if(r.k==='caler')l.push(['Qui','gestion ou convoyeur, pas encore de trajet']); /* v63.6 */
-  if(r.i&&r.i.type==='normal'&&r.i.libelle)l.push(['Motif',r.i.libelle]);
-  if(r.i&&r.i.type==='meca'&&r.i.lieu)l.push(['Où',lieuTxt(r.i.lieu)]);
-  if(r.i&&r.i.type==='meca'&&PRESTA[typePresta(r.i.presta)])l.push(['Type',cap(PRESTA[typePresta(r.i.presta)])]);
-  if(r.s&&r.s.ailleurs)l.push(['Vu par',r.s.ailleurs.by+' à '+full(r.s.ailleurs.point)]);
-  if(r.s&&r.s.ici)l.push(['Le BO le met à',full(r.s.ici.bo)]);
-  return `<div class="pl-det" aria-live="polite"><div class="dr"><span class="plate">${esc(PSEL.p)}</span><span class="dv">${esc(r.t)}</span></div>${l.map(([k,v])=>`<div class="dr"><span class="dk">${esc(k)}</span><span class="dv">${esc(v)}</span></div>`).join('')}<button type="button" class="btn wide primary" data-open="${esc(PSEL.p)}">Ouvrir la fiche</button></div>`;
+  const meca=r.i&&r.i.type==='meca',l=[];
+  if(meca&&!estLavage(r.i)&&motifTxt(r.i.motif))l.push(`<div class="bu-chips">${motifTxt(r.i.motif).split(' · ').map(c=>`<span>${esc(c)}</span>`).join('')}</div>`);
+  if(r.i&&r.i.type==='normal'&&r.i.libelle)l.push(`<div class="bu-l">${esc(r.i.libelle)}</div>`);
+  if(r.r&&r.k!=='pose')l.push(`<div class="bu-l">${esc(r.r.villeDep+' → '+r.r.villeArr)}</div>`);
+  if(r.k==='caler')l.push('<div class="bu-s">Gestion ou convoyeur</div>');
+  if(meca&&r.i.lieu)l.push(`<div class="bu-s">${esc(lieuTxt(r.i.lieu))}</div>`);
+  if(r.s&&r.s.ailleurs)l.push(`<div class="bu-s">Vu par ${esc(r.s.ailleurs.by)} à ${esc(full(r.s.ailleurs.point))}</div>`);
+  if(r.s&&r.s.ici)l.push(`<div class="bu-s">Le BO le met à ${esc(full(r.s.ici.bo))}</div>`);
+  const titre=meca?(estLavage(r.i)?'Lavage':'Garage'):r.k==='caler'?'Caler pro':r.k==='pose'?'Sur place':r.t;
+  setTimeout(placerBulle,0);
+  return `<div class="pl-pop"><button type="button" class="pl-bg" data-plclose="1" aria-label="Fermer"></button><div class="bulle k-${esc(r.k)}" role="dialog" aria-label="${esc(PSEL.p+' : '+titre)}"><i class="bu-fl" aria-hidden="true"></i>
+    <div class="bu-h"><b>${esc(titre)}</b><span class="plate">${esc(PSEL.p)}</span></div>
+    <div class="bu-q">${esc(quandCourt(r.a0,r.b0))}</div>${l.join('')}
+    <button type="button" class="bu-f" data-open="${esc(PSEL.p)}">Fiche <span aria-hidden="true">›</span></button></div></div>`;
 }
+/* place la bulle sous la barre touchée (au-dessus s'il n'y a pas la place), sans sortir de l'écran */
+function placerBulle(){const bu=document.querySelector('.bulle'),pb=document.querySelector('.pb.sel');if(!bu)return;
+  if(!pb){PSEL=null;render();return}
+  const r=pb.getBoundingClientRect(),vw=window.innerWidth,vh=window.innerHeight,w=bu.offsetWidth,h=bu.offsetHeight;
+  const cx=Math.max(Math.min((Math.max(r.left,0)+Math.min(r.right,vw))/2,vw-14),14);
+  const left=Math.max(12,Math.min(cx-w/2,vw-w-12)),dessous=r.bottom+10+h<vh-90;
+  bu.style.left=left+'px';bu.style.top=(dessous?r.bottom+10:Math.max(8,r.top-10-h))+'px';
+  bu.classList.toggle('haut',!dessous);bu.querySelector('.bu-fl').style.left=Math.max(14,Math.min(cx-left,w-14))+'px';bu.classList.add('vu')}
+window.addEventListener('resize',()=>{if(document.querySelector('.bulle'))placerBulle()});
+document.addEventListener('scroll',()=>{if(document.querySelector('.bulle'))placerBulle()},true);
 /* v63 (Fabian) : légende réduite à ce qui est dessiné sur le planning du point */
 const LEG=[['pose','Sur place'],['ouest','Location Paris Ouest'],['nord','Location Paris Nord'],['centre','Location Paris-Centre'],['est','Location Paris Est (Meaux)'],['prov','Location autre point'],['caler','Caler pro'],['meca','Garage'],['lav','Lavage'],['normal','Improductif']];
 function legende(ks){const l=LEG.filter(([c])=>ks.has(c));return l.length?`<div class="pl-leg">${l.map(([c,t])=>`<span><i class="pb ${c}"></i>${t}</span>`).join('')}</div>`:''}
@@ -1297,7 +1342,7 @@ function vHome(){
         <span class="row-t"><span class="plate">${esc(s.plaque)}</span>${s.ici?'<span class="pill ici">Vu ici</span>':''}${past?(vuSejour(s)?'<span class="pill seen">Vu</span>':'<span class="pill unseen">Pas vu</span>'):s.leaves?`<span class="pill dep">${s.toCaler?'Caler pro prévu':now?'Part aujourd\'hui':'Part ce jour-là'}</span>`:s.arrives?`<span class="pill arr">${s.fromCaler?'Caler pro prévu':'Arrive'}</span>`:''}${aVenirPill(s.plaque)}</span>
         <span class="model">${esc(v.modele||'')}${s.ici?' · BO : '+esc(full(s.ici.bo)):''}</span>
         ${timesHtml(s)}
-        ${(av=>s.impros.filter(i=>i!==av).map(improMini).join(''))(aVenir(s.plaque)[0])}`)}).join(''):`<div class="empty small"><b>${now?'Tout est fait sur ce point':'Aucun véhicule prévu sur ce point'}</b></div>`}
+        ${(av=>s.impros.filter(i=>i!==av).map(improMini).join(''))(aVenir(s.plaque)[0])}${ticketMini(v)}`)}).join(''):`<div class="empty small"><b>${now?'Tout est fait sur ce point':'Aucun véhicule prévu sur ce point'}</b></div>`}
     ${(g=>g.length?`<details class="gone" open><summary>Vus sur un autre point <b>${g.length}</b></summary>${g.map(s=>{const v=vehicle(s.plaque)||{},x=s.ailleurs;return rowHtml(s.plaque,`<span class="row-t"><span class="plate">${esc(s.plaque)}</span><span class="pill ici">Vu à ${esc(full(x.point))}</span></span><span class="model">${esc(v.modele||'')}</span><span class="spec">${esc(x.by)} l'a vu à ${esc(full(x.point))} ${esc(when(x.at))}. Pas besoin de le chercher ici.</span>`)}).join('')}</details>`:'')(now?ailleursOn(DAY).filter(s=>s.point===p):[])}
     ${(g=>g.length?`<details class="gone"><summary>Déjà partis <b>${g.length}</b></summary>${g.map(s=>{const v=vehicle(s.plaque)||{};return rowHtml(s.plaque,`<span class="row-t"><span class="plate">${esc(s.plaque)}</span><span class="pill gone">Parti</span></span><span class="model">${esc(v.modele||'')}</span>${timesHtml(s)}`)}).join('')}</details>`:'')(gone.filter(s=>s.point===p))}
   </section>`}).join('')}`;
@@ -1445,7 +1490,7 @@ function vSheet(){
       ${done?`<div class="status ${done.pb.length?'ko':'ok'}">${done.pb.length?'Problème signalé : '+esc(done.pb.join(', ')):'Validé'}${mine?'':' par '+esc(done.by)} · ${esc(when(done.at))}</div>${moi?`<div class="meta">Tu l'avais aussi vu ${esc(when(moi.at))}.</div>`:''}`:''}
       ${now?'':`<div class="later">Vous regardez ${esc(leWord(DAY))}. La validation se fait le jour même.</div>`}
       ${asks.map(askBlock).join('')}
-      ${st?`<div class="card0 times">${st.fromCaler?calerCell('Arrivée','de '+st.fromCity):timeCell('Arrivée',st.from,st.fromCity?'de '+st.fromCity:'','Déjà sur place')}<div class="sep" aria-hidden="true"></div>${st.toCaler?calerCell('Départ','vers '+st.toCity):timeCell('Départ',st.to,st.toCity?'vers '+st.toCity:'','Non planifié')}</div>`:''}
+      ${st?`<div class="card0 times">${st.fromCaler?calerCell('Arrivée','de '+st.fromCity,st.fromCalerP,1):timeCell('Arrivée',st.from,st.fromCity?'de '+st.fromCity:'','Déjà sur place')}<div class="sep" aria-hidden="true"></div>${st.toCaler?calerCell('Départ','vers '+st.toCity,st.toCalerP,0):timeCell('Départ',st.to,st.toCity?'vers '+st.toCity:'','Non planifié')}</div>`:''}
       ${st?st.impros.map(improBlock).join(''):''}
       ${aVenir(p).filter(i=>!(st&&st.impros.includes(i))).map(aVenirBlock).join('')}
       ${now&&st&&!st.ici&&!choix?'<button type="button" class="btn wide ghosttxt" id="autreBtn">Il est sur un autre point ?</button>':''}
@@ -1585,7 +1630,7 @@ document.addEventListener('click',e=>{
   if(b.id==='rSansHeure'){rdraft.heure='';const i=$('#rHeure');if(i)i.value='';majRem();return}
   if(d.unremind){unremind(d.unremind);render();toast('Rappel supprimé.');return}
   if(d.point){const p=d.point;set({myPoints:S.myPoints.includes(p)?S.myPoints.filter(x=>x!==p):S.myPoints.concat(p),ptsSet:true});return}
-  if(d.open){const rem=sheet&&sheet.remind,back=sheet&&(sheet.asks||sheet.back==='asks')?'asks':'';openSheet(d.open);if(back)sheet.back=back;if(rem){rdraft=newRemind(d.open);sheet.step='rappel'}render();return}
+  if(d.open){PSEL=null;const rem=sheet&&sheet.remind,back=sheet&&(sheet.asks||sheet.back==='asks')?'asks':'';openSheet(d.open);if(back)sheet.back=back;if(rem){rdraft=newRemind(d.open);sheet.step='rappel'}render();return}
   if(d.rpoint){rdraft.point=d.rpoint;render();return}
   if(b.id==='openAsks'){sheet={asks:true,nouv:newAsks().map(d=>d.id)};markAsksSeen();render();$('#sheet').scrollTop=0;return}
   if(b.id==='enableNotif'){try{Promise.resolve(Notification.requestPermission()).then(p=>p==='granted'?abonner().then(ok=>{if(ok)toast('Alertes activées : vous serez prévenu des nouvelles demandes');else toast('Alertes impossibles sur ce téléphone pour le moment')}):null).then(()=>render())}catch(e){}return}
@@ -1601,6 +1646,7 @@ document.addEventListener('click',e=>{
   if(b.id==='autreBtn'){sheet.autre=true;render();$('#sheet').scrollTop=0;return}
   if(b.dataset.vue){PSEL=null;set({vue:b.dataset.vue==='plan'?'plan':'liste'});return}
   if(b.dataset.plgrp){PLG[b.dataset.plgrp]=b.getAttribute('aria-expanded')!=='true';PSEL=null;render();return}
+  if(b.dataset.plclose){PSEL=null;render();return} /* v63.7 : bulle du planning fermée */
   if(b.dataset.pbar){const n={pt:b.dataset.pt,p:b.dataset.pp,cle:b.dataset.pbar};PSEL=PSEL&&PSEL.pt===n.pt&&PSEL.p===n.p&&PSEL.cle===n.cle?null:n;render();return}
   if(b.id==='okBtn'){const p=sheet.plaque;record(p,[],faitsTexte(draft),'');closeSheet(p+' validé. Tout est OK.');return}
   if(b.id==='pbBtn'){sheet.step='probleme';render();$('#sheet').scrollTop=0;return}
