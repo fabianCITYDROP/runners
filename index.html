@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Runners</title>
 <!-- Appli Runners City Drop, v22 : version reliée au Google Sheet (voir config.js) ; gros caractères, 3 photos, aujourd'hui au milieu, recherche en haut, page des rappels ; v22 : corrections après test complet ; v23 : planning compact (grosses flottes), dates avec le mois, longs textes coupés sur les cartes ; v24 : rapide sur téléphone lent avec une grosse flotte (planning préparé par Google et rangé à part, écran redessiné seulement s'il change) ; v25 : message de fin de tournée simplifié (date en entier, plaques les unes sous les autres, sans heure ni prénom) ; v27 : une validation faite pendant la réception du planning part tout de suite après (avant : jusqu'à 5 min d'attente) ; envois sans photo passés par l'adresse (GET) car l'iPhone bloquait les envois classiques ; v28 : actualisation toutes les 30 s ; v29 : une validation part même si le runner ferme l'appli juste après ; v30 : signalement avec photos envoyé en deux temps (le passage d'abord, même appli fermée, les photos ensuite) ; attente plus longue et message « Google ne répond pas » au lieu d'un faux « Pas de réseau » ; v31 : photo allégée envoyée même appli fermée (la vraie suit à la réouverture) ; un envoi n'est plus jeté quand Google est seulement occupé ; annuler un passage déjà parti l'annule aussi chez Google ; v32 : un lien désactivé ne jette plus les envois ; annulation sûre même quand les envois arrivent dans le désordre ; photos gardées tant que le téléphone n'a pas confirmé les avoir rangées ; un véhicule envoyé ne réapparaît plus si l'appli est tuée juste après ; v33 : envois groupés en un seul appel (avec le script v12), moins de relectures chez Google, deux onglets ouverts sans perte, mémoire pleine sans blocage, une panne de Google n'affiche plus « Lien non reconnu » ; v34 : page bureau v10 (photos effacées au bout de 5 jours, avec le script v13) ; v35 : page bureau v11 plus rapide (avec le script v14) ; v36 : nouvelles demandes du bureau signalées (pastille « 1 nouvelle », bandeau, vibration, chiffre sur l'icône, notification si autorisée) ; v37 : vraies notifications des nouvelles demandes, même écran verrouillé (avec le script v15) ; v38 : les alertes gardent leur détail après une mise à jour de l'appli ; v39 : mise à jour automatique sans fermer l'appli ; v40 : gros bouton ACTIVER LES NOTIFICATIONS en haut de l'accueil tant qu'elles ne sont pas actives ; v41 : encadré des notifications plus sobre, mise à jour repérée chaque minute et appliquée après 30 s sans geste ; v42 (revue de nuit) : ouverture immédiate sur réseau faible (copie du téléphone après 3 s, polices sans bloquer), fiche et « Tout est OK » 2 à 3 fois plus rapides, double appui sans effet sur l'écran suivant, véhicule parti le matin et revenu le soir affiché pour son retour, pas de rechargement à minuit pendant une saisie, panne de Google signalée sur la ligne d'état au lieu d'un message toutes les 30 s ; v43 : horaires d'arrivée et de départ sur chaque demande dans la page « Rappels et demandes », plaque jamais coupée sur deux lignes ; v44 : toucher la notification ouvre directement « Rappels et demandes » avec la demande (son texte s'affiche tout de suite, le détail arrive de Google juste après) ; v45 : demandes sans point (ou sur un point non suivi) affichées dans « Autres demandes » au lieu d'être comptées sans apparaître ; demandes modifiables depuis la page bureau (avec le script v20) ; v47 : véhicules déjà repartis aujourd'hui rangés dans « Déjà partis » (repliés en bas du point, hors du compte « à voir », à part dans le récap) ; v48 : demandes du bureau sur plusieurs jours (visibles chaque jour de la période, « jusqu'au … ») ; v50 : « Terminer ma tournée » envoie tout seul le récapitulatif au service parc (Slack), même sans réseau (part dès qu'il revient) ; v51 : tirets de la plaque mis tout seuls dans la recherche ; v52 : un mot possible sur « Tout est OK », liste des défauts revue, clair par défaut avec bouton mode sombre -->
+<!-- v63.9 (9/11, Fabian) : « Pas trouvé sur place » retiré du récap de fin de tournée (reste visible dans Ma tournée) ; véhicule pas prévu sur mon point : bouton « Je suis à X, VU présent » (X = point du BO) pour le vérifier sur son point sans le déplacer (avec le script v34.12) -->
+<!-- v63.8 (6/11, Fabian) : bouton « Objet trouvé » dans la fiche (photo obligatoire, vaut « Tout est OK », le service parc est prévenu sur Slack avec le script v34.11) ; recherche : les véhicules en panne ou au lavage sans trajet ressortent avec quelques chiffres, avec l'étiquette « En panne » / « Au lavage » -->
 <!-- v63.7 (5/11, Fabian) : Caler pro avec ses heures (départ = début de la plage BO, arrivée = fin) dans la liste et la fiche ; motif du garage (codes du BO : DIAG, E3F…) ; « Ticket BO » + début du texte dans la carte de la liste dans « À venir », « Immobilisé garage » et le détail du planning ; événements BO (dégâts, pannes, retours clients des 30 derniers jours) dans « Déjà signalé dans le BO » (script v34.9 + 2e question Metabase) -->
 <!-- v63.6 (5/11, Fabian, cas GP-563-XK) : vue planning : « Caler pro » dessiné en bleu rayé sur la plage du BO (avant : invisible, trajet de 0 minute) ; trajets hors de nos points montrés (script v34.8) ; Meaux en jaune comme dans le BO -->
 <!-- v63.5 (4/11, Fabian) : vue planning : lavage en rose « Lavage », garage en rouge « Garage » (avant : tout en Garage) ; détail de la barre : lieu et type ; type de presta lu aussi en « lg.ref…wash » -->
@@ -174,6 +176,8 @@ textarea{min-height:80px;resize:vertical}
 textarea.oknote{min-height:52px;margin-bottom:10px}
 .faits{margin-bottom:10px}.faits .mlabel{margin-bottom:6px;font-size:12px}
 .chips{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.chip.objet{grid-column:1/-1;display:flex;align-items:center;justify-content:center;gap:8px;border-style:dashed;color:var(--accent)}.chip.objet svg{width:18px;height:18px;flex:none}
+.etq{flex:none;align-self:flex-start;width:fit-content;margin:2px 0 0;padding:2px 8px;border-radius:999px;background:var(--warn-soft);color:var(--warn);font-size:12.5px;font-weight:700;vertical-align:middle}.etq.lav{background:#FDE7F1;color:#B0306F}
 .chip{min-height:40px;padding:6px 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-radius:10px;border:2px solid var(--line-strong);background:var(--surface);font-size:14px;font-weight:600;line-height:1.15;color:var(--fg);text-align:left}
 .chip.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
 .chip.on::before{content:'✓ '}
@@ -666,12 +670,12 @@ if(!DEMO)(async()=>{
   }})().catch(()=>{}).finally(()=>IDB.open().then(()=>{QREADY=!!IDB.db;save();run()})); /* v59 : attendre que la base soit ouverte (sinon les photos restaient dans la petite sauvegarde) */
 let sheet=null;            /* {plaque, step:'fiche'|'probleme'} ou {search:true} */
 let showReport=false,picker=false,query='';
-let draft={types:[],photos:[],comment:'',note:'',faits:[]};
+let draft={types:[],photos:[],comment:'',note:'',faits:[],objet:''};
 /* v56 (Fabian) : sur « Tout est OK », ce qui a été fait sur place se coche (plusieurs choix) au lieu de s'écrire ;
    choix tirés des messages des runners dans #parc-runner, rangés par paires ; le texte envoyé reste le même champ (« AdBlue effacé, Rétro changé »), Slack et bureau inchangés */
 const FAITS=['AdBlue effacé','Voyant effacé','Rétro changé','Ampoule changée','Essuie-glace changé','RDS vérifiée'];
 /* v58 : mêmes choix sur « Tout est OK » et sur « Signaler un problème » (Fabian, Mika : le runner peut avoir effacé un voyant ET trouvé un pare-brise cassé) */
-function faitsChips(){return `<div class="mlabel">Fait sur place ? (facultatif)</div><div class="chips">${FAITS.map(f=>{const on=draft.faits.includes(f);return `<button type="button" class="chip ${on?'on':''}" data-fait="${esc(f)}" aria-pressed="${on}">${esc(f)}</button>`}).join('')}</div>`}
+function faitsChips(objet){return `<div class="mlabel">Fait sur place ? (facultatif)</div><div class="chips">${FAITS.map(f=>{const on=draft.faits.includes(f);return `<button type="button" class="chip ${on?'on':''}" data-fait="${esc(f)}" aria-pressed="${on}">${esc(f)}</button>`}).join('')}${objet?`<button type="button" class="chip objet" id="objBtn">${I.camera}Objet trouvé dans le véhicule</button>`:''}</div>`} /* v63.8 : « Objet trouvé » seulement sur la page « Tout est OK » */
 function faitsTexte(dr){return dr.faits.concat(dr.note.trim()?[dr.note.trim()]:[]).join(', ')}
 function faitsDe(t){const l=String(t||'').split(/\s*,\s*/).filter(Boolean),f=l.filter(x=>FAITS.includes(x));return {faits:f,note:l.filter(x=>!FAITS.includes(x)).join(', ')}}
 let rdraft={date:'',note:'',other:false,point:'',heure:''};
@@ -705,7 +709,9 @@ function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2
 function memo(fn){const c=new Map();let src;return function(day){const a=S.loc,b=S.myPoints.join('|')+'|'+S.impros.length+'|'+ICIK+'|'+(day||'');if(a!==src){src=a;c.clear()}if(!c.has(b))c.set(b,fn(day));return c.get(b)}}
 
 /* ---------- Planning ---------- */
-const vehicles=memo(()=>{const m=new Map();S.loc.forEach(r=>{const v=m.get(r.plaque);if(!v)m.set(r.plaque,{plaque:r.plaque,modele:r.modele||'',categorie:r.categorie,km:r.km,events:r.events.slice()});else r.events.forEach(e=>{if(!v.events.some(x=>x.label===e.label))v.events.push(e)})});return m});
+const vehicles=memo(()=>{const m=new Map();S.loc.forEach(r=>{const v=m.get(r.plaque);if(!v)m.set(r.plaque,{plaque:r.plaque,modele:r.modele||'',categorie:r.categorie,km:r.km,events:r.events.slice()});else r.events.forEach(e=>{if(!v.events.some(x=>x.label===e.label))v.events.push(e)})});
+  /* v63.8 (Fabian 6/11) : un véhicule en panne ou au lavage sans trajet n'avait pas de ligne : la recherche ne le trouvait qu'avec la plaque entière */
+  S.impros.forEach(i=>{if(i.plaque&&!m.has(i.plaque))m.set(i.plaque,{plaque:i.plaque,modele:'',events:[]})});return m});
 function vehicle(p){return vehicles().get(p)||null}
 function allPoints(){const s=new Set();S.loc.forEach(r=>{s.add(r.villeDep);s.add(r.villeArr)});return [...s].filter(Boolean)}
 /* Séjour d'un véhicule sur un de mes points : de son arrivée à son départ suivant */
@@ -949,10 +955,12 @@ let DONE_DAY=TODAY;
 
 /* v60 : point choisi avec « Il est ici » pour ce véhicule (oublié à la prochaine ouverture de sa fiche) */
 const ICI_CHOIX={};
-function record(p,types,comment,photos,faits){
-  const st=stayFor(p),ask=askFor(p),ici=ICI_CHOIX[p]&&!types.includes('Pas trouvé sur place')?ICI_CHOIX[p]:'';delete ICI_CHOIX[p];
+/* v63.9 (Fabian 9/11) : « Je suis à X, il est bien là » : le runner est allé sur le point du BO (exceptionnel, ex. Coignières) */
+const LABO_CHOIX={};
+function record(p,types,comment,photos,faits,objet){
+  const st=stayFor(p),ask=askFor(p),ici=ICI_CHOIX[p]&&!types.includes('Pas trouvé sur place')?ICI_CHOIX[p]:'',labo=LABO_CHOIX[p]||'';delete ICI_CHOIX[p];delete LABO_CHOIX[p];
   const at=nowStr(),bo=ici?(st&&st.point!==ici?st.point:ouBO(p))||'?':'';
-  const q={id:uid(),action:'passage',cle:ici?p+'|'+at+'|'+ici:keyFor(p),plaque:p,point:ici||(st?st.point:(ask&&ask.point)||'Hors liste'),problemes:types,commentaire:comment,faits:types.length&&faits?String(faits).slice(0,500):'',photos:(photos||[]).slice(0,MAX_PHOTOS),demande_id:asksFor(p).map(d=>d.id).join(','),at,by:S.who};if(bo)q.bo=bo;
+  const q={id:uid(),action:'passage',cle:ici?p+'|'+at+'|'+ici:keyFor(p),plaque:p,point:ici||(st?st.point:labo||(ask&&ask.point)||'Hors liste'),problemes:types,commentaire:comment,faits:types.length&&faits?String(faits).slice(0,500):'',photos:(photos||[]).slice(0,MAX_PHOTOS),demande_id:asksFor(p).map(d=>d.id).join(','),at,by:S.who};if(bo)q.bo=bo;if(objet)q.objet=String(objet).slice(0,300); /* v63.8 */
   if(q.photos.length&&MINI.get(q.photos[0]))q.mini=MINI.get(q.photos[0]);
   if(DEMO){const x=fromQueue(q);delete x.pending;S.passages.push(x)}else{S.queue.push(q);savePhotos(q)}
   save();run();
@@ -1007,7 +1015,7 @@ window.addEventListener('storage',e=>{
   if(added){render(true)}
 });
 function baseOf(q){const b=bodyOf(q);delete b.photos;b.photos_attendues=q.photos.length;return b}
-function bodyOf(q){const body={code:q.code||CODE};if(q.action==='passage'&&q.at)body.at=q.at; /* v59 : heure de la validation (envoi parti plus tard) */['action','id','cle','plaque','point','bo','problemes','commentaire','faits','photos','demande_id','date','heure','consigne','cible','endpoint','fin','pasVus','partis','jour'].forEach(k=>{if(q[k]!==undefined)body[k]=q[k]});if(typeof body.commentaire==='string')body.commentaire=body.commentaire.slice(0,500);return body}
+function bodyOf(q){const body={code:q.code||CODE};if(q.action==='passage'&&q.at)body.at=q.at; /* v59 : heure de la validation (envoi parti plus tard) */['action','id','cle','plaque','point','bo','objet','problemes','commentaire','faits','photos','demande_id','date','heure','consigne','cible','endpoint','fin','pasVus','partis','jour'].forEach(k=>{if(q[k]!==undefined)body[k]=q[k]});if(typeof body.commentaire==='string')body.commentaire=body.commentaire.slice(0,500);return body}
 /* Le runner ferme l'appli juste après avoir validé : on confie les envois sans photo au téléphone (keepalive),
    qui les termine même appli fermée. Ils restent aussi dans la file : au prochain envoi, Google reconnaît
    un doublon (même identifiant) et ne l'enregistre pas deux fois. */
@@ -1418,7 +1426,8 @@ function vDone(){
 function searchResults(){
   const q=norm(query);const res=q.length>=2?[...vehicles().values()].filter(v=>norm(v.plaque).includes(q)).slice(0,8):[];
   const raw=query.trim().toUpperCase();
-  return `${res.map(v=>rowHtml(v.plaque,`<span class="plate">${esc(v.plaque)}</span><span class="model">${esc(v.modele||'')}</span>`)).join('')}
+  const pan=plaquesEnPanne(TODAY),etq=p=>{if(!pan.has(p))return '';const n=nowStr(),i=S.impros.find(i=>i.plaque===p&&i.type==='meca'&&i.debut<=n&&(!i.fin||i.fin>=n));return i&&estLavage(i)?'<span class="etq lav">Au lavage</span>':'<span class="etq">En panne</span>'}; /* v63.8 : caché des tournées, mais trouvé ici */
+  return `${res.map(v=>rowHtml(v.plaque,`<span class="plate">${esc(v.plaque)}</span>${etq(v.plaque)}<span class="model">${esc(v.modele||'')}</span>`)).join('')}
     ${q.length>=2&&!res.length?'<div class="meta">Aucun véhicule de la flotte ne correspond.</div>':''}
     ${q.length>=7&&!vehicles().has(raw)&&!res.some(v=>norm(v.plaque)===q)?(()=>{const p=/^[A-Z]{2}\d{3}[A-Z]{2}$/.test(q)?q.slice(0,2)+'-'+q.slice(2,5)+'-'+q.slice(5):raw;return `<button type="button" class="btn wide" data-open="${esc(p)}">Continuer avec ${esc(p)}</button>`})():''}`; /* v59 : seulement pour une plaque complète qui n'est pas dans la flotte */
 }
@@ -1458,6 +1467,17 @@ function vSheet(){
     </div>
     <div class="sh-foot pad"><button type="button" class="btn big primary" id="saveRem" ${remOk()?'':'disabled'}>Enregistrer le rappel</button></div>`;
   }
+  /* v63.8 (Fabian 6/11) : objet trouvé : photo obligatoire, vaut « Tout est OK », le service parc est prévenu sur Slack */
+  if(sheet.step==='objet')return top+`
+    <div class="sh-body pad">
+      <div class="q">Objet trouvé dans ${esc(p)}</div>
+      <div class="meta">Prends l'objet en photo. Le service parc est prévenu tout de suite.</div>
+      ${draft.photos.length?`<div class="photos">${draft.photos.map((u,i)=>`<div class="ph ${u.indexOf('data:')===0?'':'demo'}">${u.indexOf('data:')===0?`<img src="${u}" alt="Photo ${i+1}">`:'Photo '+(i+1)}<button type="button" class="ph-x" data-rmphoto="${i}" aria-label="Retirer la photo ${i+1}">×</button></div>`).join('')}</div>`:''}
+      ${draft.photos.length<MAX_PHOTOS?`<label class="btn wide photo" for="photo">${I.camera}<span id="photoName">${draft.pending?'Préparation de la photo…':draft.photos.length?'Ajouter une photo ('+draft.photos.length+'/'+MAX_PHOTOS+')':"Prendre l'objet en photo"}</span></label>
+      <input type="file" id="photo" accept="image/*" capture="environment" hidden>`:`<div class="meta">${MAX_PHOTOS} photos maximum.</div>`}
+      <textarea id="objNote" maxlength="300" placeholder="Quoi et où ? (ex. lunettes, boîte à gants)">${esc(draft.objet)}</textarea>
+    </div>
+    <div class="sh-foot pad"><button type="button" class="btn big primary" id="saveObj" ${draft.photos.length&&!draft.pending&&!draft.wantSave?'':'disabled'}>${draft.pending?'Photo en préparation…':draft.photos.length?I.tick+'Tout est OK + objet trouvé':'Photo obligatoire'}</button></div>`;
   if(sheet.step==='probleme')return top+`
     <div class="sh-body pad">
       <div class="q">Quel problème ?</div>
@@ -1471,11 +1491,12 @@ function vSheet(){
     <div class="sh-foot pad"><button type="button" class="btn big warn" id="saveDmg" ${draft.types.length&&!draft.pending&&!draft.wantSave?'':'disabled'}>${draft.pending?'Photo en préparation…':'Valider le problème'}</button></div>`;
   const ev=v.events||[];
   /* v60 : « Il est ici » : véhicule que le BO met sur un autre point (garage, convoyage pas fait) */
-  const choix=ICI_CHOIX[p]||'',bo=st?st.point:ouBO(p);
+  const choix=ICI_CHOIX[p]||'',labo=LABO_CHOIX[p]||'',bo=st?st.point:ouBO(p);
   const cands=(()=>{const m=S.myPoints.filter(x=>LOCAL.includes(x)&&x!==bo);return m.length?m:LOCAL.filter(x=>x!==bo)})();
   /* pas de question pour un véhicule attendu sur mes points (retour en avance) ou demain sur l'un d'eux */
-  const demander=now&&!choix&&!(st&&st.ici)&&(sheet.autre||(!st&&!!bo&&!done&&!S.myPoints.includes(bo)&&!stayFor(p,plusDays(1))));
+  const demander=now&&!choix&&!labo&&!(st&&st.ici)&&(sheet.autre||(!st&&!!bo&&!done&&!S.myPoints.includes(bo)&&!stayFor(p,plusDays(1))));
   const iciNote=choix?`<div class="imp ici"><div class="imp-h"><i></i>Vu sur un autre point</div><div class="imp-t">Tu le vois à <b>${esc(full(choix))}</b>. Le BO le met à <b>${esc(full(bo||'?'))}</b>. Valide-le ici : le service parc sera prévenu.</div></div>`
+    :labo?`<div class="imp ici"><div class="imp-h"><i></i>Sur son point</div><div class="imp-t">Tu es à <b>${esc(full(labo))}</b>, là où le BO le met. Vérifie-le comme d'habitude.</div></div>`
     :demander?`<div class="imp ici"><div class="imp-h"><i></i>${st?'Sur un autre point ?':'Pas prévu sur ton point'}</div><div class="imp-t">Le BO met ce véhicule à <b>${esc(full(bo))}</b>. ${cands.length===1?'Il est devant toi, à '+esc(full(cands[0]))+' ?':'Il est devant toi ? Sur quel point ?'}</div></div>`
     :st&&st.ici?`<div class="imp ici"><div class="imp-h"><i></i>Vu ici</div><div class="imp-t">Vu à ${esc(full(st.point))} par ${esc(st.ici.by)} ${esc(when(st.ici.at))}. Le BO le met à ${esc(full(st.ici.bo))}.</div></div>`
     :st&&st.ailleurs?`<div class="imp ici"><div class="imp-h"><i></i>Vu sur un autre point</div><div class="imp-t">${esc(st.ailleurs.by)} l'a vu à ${esc(full(st.ailleurs.point))} ${esc(when(st.ailleurs.at))}. Pas besoin de le chercher ici.</div></div>`:'';
@@ -1483,6 +1504,7 @@ function vSheet(){
     <div class="sh-body pad">${iciNote}${asks.map(askBlock).join('')}</div>
     <div class="sh-foot pad">
       ${cands.length<=2?cands.map(pt=>`<button type="button" class="btn big primary" data-ici="${esc(pt)}">Oui, il est ici à ${esc(full(pt))}</button>`).join(''):`<div class="tiles">${cands.map(pt=>`<button type="button" class="tile" data-ici="${esc(pt)}">${esc(full(pt))}</button>`).join('')}</div>`}
+      ${st?'':`<button type="button" class="btn big" data-labo="${esc(bo)}">Je suis à ${esc(full(bo))}, VU présent</button>`}
       <button type="button" class="btn big" id="iciNon">${st?'Non, il est bien à '+esc(full(st.point)):'Non, je regardais juste'}</button>
     </div>`;
   return top+`
@@ -1497,7 +1519,7 @@ function vSheet(){
       ${ev.length?`<div class="card0"><div class="sec"><div class="mlabel">Déjà signalé dans le BO</div><ul class="evl">${ev.map(e=>`<li><span>${esc(e.label)}</span>${e.status?`<em>${esc(e.status)}</em>`:''}</li>`).join('')}</ul></div></div>`:''}
     </div>
     <div class="sh-foot pad">
-      ${now?`<div class="faits">${faitsChips()}
+      ${now?`<div class="faits">${faitsChips(1)}
       <textarea id="okNote" class="oknote" maxlength="300" placeholder="Autre chose ? Écris-le ici">${esc(draft.note)}</textarea></div>
       <button type="button" class="btn big primary" id="okBtn">${I.tick}Tout est OK</button>
       <button type="button" class="btn big warn-o" id="pbBtn">Signaler un problème</button>
@@ -1510,7 +1532,7 @@ function vSheet(){
 /* « Vendredi 16 octobre » */
 function fullDay(isoD){const [y,m,d]=isoD.split('-').map(Number);return ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'][new Date(y,m-1,d).getDay()]+' '+(d===1?'1er':d)+' '+['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'][m-1]}
 function report(){
-  const d=doneToday().slice().reverse();const l=dLabel(TODAY);const lines=[];
+  const d=doneToday().filter(x=>!x.pb.includes('Pas trouvé sur place')).slice().reverse(); /* v63.9 (Fabian 9/11) : pas trouvé = pas vu, hors du récap (comme Slack avec le script v34.12) */const l=dLabel(TODAY);const lines=[];
   lines.push('*'+fullDay(TODAY)+'*');
   lines.push(plural(d.length,'véhicule')+' vu'+(d.length>1?'s':''));
   [...new Set(d.map(x=>x.point))].forEach(p=>{lines.push('');lines.push('*'+p+'*');
@@ -1576,16 +1598,21 @@ function render0(bg){
   if(sheet){sh.innerHTML=sh._h=vSheet();sh.hidden=false;document.body.classList.add('noscroll')}else{sh.hidden=true;sh.innerHTML=sh._h='';document.body.classList.remove('noscroll')}
   ecranChange();
 }
-function openSheet(p){query='';MINI.clear();delete ICI_CHOIX[p]; /* v42 : aperçus des photos d'avant oubliés (gardés toute la journée avant) */const x=passageOf(p),pbs=x?x.pb.filter(t=>DAMAGES.includes(t)||t===OTHER):[]; /* v58 : « Pas trouvé sur place » n'est pas repris dans le brouillon */draft=x&&x.by===S.who&&pbs.length?{types:pbs,photos:[],comment:x.comment,note:'',faits:[]}:{types:[],photos:[],comment:'',note:'',faits:[]};if(x&&x.by===S.who)Object.assign(draft,faitsDe(x.pb.length?x.faits:x.comment)); /* v52 : le mot laissé sur « Tout est OK » est repris */sheet={plaque:p,step:'fiche'};render();$('#sheet').scrollTop=0}
+function openSheet(p){query='';MINI.clear();delete ICI_CHOIX[p];delete LABO_CHOIX[p]; /* v42 : aperçus des photos d'avant oubliés (gardés toute la journée avant) */const x=passageOf(p),pbs=x?x.pb.filter(t=>DAMAGES.includes(t)||t===OTHER):[]; /* v58 : « Pas trouvé sur place » n'est pas repris dans le brouillon */draft=x&&x.by===S.who&&pbs.length?{types:pbs,photos:[],comment:x.comment,note:'',faits:[],objet:''}:{types:[],photos:[],comment:'',note:'',faits:[],objet:''};if(x&&x.by===S.who)Object.assign(draft,faitsDe(x.pb.length?x.faits:x.comment)); /* v52 : le mot laissé sur « Tout est OK » est repris */sheet={plaque:p,step:'fiche'};render();$('#sheet').scrollTop=0}
 function saveDraft(dr){const p=dr.wantSave||(sheet&&sheet.plaque);dr.wantSave='';if(!p||dr.saved||!dr.types.length)return;dr.saved=true;record(p,dr.types.slice(),dr.comment.trim(),dr.photos.slice(),faitsTexte(dr)); /* v58 : avec ce qui a été fait sur place */
   if(sheet&&sheet.plaque===p&&draft===dr)closeSheet(p+' validé avec un problème. Le service parc sera prévenu.');else{render();toast(p+' validé avec un problème. Le service parc sera prévenu.')}}
+/* v63.8 : objet trouvé (au moins une photo) : passage « Tout est OK » avec le mot « Objet trouvé : … » */
+function saveObjet(dr){const p=dr.wantSave||(sheet&&sheet.plaque);dr.wantSave='';dr.wantObjet=0;if(!p||dr.saved||!dr.photos.length)return;dr.saved=true;
+  const t=String(dr.objet||'').trim(),f=faitsTexte(dr),com=['Objet trouvé'+(t?' : '+t:'')].concat(f?[f]:[]).join(', ');
+  record(p,[],com,dr.photos.slice(),'',t||'oui');const m=p+' validé. Objet trouvé envoyé au service parc.';
+  if(sheet&&sheet.plaque===p&&draft===dr)closeSheet(m);else{render();toast(m)}}
 /* v54 : bouton retour du téléphone : ferme la fiche (ou revient d'une étape) au lieu de quitter l'appli */
 let retourEnCours=false;
 function syncHist(){try{const ouvert=!!(sheet||showReport),st=history.state&&history.state.fiche;
   if(ouvert&&!st)history.pushState({fiche:1},'');else if(!ouvert&&st&&!retourEnCours){retourEnCours=true;history.back()}}catch(e){}}
 window.addEventListener('popstate',()=>{
   if(retourEnCours){retourEnCours=false;syncHist();return}
-  if(sheet&&(sheet.step==='probleme'||sheet.step==='rappel')){sheet.step='fiche';render();return}
+  if(sheet&&(sheet.step==='probleme'||sheet.step==='rappel'||sheet.step==='objet')){sheet.step='fiche';render();return}
   if(sheet){closeSheet();return}
   if(showReport){showReport=false;render();return}
 });
@@ -1642,6 +1669,7 @@ document.addEventListener('click',e=>{
   if(b.id==='backFiche'){sheet.step='fiche';render();return}
   if(b.id==='themeBtn'){const t=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=t;try{localStorage.setItem('runners-theme',t)}catch(e){}render();return}
   if(b.dataset.ici!==undefined&&sheet&&sheet.plaque){ICI_CHOIX[sheet.plaque]=b.dataset.ici;sheet.autre=false;render();$('#sheet').scrollTop=0;return}
+  if(b.dataset.labo!==undefined&&sheet&&sheet.plaque){LABO_CHOIX[sheet.plaque]=b.dataset.labo;render();$('#sheet').scrollTop=0;return} /* v63.9 */
   if(b.id==='iciNon'){if(sheet.autre){sheet.autre=false;render()}else closeSheet();return}
   if(b.id==='autreBtn'){sheet.autre=true;render();$('#sheet').scrollTop=0;return}
   if(b.dataset.vue){PSEL=null;set({vue:b.dataset.vue==='plan'?'plan':'liste'});return}
@@ -1650,6 +1678,8 @@ document.addEventListener('click',e=>{
   if(b.dataset.pbar){const n={pt:b.dataset.pt,p:b.dataset.pp,cle:b.dataset.pbar};PSEL=PSEL&&PSEL.pt===n.pt&&PSEL.p===n.p&&PSEL.cle===n.cle?null:n;render();return}
   if(b.id==='okBtn'){const p=sheet.plaque;record(p,[],faitsTexte(draft),'');closeSheet(p+' validé. Tout est OK.');return}
   if(b.id==='pbBtn'){sheet.step='probleme';render();$('#sheet').scrollTop=0;return}
+  if(b.id==='objBtn'){sheet.step='objet';render();$('#sheet').scrollTop=0;return} /* v63.8 */
+  if(b.id==='saveObj'){if(draft.pending){draft.wantSave=sheet.plaque;draft.wantObjet=1;b.disabled=true;b.textContent='Photo en préparation…';return}saveObjet(draft);return}
   if(d.rmphoto){draft.photos.splice(+d.rmphoto,1);render();return}
   if(d.fait){const i=draft.faits.indexOf(d.fait);i<0?draft.faits.push(d.fait):draft.faits.splice(i,1);render();return}
   if(d.dmg){const i=draft.types.indexOf(d.dmg);i<0?draft.types.push(d.dmg):draft.types.splice(i,1);render();return}
@@ -1673,6 +1703,7 @@ document.addEventListener('input',e=>{
   if(e.target.id==='q'){tirets(e);query=e.target.value;const r=$('#qres');if(r)r.innerHTML=searchResults()}
   if(e.target.id==='comment')draft.comment=e.target.value;
   if(e.target.id==='okNote')draft.note=e.target.value;
+  if(e.target.id==='objNote')draft.objet=e.target.value;
   if(e.target.id==='rNote')rdraft.note=e.target.value;
   if(e.target.id==='rDate'){rdraft.date=/^\d{4}-\d{2}-\d{2}$/.test(e.target.value)&&e.target.value>TODAY?e.target.value:'';majRem()}
   if(e.target.id==='rHeure'){const h=/^\d{2}:\d{2}/.test(e.target.value)?e.target.value.slice(0,5):'';rdraft.heure=h;majRem()}
@@ -1683,7 +1714,7 @@ document.addEventListener('change',e=>{
   /* v54 : tant que la photo se prépare, « Valider le problème » attend (avant : validé sans la photo sur un téléphone lent) ;
      la photo va toujours au véhicule pour lequel elle a été prise */
   if(e.target.id==='photo'){const f=e.target.files[0];if(!f)return;$('#photoName').textContent='Préparation de la photo…';const dr=draft;dr.pending=(dr.pending||0)+1;render();
-    compress(f).then(u=>{dr.pending--;if(dr.photos.length<MAX_PHOTOS)dr.photos.push(DEMO?'photo':u);render();if(!DEMO)miniOf(u).then(m=>{if(m)MINI.set(u,m)});if(dr.wantSave&&!dr.pending)saveDraft(dr)},()=>{dr.pending--;render();toast('Photo illisible. Réessayez.');if(dr.wantSave&&!dr.pending)saveDraft(dr)})}
+    compress(f).then(u=>{dr.pending--;if(dr.photos.length<MAX_PHOTOS)dr.photos.push(DEMO?'photo':u);render();if(!DEMO)miniOf(u).then(m=>{if(m)MINI.set(u,m)});if(dr.wantSave&&!dr.pending)(dr.wantObjet?saveObjet:saveDraft)(dr)},()=>{dr.pending--;render();toast('Photo illisible. Réessayez.');if(dr.wantSave&&!dr.pending)(dr.wantObjet?saveObjet:saveDraft)(dr)})}
   if(e.target.id==='csvFile'){const f=e.target.files[0];if(!f)return;const r=new FileReader();
     r.onload=()=>{try{const t=parseCsv(String(r.result));const m=new Date(f.lastModified||Date.now());
       set({loc:t.loc,impros:t.impros,plan:null,sourceLabel:'Export du '+dLabel(iso(m)).num+' à '+hm(m).replace(':','h')});
