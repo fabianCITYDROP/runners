@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Runners</title>
 <!-- Appli Runners City Drop, v22 : version reliée au Google Sheet (voir config.js) ; gros caractères, 3 photos, aujourd'hui au milieu, recherche en haut, page des rappels ; v22 : corrections après test complet ; v23 : planning compact (grosses flottes), dates avec le mois, longs textes coupés sur les cartes ; v24 : rapide sur téléphone lent avec une grosse flotte (planning préparé par Google et rangé à part, écran redessiné seulement s'il change) ; v25 : message de fin de tournée simplifié (date en entier, plaques les unes sous les autres, sans heure ni prénom) ; v27 : une validation faite pendant la réception du planning part tout de suite après (avant : jusqu'à 5 min d'attente) ; envois sans photo passés par l'adresse (GET) car l'iPhone bloquait les envois classiques ; v28 : actualisation toutes les 30 s ; v29 : une validation part même si le runner ferme l'appli juste après ; v30 : signalement avec photos envoyé en deux temps (le passage d'abord, même appli fermée, les photos ensuite) ; attente plus longue et message « Google ne répond pas » au lieu d'un faux « Pas de réseau » ; v31 : photo allégée envoyée même appli fermée (la vraie suit à la réouverture) ; un envoi n'est plus jeté quand Google est seulement occupé ; annuler un passage déjà parti l'annule aussi chez Google ; v32 : un lien désactivé ne jette plus les envois ; annulation sûre même quand les envois arrivent dans le désordre ; photos gardées tant que le téléphone n'a pas confirmé les avoir rangées ; un véhicule envoyé ne réapparaît plus si l'appli est tuée juste après ; v33 : envois groupés en un seul appel (avec le script v12), moins de relectures chez Google, deux onglets ouverts sans perte, mémoire pleine sans blocage, une panne de Google n'affiche plus « Lien non reconnu » ; v34 : page bureau v10 (photos effacées au bout de 5 jours, avec le script v13) ; v35 : page bureau v11 plus rapide (avec le script v14) ; v36 : nouvelles demandes du bureau signalées (pastille « 1 nouvelle », bandeau, vibration, chiffre sur l'icône, notification si autorisée) ; v37 : vraies notifications des nouvelles demandes, même écran verrouillé (avec le script v15) ; v38 : les alertes gardent leur détail après une mise à jour de l'appli ; v39 : mise à jour automatique sans fermer l'appli ; v40 : gros bouton ACTIVER LES NOTIFICATIONS en haut de l'accueil tant qu'elles ne sont pas actives ; v41 : encadré des notifications plus sobre, mise à jour repérée chaque minute et appliquée après 30 s sans geste ; v42 (revue de nuit) : ouverture immédiate sur réseau faible (copie du téléphone après 3 s, polices sans bloquer), fiche et « Tout est OK » 2 à 3 fois plus rapides, double appui sans effet sur l'écran suivant, véhicule parti le matin et revenu le soir affiché pour son retour, pas de rechargement à minuit pendant une saisie, panne de Google signalée sur la ligne d'état au lieu d'un message toutes les 30 s ; v43 : horaires d'arrivée et de départ sur chaque demande dans la page « Rappels et demandes », plaque jamais coupée sur deux lignes ; v44 : toucher la notification ouvre directement « Rappels et demandes » avec la demande (son texte s'affiche tout de suite, le détail arrive de Google juste après) ; v45 : demandes sans point (ou sur un point non suivi) affichées dans « Autres demandes » au lieu d'être comptées sans apparaître ; demandes modifiables depuis la page bureau (avec le script v20) ; v47 : véhicules déjà repartis aujourd'hui rangés dans « Déjà partis » (repliés en bas du point, hors du compte « à voir », à part dans le récap) ; v48 : demandes du bureau sur plusieurs jours (visibles chaque jour de la période, « jusqu'au … ») ; v50 : « Terminer ma tournée » envoie tout seul le récapitulatif au service parc (Slack), même sans réseau (part dès qu'il revient) ; v51 : tirets de la plaque mis tout seuls dans la recherche ; v52 : un mot possible sur « Tout est OK », liste des défauts revue, clair par défaut avec bouton mode sombre -->
+<!-- v63.13 (17/11, Fabian) : 2 nouveaux points, passages à partir du 1er décembre : Évry (zone sud, bleu au planning comme le BO) et Mantes (Mantes-la-Jolie, zone ouest, vert). Il faut le script v34.15. -->
+<!-- v63.12 (17/11, Fabian, GS-741-SG et GG-214-EH) : véhicule avec la case « En panne » cochée dans le BO (Sous Statut 4, envoyé par le script v34.14) retiré des véhicules à voir, du récap et de la vue planning, comme le garage depuis v63.3 ; toujours trouvable par la recherche (étiquette « En panne ») et ramené par une demande du bureau. Un improductif jaune sans la case reste visible -->
 <!-- v63.10 (10/11, Fabian) : un véhicule validé avec « Je suis à X, VU présent » puis repris (problème ajouté) reste à X : il ne repart plus en « Hors liste » (deux lignes dans Ma tournée, cas GX-257-LX) -->
 <!-- v63.9 (9/11, Fabian) : « Pas trouvé sur place » retiré du récap de fin de tournée (reste visible dans Ma tournée) ; véhicule pas prévu sur mon point : bouton « Je suis à X, VU présent » (X = point du BO) pour le vérifier sur son point sans le déplacer (avec le script v34.12) -->
 <!-- v63.8 (6/11, Fabian) : bouton « Objet trouvé » dans la fiche (photo obligatoire, vaut « Tout est OK », le service parc est prévenu sur Slack avec le script v34.11) ; recherche : les véhicules en panne ou au lavage sans trajet ressortent avec quelques chiffres, avec l'étiquette « En panne » / « Au lavage » -->
@@ -407,6 +409,9 @@ nav.tabs button{font-size:16px}
 .sh-id .spec b{font-weight:600;color:var(--fg)}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .pill.lav{background:#4A1A31;color:#FFB3D4}:root:not([data-theme="light"]) .pill.gar{background:#2A3036;color:#C9D1D9}:root:not([data-theme="light"]) .imp.lav{background:#123A3D;color:#7FD6DD}}
 :root[data-theme="dark"] .pill.lav{background:#4A1A31;color:#FFB3D4}:root[data-theme="dark"] .pill.gar{background:#2A3036;color:#C9D1D9}:root[data-theme="dark"] .imp.lav{background:#123A3D;color:#7FD6DD}
+
+/* v63.13 : 7 points (Évry, Mantes) : les boutons passent sur 2 lignes au lieu d'être coupés (« Ma… ») */
+.pts{flex-wrap:wrap}.pts .pt{flex:1 0 auto;min-width:auto;padding:0 10px}
 </style>
 </head>
 <body>
@@ -439,11 +444,11 @@ const MAX_PHOTOS=3;
 const DAYS_BACK=3,DAYS_AHEAD=10,HISTORY_DAYS=7;
 const RUNNERS=['Anis','Philippe','Kamel','Tarek','Fahem'];
 /* Points City Drop d'Île-de-France (La Def : adresse à Nanterre) et noms courts des boutons */
-const LOCAL=['La Def','Saint-Cloud','Aulnay','Paris-Centre','Coignières'];
+const LOCAL=['La Def','Saint-Cloud','Aulnay','Paris-Centre','Coignières','Évry','Mantes'];
 const SHORT={'Saint-Cloud':'St-Cloud','Paris-Centre':'Paris'};
-const FULL={'La Def':'La Défense','Aulnay':'Aulnay-sous-Bois'};
+const FULL={'La Def':'La Défense','Aulnay':'Aulnay-sous-Bois','Mantes':'Mantes-la-Jolie'};
 /* Autres écritures possibles dans l'export, ramenées au nom du point */
-const ALIAS={'nanterre':'La Def','la def':'La Def','la defense':'La Def','paris la defense':'La Def','saint cloud':'Saint-Cloud','st cloud':'Saint-Cloud','aulnay':'Aulnay','aulnay sous bois':'Aulnay','paris centre':'Paris-Centre','coignieres':'Coignières'};
+const ALIAS={'nanterre':'La Def','la def':'La Def','la defense':'La Def','paris la defense':'La Def','saint cloud':'Saint-Cloud','st cloud':'Saint-Cloud','aulnay':'Aulnay','aulnay sous bois':'Aulnay','paris centre':'Paris-Centre','coignieres':'Coignières','evry':'Évry','evry courcouronnes':'Évry','paris | evry':'Évry','mantes':'Mantes','mantes la jolie':'Mantes','paris | mantes la jolie':'Mantes'};
 /* v52 (Fabian) : « Voyant moteur » au lieu de « Voyant au tableau de bord », « Choc carrosserie » retiré, AdBlue et lavage ajoutés. Plusieurs choix possibles. */
 const DAMAGES=['Impact pare-brise','Pare-brise fissuré','Pneu avant à changer','Pneu arrière à changer','Rétroviseur endommagé','Feu cassé','Voyant moteur','Voyant AdBlue','Lavage à prévoir'];
 const OTHER='Autre problème';
@@ -493,6 +498,8 @@ const COLS={
 };
 /* v63.4 : code autoradio par plaque (envoyé par le script v34.5) */
 var RADIO={};
+/* v63.12 : plaques dont la case « En panne » est cochée dans le BO (script v34.14 ; vide avec un script plus ancien) */
+var PANNE=new Set();
 function city(s){s=String(s||'').trim();const k=s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[-_]/g,' ').replace(/\s+/g,' ');return ALIAS[k]||s}
 function normDate(s){
   s=String(s||'').trim();let m;
@@ -547,7 +554,7 @@ function splitLine(line,sep){
 /* Planning reçu de Google : déjà préparé par le script v6 (rapide), sinon tableau brut de l'export */
 function readPlan(pl){
   if(pl&&pl.erreur)throw new Error(pl.erreur);
-  if(pl&&pl.v===2){RADIO=pl.radio||{};return {
+  if(pl&&pl.v===2){RADIO=pl.radio||{};PANNE=new Set(pl.panne||[]);return {
     loc:pl.loc.map(a=>({plaque:a[0],modele:a[1],categorie:a[2],km:a[3]===''||a[3]==null?null:+a[3],villeDep:a[4],dep:a[5],villeArr:a[6],arr:a[7],events:a[8]?parseEvents(a[8]):[],caler:!!a[9],calerP:Array.isArray(a[9])&&a[9].length===2?a[9].map(String):null})),
     impros:pl.impros.map(a=>({plaque:a[0],type:a[1],debut:a[2],fin:a[3],libelle:a[4],lieu:a[5]||'',presta:a[6]||'',motif:a[7]||''}))}}
   return parseTable(pl.entetes,pl.lignes);
@@ -942,8 +949,10 @@ function parti(s,day){return (day||TODAY)===TODAY&&!!s.to&&s.to<nowStr()}
 /* v63.3 (Fabian 2/11) : un véhicule en panne (« Garage » dans le BO, commencé et pas fini ; un autre jour : ce jour-là)
    n'est plus à chercher sur son point. Il reste trouvable par la recherche, et revient avec une demande du bureau.
    Plaques calculées une fois par liste (téléphones lents, grosse flotte). */
+/* v63.12 (Fabian 17/11) : aussi la case « En panne » cochée dans le BO (état d'aujourd'hui : compté pour aujourd'hui et les jours suivants,
+   pas pour les jours passés). Un improductif jaune sans la case reste à voir. */
 function plaquesEnPanne(day){const d=day||TODAY,now=nowStr(),de=d===TODAY?now:d+' 00:00',a=d===TODAY?now:d+' 23:59';
-  return new Set(S.impros.filter(i=>i.type==='meca'&&i.debut<=a&&(!i.fin||i.fin>=de)).map(i=>i.plaque))}
+  const s=new Set(S.impros.filter(i=>i.type==='meca'&&i.debut<=a&&(!i.fin||i.fin>=de)).map(i=>i.plaque));if(d>=TODAY)PANNE.forEach(p=>s.add(p));return s}
 function restants(day){day=day||TODAY;const asks=new Set(openAsks(day).map(d=>d.plaque)),panne=plaquesEnPanne(day);return staysOn(day).filter(s=>!vuSejour(s)&&!asks.has(s.plaque)&&!s.ailleurs&&!panne.has(s.plaque))}
 function todo(day){return restants(day).filter(s=>!parti(s,day))}
 function partis(day){return restants(day).filter(s=>parti(s,day))}
@@ -1231,7 +1240,7 @@ function gate(title,text,btn){return `<div class="gate"><b>${title}</b><p>${text
    Mêmes véhicules que la liste, sur 3 jours ; une barre par période (sur place, location, garage, improductif).
    Toucher une barre montre le détail et ouvre la fiche. Couleurs des locations : celles du BO, selon le point parisien
    d'où part ou où arrive le véhicule (zones données par Fabian le 1/11 ; Paris-Centre en noir, Meaux = Paris Est). */
-const ZONE={'La Def':'ouest','Saint-Cloud':'ouest','Coignières':'ouest','Aulnay':'nord','Paris-Centre':'centre','Meaux':'est','Paris - Meaux':'est'}; /* v63.6 : nom de Meaux dans l'export */
+const ZONE={'La Def':'ouest','Saint-Cloud':'ouest','Coignières':'ouest','Aulnay':'nord','Paris-Centre':'centre','Meaux':'est','Paris - Meaux':'est','Évry':'sud','Mantes':'ouest'}; /* v63.13 : Évry bleu comme dans le BO */ /* v63.6 : nom de Meaux dans l'export */
 const PL_H=7; /* pixels par heure */
 let PSEL=null; /* barre choisie : {pt, p, cle} */
 const cleBarre=r=>r.k+'|'+(r.a0||'')+'|'+(r.b0||'')+'|'+r.t;
@@ -1266,6 +1275,8 @@ function vPlanning(pt){
   const W=fenetre(pt),x=ms=>Math.round((ms-W.a)/36e5*PL_H),larg=x(W.b),a=W.a,b=W.b,now=Date.now(),cle=pt+'|'+DAY;
   const d=DAY.split('-').map(Number),D0=new Date(d[0],d[1]-1,d[2]).getTime(),D1=new Date(d[0],d[1]-1,d[2]+1).getTime(),debut=DAY===TODAY?now:D0;
   const sej={};stays().forEach(s=>{if(s.point===pt&&(!s.from||enMs(s.from)<b)&&(!s.to||enMs(s.to)>a))(sej[s.plaque]=sej[s.plaque]||[]).push(s)});
+  /* v63.12 : case « En panne » cochée dans le BO : retiré du planning, sauf demande du bureau (le garage reste dessiné en rouge, v63.5) */
+  if(DAY>=TODAY&&PANNE.size){const dem=new Set(openAsks(DAY).map(d=>d.plaque));Object.keys(sej).forEach(p=>{if(PANNE.has(p)&&!dem.has(p))delete sej[p]})}
   const ps=Object.keys(sej);
   if(!ps.length)return '<div class="empty small"><b>Aucun véhicule sur ce point cette semaine</b></div>';
   const de=s=>s.from?enMs(s.from):-Infinity,a_=s=>s.to?enMs(s.to):Infinity;
@@ -1318,7 +1329,7 @@ function placerBulle(){const bu=document.querySelector('.bulle'),pb=document.que
 window.addEventListener('resize',()=>{if(document.querySelector('.bulle'))placerBulle()});
 document.addEventListener('scroll',()=>{if(document.querySelector('.bulle'))placerBulle()},true);
 /* v63 (Fabian) : légende réduite à ce qui est dessiné sur le planning du point */
-const LEG=[['pose','Sur place'],['ouest','Location Paris Ouest'],['nord','Location Paris Nord'],['centre','Location Paris-Centre'],['est','Location Paris Est (Meaux)'],['prov','Location autre point'],['caler','Caler pro'],['meca','Garage'],['lav','Lavage'],['normal','Improductif']];
+const LEG=[['pose','Sur place'],['ouest','Location Paris Ouest'],['nord','Location Paris Nord'],['centre','Location Paris-Centre'],['est','Location Paris Est (Meaux)'],['sud','Location Paris Sud (Évry)'],['prov','Location autre point'],['caler','Caler pro'],['meca','Garage'],['lav','Lavage'],['normal','Improductif']];
 function legende(ks){const l=LEG.filter(([c])=>ks.has(c));return l.length?`<div class="pl-leg">${l.map(([c,t])=>`<span><i class="pb ${c}"></i>${t}</span>`).join('')}</div>`:''}
 
 /* Planning : chaque point s'ouvre centré sur maintenant (une seule fois par affichage) */
