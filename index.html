@@ -10,6 +10,7 @@
 <!-- v63.12 (17/11, Fabian, GS-741-SG et GG-214-EH) : véhicule avec la case « En panne » cochée dans le BO (Sous Statut 4, envoyé par le script v34.14) retiré des véhicules à voir, du récap et de la vue planning, comme le garage depuis v63.3 ; toujours trouvable par la recherche (étiquette « En panne ») et ramené par une demande du bureau. Un improductif jaune sans la case reste visible -->
 <!-- v63.10 (10/11, Fabian) : un véhicule validé avec « Je suis à X, VU présent » puis repris (problème ajouté) reste à X : il ne repart plus en « Hors liste » (deux lignes dans Ma tournée, cas GX-257-LX) -->
 <!-- v63.9 (9/11, Fabian) : « Pas trouvé sur place » retiré du récap de fin de tournée (reste visible dans Ma tournée) ; véhicule pas prévu sur mon point : bouton « Je suis à X, VU présent » (X = point du BO) pour le vérifier sur son point sans le déplacer (avec le script v34.12) -->
+<!-- v63.15 (17/11, Fabian) : photos jointes par le bureau à une demande (3 au plus, script v34.16) : seulement leurs numéros arrivent avec les demandes (aucun poids en plus) ; « Voir les photos du bureau » les charge d'un appui, en taille réduite (~70 Ko chacune) -->
 <!-- v63.8 (6/11, Fabian) : bouton « Objet trouvé » dans la fiche (photo obligatoire, vaut « Tout est OK », le service parc est prévenu sur Slack avec le script v34.11) ; recherche : les véhicules en panne ou au lavage sans trajet ressortent avec quelques chiffres, avec l'étiquette « En panne » / « Au lavage » -->
 <!-- v63.7 (5/11, Fabian) : Caler pro avec ses heures (départ = début de la plage BO, arrivée = fin) dans la liste et la fiche ; motif du garage (codes du BO : DIAG, E3F…) ; « Ticket BO » + début du texte dans la carte de la liste dans « À venir », « Immobilisé garage » et le détail du planning ; événements BO (dégâts, pannes, retours clients des 30 derniers jours) dans « Déjà signalé dans le BO » (script v34.9 + 2e question Metabase) -->
 <!-- v63.6 (5/11, Fabian, cas GP-563-XK) : vue planning : « Caler pro » dessiné en bleu rayé sur la plage du BO (avant : invisible, trajet de 0 minute) ; trajets hors de nos points montrés (script v34.8) ; Meaux en jaune comme dans le BO -->
@@ -228,6 +229,16 @@ input.plateinput{font-family:var(--mono);text-transform:uppercase;font-size:22px
 .imp.normal{background:var(--yellow-soft);color:var(--yellow)}
 .imp.info{background:var(--red-soft);color:var(--red)}
 .imp.info .imp-t{color:var(--fg)}
+/* v63.15 : photos du bureau sur une demande, chargées seulement quand le runner les ouvre */
+.phbtn{display:inline-flex;align-items:center;gap:8px;align-self:flex-start;margin-top:6px;min-height:44px;padding:8px 14px;border-radius:10px;border:1px solid currentColor;background:var(--surface);color:inherit;font-size:15px;font-weight:600}
+.phv{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.phv a{display:block;border-radius:10px;overflow:hidden;background:var(--surface-2);min-height:120px;position:relative}
+.phv img{display:block;width:100%;height:auto}
+.phv a.ko{min-height:0;padding:14px;color:var(--muted);font-size:14px;font-weight:500;background:var(--surface-2)}
+.phv a.ko img{display:none}
+.phv a.ko::after{content:'Photo plus disponible (effacée)'}
+.pill.phc svg{width:15px;height:15px}.phbtn svg{width:20px;height:20px}
+.pill.phc{display:inline-flex;align-items:center;gap:5px;background:var(--surface-2);color:var(--fg);box-shadow:inset 0 0 0 1px var(--line)}
 .imp.ici{background:var(--info-soft);color:var(--info)}
 /* v62 : vue planning (Fabian 1/11) : mêmes couleurs que le planning du BO */
 .vues{display:flex;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:3px;gap:3px}
@@ -461,6 +472,7 @@ const REFRESH_MS=30*1000; /* v28 : toutes les 30 s (avant 5 min) pour voir vite 
 /* ---------- Icônes ---------- */
 const svg=(d,w,sw)=>`<svg width="${w||22}" height="${w||22}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw||2}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
 const I={
+  cam:svg('<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3.5"/>'), /* v63.15 : photos du bureau */
   moon:svg('<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>'),
   sun:svg('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>'),
   todo:svg('<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/>'),
@@ -618,7 +630,7 @@ function demoState(){
     {at:D(-2)+' 09:10',by:'Anis',plaque:'AA-110-CD',point:'Hors liste',cle:'manual|'+D(-2)+'|AA-110-CD',pb:['Choc carrosserie'],comment:'porte latérale',photo:true,demande:''},
     {at:D(0)+' 07:50',by:'Anis',plaque:'AA-102-CD',point:'La Def',cle:'AA-102-CD|'+D(-1)+' 18:00|La Def',pb:[],comment:'',photo:false,demande:''}
   ];
-  const demandes=[{id:'D-demo1',date:D(0),runner:'Tous',plaque:'AA-110-CD',point:'La Def',consigne:'Rentré hors planning : faire le tour du véhicule et une photo du compteur.',auteur:'Service parc'},
+  const demandes=[{id:'D-demo1',date:D(0),runner:'Tous',plaque:'AA-110-CD',point:'La Def',consigne:'Rentré hors planning : faire le tour du véhicule et une photo du compteur.',auteur:'Service parc',photos:['DEMOphoto1xxxxxxxxxxxxxxxx','DEMOphoto2xxxxxxxxxxxxxxxx','DEMOphoto3xxxxxxxxxxxxxxxx']},
     {id:'R-demo2',date:D(3),runner:'Anis',plaque:'AA-115-CD',point:'La Def',consigne:'Revoir le rétroviseur gauche',auteur:'Anis'}];
   return {loc,impros,passages,demandes,who:'Anis',myPoints:['La Def','Saint-Cloud','Aulnay'],sourceLabel:'Démonstration · données fictives'};
 }
@@ -1156,7 +1168,7 @@ async function run(force){
         if(!r.partiel&&!got.length)S.depuis='';
         if(r.vp===undefined)S.depuis='';S.vp=r.vp;
         savePassages();
-        S.demandes=(r.demandes||[]).filter(d=>normDate(d.date)).map(d=>({id:d.id,date:normDate(d.date),runner:d.runner,plaque:String(d.plaque||'').toUpperCase(),point:d.point?city(d.point):'',consigne:d.consigne,statut:d.statut,auteur:d.auteur||'Service parc',fin:normDate(d.fin)||'',creneau:String(d.creneau||'').slice(0,40),heure:/^\d{2}:\d{2}/.test(String(d.heure||''))?String(d.heure).slice(0,5):'',vise:d.vise!==false}));
+        S.demandes=(r.demandes||[]).filter(d=>normDate(d.date)).map(d=>({id:d.id,date:normDate(d.date),runner:d.runner,plaque:String(d.plaque||'').toUpperCase(),point:d.point?city(d.point):'',consigne:d.consigne,statut:d.statut,auteur:d.auteur||'Service parc',fin:normDate(d.fin)||'',creneau:String(d.creneau||'').slice(0,40),heure:/^\d{2}:\d{2}/.test(String(d.heure||''))?String(d.heure).slice(0,5):'',vise:d.vise!==false,photos:idsPhotos(d.photos)}));
         const autreRunner=S.who&&S.who!==r.runner.prenom; /* v58 : autre lien ouvert sur ce téléphone : on reprend les points de ce runner */
         S.who=r.runner.prenom;
         /* v63.14 (Fabian 17/11) : points donnés au runner dans la feuille : toujours en haut. Au 1er démarrage, ou quand le
@@ -1207,9 +1219,15 @@ function improBlock(i){
     ?`<div class="imp ${estLavage(i)?'lav':'meca'}"><div class="imp-h"><i></i>${estLavage(i)?'Au lavage':'Immobilisé garage'}</div><div class="imp-p">${esc(when(i.debut))} <span>jusqu'à</span> ${esc(when(i.fin))}</div>${i.lieu?`<div class="imp-s">${esc(lieuTxt(i.lieu))}</div>`:''}${motifLigne(i)}</div>`
     :`<div class="imp normal"><div class="imp-h"><i></i>Improductif</div><div class="imp-t">${esc(i.libelle||'Sans intitulé')}</div><div class="imp-p">${esc(when(i.debut))} <span>jusqu'à</span> ${esc(when(i.fin))}</div></div>`;
 }
+/* v63.15 : photos du bureau (numéros Drive) ; affichées en taille réduite, jamais chargées avant l'appui */
+const PH_OUV=new Set();
+function idsPhotos(v){return String(v||'').split(/\s+/).filter(x=>/^[\w-]{20,80}$/.test(x)).slice(0,3)}
+function phBureau(d){const ids=d.photos||[];if(!ids.length||d.auteur===S.who)return '';const n=ids.length,o=PH_OUV.has(d.id);
+  return `<button type="button" class="phbtn" data-voirph="${esc(d.id)}" aria-expanded="${o}">${o?'Masquer les photos':I.cam+'Voir '+(n>1?'les '+n+' photos':'la photo')+' du bureau'}</button>`+(o?`<div class="phv">${ids.map((id,i)=>`<a href="https://drive.google.com/thumbnail?id=${encodeURIComponent(id)}&sz=w1600" target="_blank" rel="noopener"><img src="https://drive.google.com/thumbnail?id=${encodeURIComponent(id)}&sz=w800" alt="Photo ${i+1} du bureau" onerror="this.parentNode.classList.add('ko')"></a>`).join('')}</div>`:'');}
+function phPill(d){const n=(d.photos||[]).length;return n&&d.auteur!==S.who?`<span class="pill phc">${I.cam}${n}</span>`:''}
 function askBlock(d){
   const mine=d.auteur===S.who;const late=d.date<TODAY?' · prévu '+dayWord(d.date):jusqua(d)?' · '+jusqua(d):d.date!==TODAY?' · '+dayWord(d.date):'';
-  return `<div class="imp ${mine?'mine':'info'}"><div class="imp-h"><i></i>${mine?'Mon rappel'+esc(hhmm(d.heure)):'Demandé par le service parc'}${esc(late)}</div><div class="imp-t">${esc(d.consigne||'Passer voir ce véhicule.')}</div>${!mine&&d.point?`<div class="imp-p">${esc(d.point)}</div>`:''}${mine?`<button type="button" class="lnk" data-unremind="${esc(d.id)}">Supprimer ce rappel</button>`:''}</div>`;
+  return `<div class="imp ${mine?'mine':'info'}"><div class="imp-h"><i></i>${mine?'Mon rappel'+esc(hhmm(d.heure)):'Demandé par le service parc'}${esc(late)}</div><div class="imp-t">${esc(d.consigne||'Passer voir ce véhicule.')}</div>${!mine&&d.point?`<div class="imp-p">${esc(d.point)}</div>`:''}${phBureau(d)}${mine?`<button type="button" class="lnk" data-unremind="${esc(d.id)}">Supprimer ce rappel</button>`:''}</div>`;
 }
 /* « aujourd'hui », « demain », « hier » ou « jeu. 22 oct. » */
 function dayWord(d){const n=dayDiff(d);return n===0?"aujourd'hui":n===1?'demain':n===-1?'hier':(l=>l.dow.toLowerCase()+' '+l.num)(dLabel(d))}
@@ -1383,7 +1401,7 @@ function vHome(){
 function askPt(d){return d.point||((stayFor(d.plaque,DAY)||{}).point)||''}
 function askPill(d){return d.date<TODAY?`<span class="pill late">Prévu ${esc(dayWord(d.date))}</span>`:d.auteur===S.who?'<span class="pill mine">Mon rappel'+esc(hhmm(d.heure))+'</span>':'<span class="pill ask">Service parc</span>'}
 /* Rappel ou demande dans la liste du point, même si le planning ne met pas le véhicule ici */
-function askCard(d,s,ou){const v=vehicle(d.plaque)||{};return rowHtml(d.plaque,`<span class="row-t"><span class="plate">${esc(d.plaque)}</span>${askPill(d)}</span>${v.modele?`<span class="model">${esc(v.modele)}</span>`:''}<span class="consigne">${esc(d.consigne||'Passer voir ce véhicule.')}</span>${jusqua(d)?`<span class="spec periode">${esc(cap(jusqua(d)))}</span>`:''}${ou?`<span class="spec">${esc(ou)}</span>`:''}${s?timesHtml(s)+bloque(d,s)+improsDemande(d,s).map(improMini).join(''):'<span class="spec">Pas prévu ici dans le planning</span>'+bloque(d,s)}`,'ask')}
+function askCard(d,s,ou){const v=vehicle(d.plaque)||{};return rowHtml(d.plaque,`<span class="row-t"><span class="plate">${esc(d.plaque)}</span>${askPill(d)}${phPill(d)}</span>${v.modele?`<span class="model">${esc(v.modele)}</span>`:''}<span class="consigne">${esc(d.consigne||'Passer voir ce véhicule.')}</span>${jusqua(d)?`<span class="spec periode">${esc(cap(jusqua(d)))}</span>`:''}${ou?`<span class="spec">${esc(ou)}</span>`:''}${s?timesHtml(s)+bloque(d,s)+improsDemande(d,s).map(improMini).join(''):'<span class="spec">Pas prévu ici dans le planning</span>'+bloque(d,s)}`,'ask')}
 function cap(t){return t.charAt(0).toUpperCase()+t.slice(1)}
 /* v55 (Fabian) : sur une demande, le créneau où le véhicule est bloqué dans le BO (improductif) le jour de la demande,
    encadré « Véhicule immobilisé » (jaune pour un improductif, rouge pour la méca) puis une ligne par impro (heures, motif). Si le bureau a coché
@@ -1407,7 +1425,7 @@ function vAsks(){
   const now=DAY===TODAY,cur=openAsks(DAY),from=DAY>TODAY?DAY:TODAY;
   const later=allAsks().filter(d=>pourMoi(d)&&d.date>from).sort((a,b)=>a.date.localeCompare(b.date));
   /* v43 : horaires d'arrivée et de départ (planning Metabase) sur chaque demande, comme dans la liste des véhicules */
-  const row=d=>{const v=vehicle(d.plaque)||{};const st=stayFor(d.plaque,d.date<TODAY?TODAY:d.date);const pt=d.point||(st||{}).point||'';return rowHtml(d.plaque,`<span class="row-t"><span class="plate">${esc(d.plaque)}</span>${d.auteur===S.who?'<span class="pill mine">Mon rappel'+esc(hhmm(d.heure))+'</span>':'<span class="pill ask">Service parc</span>'}${sheet&&sheet.nouv&&sheet.nouv.includes(d.id)?'<span class="pill new">Nouvelle</span>':''}</span>${v.modele?`<span class="model">${esc(v.modele)}</span>`:''}<span class="consigne">${esc(d.consigne||'Passer voir ce véhicule.')}</span><span class="spec">${esc((d.date<TODAY?'Prévu '+dayWord(d.date):jusqua(d)?cap(jusqua(d)):cap(dayWord(d.date)))+(pt?' · '+full(pt):''))}</span>${st?timesHtml(st)+bloque(d,st)+improsDemande(d,st).map(improMini).join(''):'<span class="spec">Pas dans le planning ce jour-là</span>'+bloque(d,st)}`,'ask')};
+  const row=d=>{const v=vehicle(d.plaque)||{};const st=stayFor(d.plaque,d.date<TODAY?TODAY:d.date);const pt=d.point||(st||{}).point||'';return rowHtml(d.plaque,`<span class="row-t"><span class="plate">${esc(d.plaque)}</span>${d.auteur===S.who?'<span class="pill mine">Mon rappel'+esc(hhmm(d.heure))+'</span>':'<span class="pill ask">Service parc</span>'}${sheet&&sheet.nouv&&sheet.nouv.includes(d.id)?'<span class="pill new">Nouvelle</span>':''}${phPill(d)}</span>${v.modele?`<span class="model">${esc(v.modele)}</span>`:''}<span class="consigne">${esc(d.consigne||'Passer voir ce véhicule.')}</span><span class="spec">${esc((d.date<TODAY?'Prévu '+dayWord(d.date):jusqua(d)?cap(jusqua(d)):cap(dayWord(d.date)))+(pt?' · '+full(pt):''))}</span>${st?timesHtml(st)+bloque(d,st)+improsDemande(d,st).map(improMini).join(''):'<span class="spec">Pas dans le planning ce jour-là</span>'+bloque(d,st)}`,'ask')};
   return `<div class="sh-top pad"><button type="button" class="back" id="closeSheet">${I.back}Retour</button></div>
   <div class="sh-body pad">
     <div class="q">Rappels et demandes</div>
@@ -1679,6 +1697,7 @@ document.addEventListener('click',e=>{
   if(d.rother){rdraft.other=true;rdraft.date='';render();return}
   if(b.id==='saveRem'){if(!remOk()){majRem();return}const p=sheet.plaque,dt0=rdraft.date,h=rdraft.heure;remind(p,dt0,rdraft.note.trim(),rdraft.point,h);closeSheet('Rappel enregistré pour '+(dt0===TODAY?"aujourd'hui":dayWord(dt0).replace(/\.$/,''))+(h?' à '+h.replace(':','h'):'')+'.');return}
   if(b.id==='rSansHeure'){rdraft.heure='';const i=$('#rHeure');if(i)i.value='';majRem();return}
+  if(d.voirph){PH_OUV.has(d.voirph)?PH_OUV.delete(d.voirph):PH_OUV.add(d.voirph);render();return}
   if(d.unremind){unremind(d.unremind);render();toast('Rappel supprimé.');return}
   if(d.ptsplus){PTS_OUVERT=!PTS_OUVERT;render();return}
   if(d.point){const p=d.point;set({myPoints:S.myPoints.includes(p)?S.myPoints.filter(x=>x!==p):S.myPoints.concat(p),ptsSet:true});return}

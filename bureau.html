@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Runners · Bureau</title>
 <!-- Page bureau de l'appli Runners, v4 : liens des runners, demandes à n'importe quelle date, rappels des runners, passages du jour ; v4 : actualisation automatique, un passage peut clore plusieurs demandes ; v6 (suite de la v4, la v5 est la version pro à part) : envois passés dans l'adresse (GET) car certains appareils bloquaient les envois classiques ; v7 : un véhicule ajouté s'affiche tout de suite (envoi en arrière-plan) ; v8 : « Photos en cours d'envoi » quand les photos suivent le passage ; v9 : « aperçu » tant que seule la photo allégée est arrivée ; v10 : photo effacée au bout de 5 jours indiquée ; v11 : plus rapide (planning retéléchargé seulement s'il a changé), actualisée toutes les 30 secondes ; v12 : indique combien de téléphones ont reçu l'alerte d'une nouvelle demande ; v13 : mise à jour automatique sans recharger à la main ; v14 : page laissée ouverte la nuit remise au nouveau jour le matin, liens photo vérifiés, polices sans bloquer l'affichage ; v15 : demandes et rappels à faire modifiables (bouton Modifier, avec le script v20) ; v16 : onglet « Retours runners » (véhicules demandés vus par un runner, alerte avec bandeau, son et notification de l'ordinateur ; retiré si le runner annule), état de Slack (avec le script v21) ; v17 (appli v48) : demande sur un jour ou sur plusieurs jours (du … au …) ; v18 (appli v49) : « Date unique / Période », termes revus ; v19 (appli v51) : onglet « Planifier » (avant « Dernière minute »), tirets de la plaque mis tout seuls ; v20 (appli v53) : liste « à faire » seulement, la plus récente en haut, 7 jours au plus ; passages du jour rangés par runner ; v21 (appli v54) : panne passagère de Google sans perdre la page, ajout sans doublon si la réponse se perd, actualisation lente ne défait plus un ajout ou un retrait, modification annulée proprement si la demande est faite entre-temps, plaque à moitié tapée refusée, téléphone étroit -->
+<!-- v63.15 (17/11, Fabian) : jusqu'à 3 photos jointes à une demande (réduites à 1280 px, envoyées juste après la demande) ; Slack : la 1re dans le message, les autres en réponse dans le fil ; le runner les ouvre d'un appui (script v34.16) -->
 <!-- v25 (29/10) : actualisation et annonces des retours même quand un champ a le curseur ; nouvel essai tout seul si Google ne répond pas à l'ouverture ; heures à la minute ; formulaire gardé entre onglets et remis si l'envoi échoue ; heure des rappels des runners -->
 <!-- v24 (26/10, Fabian, Mika) : passages : « Fait sur place » affiché sous un problème signalé -->
 <!-- v23 (25/10, Fabian) : pas encore d'impro dans le BO (l'export Metabase arrive toutes les heures) : on peut saisir les heures de l'immobilisation (toujours « Improductif » pour le runner, Fabian) ; le runner les voit sur sa demande -->
@@ -148,6 +149,16 @@ button.bo-r{cursor:pointer}button.bo-r:hover{background:var(--surface-2)}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;max-width:min(440px,calc(100% - 32px));padding:10px 14px;border-radius:10px;background:var(--head);color:var(--head-fg);font-size:14px;z-index:5}
 a{color:var(--accent);font-weight:600}
 @media print{header nav,.acts,.no-print,.toast{display:none!important}.runners{grid-template-columns:1fr 1fr}.rc{break-inside:avoid}}
+/* v63.15 : photos jointes à une demande */
+.phs{display:flex;gap:8px;flex-wrap:wrap}
+.ph{position:relative;width:76px;height:76px;border-radius:10px;overflow:hidden;border:1px solid var(--line-strong);background:var(--surface-2)}
+.ph img{width:100%;height:100%;object-fit:cover;display:block}
+.ph-x{position:absolute;top:3px;right:3px;width:26px;height:26px;border-radius:50%;border:none;background:rgba(0,0,0,.62);color:#fff;font-size:16px;line-height:26px;padding:0;cursor:pointer}
+.ph-add{width:76px;height:76px;border:1.5px dashed var(--line-strong);border-radius:10px;background:var(--surface);font-size:12.5px;font-weight:600;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;cursor:pointer;color:var(--muted)}
+.ph-add b{font-size:24px;line-height:1;font-weight:500}
+.li-ph{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;align-items:center}
+.li-ph a,.li-ph span.th{display:block;width:56px;height:56px;border-radius:8px;overflow:hidden;border:1px solid var(--line);background:var(--surface-2)}
+.li-ph img{width:100%;height:100%;object-fit:cover;display:block}
 </style>
 </head>
 <body>
@@ -194,6 +205,39 @@ function finDe(d){return d.fin&&String(d.fin).slice(0,10)>d.date?String(d.fin).s
 function nbJours(a,b){const x=a.split('-').map(Number),y=b.split('-').map(Number);return Math.round((Date.UTC(y[0],y[1]-1,y[2])-Date.UTC(x[0],x[1]-1,x[2]))/864e5)+1}
 function plusJours(a,n){const x=a.split('-').map(Number);const d=new Date(x[0],x[1]-1,x[2]+n);return iso(d)}
 function periodeName(d){const f=finDe(d);return f===d.date?dayName(d.date):'Du '+dLabel(d.date)+' au '+dLabel(f)}
+/* v63.15 : photos d'une demande. Réduites à 1280 px comme celles des runners (~200 Ko), envoyées à part (POST) juste
+   après la demande : la demande part et s'affiche tout de suite, même si les photos prennent quelques secondes. */
+const PH_MAX=3;
+function idsPhotos(v){return String(v||'').split(/\s+/).filter(x=>/^[\w-]{20,80}$/.test(x)).slice(0,PH_MAX)}
+function miniDrive(id,t){return 'https://drive.google.com/thumbnail?id='+encodeURIComponent(id)+'&sz=w'+(t||200)}
+function reduirePhoto(file){
+  return new Promise((ok,ko)=>{const url=URL.createObjectURL(file);const img=new Image();
+    img.onload=()=>{const s=Math.min(1,1280/Math.max(img.width,img.height));const c=document.createElement('canvas');c.width=Math.round(img.width*s);c.height=Math.round(img.height*s);
+      c.getContext('2d').drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(url);ok(c.toDataURL('image/jpeg',.72))};
+    img.onerror=()=>{URL.revokeObjectURL(url);ko(new Error('photo'))};img.src=url});
+}
+function phFormHtml(){return PH_D.map((u,i)=>`<div class="ph"><img src="${u}" alt="Photo ${i+1}"><button type="button" class="ph-x" data-rmph="${i}" aria-label="Retirer la photo ${i+1}">×</button></div>`).join('')+(PH_D.length<PH_MAX?`<button type="button" class="ph-add" data-addph="1"><b>+</b>Photo</button>`:'')}
+function majPhForm(){const z=$('#dPhotos');if(z)z.innerHTML=phFormHtml();const n=$('#dPhNote');if(n)n.hidden=!PH_D.length}
+function phListeHtml(d){
+  const loc=PH_ENVOI.get(d.id)||d.phLocal;
+  if(loc&&loc.length)return `<div class="li-ph">${loc.map((u,i)=>`<span class="th"><img src="${u}" alt="Photo ${i+1}"></span>`).join('')}${PH_ENVOI.has(d.id)?'<span class="meta">Photos en cours d\'envoi…</span>':''}</div>`;
+  const ids=idsPhotos(d.photos);
+  return ids.length?`<div class="li-ph">${ids.map((id,i)=>`<a href="https://drive.google.com/file/d/${encodeURIComponent(id)}/view" target="_blank" rel="noopener" title="Ouvrir la photo ${i+1}"><img src="${miniDrive(id)}" alt="Photo ${i+1}" loading="lazy"></a>`).join('')}</div>`:'';
+}
+/* POST (la porte GET de la page bureau ne peut pas porter des photos) ; deux essais */
+async function envoyerPhotosDemande(id,plaque,photos){
+  if(!photos.length)return;
+  if(DEMO){const d=D.demandes.find(x=>x.id===id);if(d)d.phLocal=photos;render();return}
+  PH_ENVOI.set(id,photos);render();
+  let ok=false;
+  for(let essai=0;essai<2&&!ok;essai++){
+    const ctl=new AbortController();const t=setTimeout(()=>ctl.abort(),60000);
+    try{const r=await fetch(API,{method:'POST',body:JSON.stringify({bureau:CODE,action:'demande_photos',id,photos}),signal:ctl.signal}).then(x=>x.json());ok=!!(r&&r.ok);if(r&&r.erreur&&!r.reessayer)break}
+    catch(e){}finally{clearTimeout(t)}
+  }
+  PH_ENVOI.delete(id);
+  if(ok)await load();else{render();toast(plaque+' : demande enregistrée, mais les photos ne sont pas parties. Faites « Modifier » pour les remettre.')}
+}
 function toast(m){const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>{t.hidden=true},3000)}
 function linkFor(code){return APP_URL+'?c='+encodeURIComponent(code)}
 function qrSvg(text){
@@ -217,7 +261,10 @@ let D=null,err='',tab='demandes',confirmCode='',loading=false,edit='',plage=fals
 /* v17 : demandes en cours de retrait (cachées tout de suite, en attendant la réponse de Google) */
 const RETRAIT=new Set();
 /* v21 : ajouts et modifications pas encore confirmés par Google, remis par-dessus chaque actualisation */
-const ENVOIS=new Map(),MODIFS=new Map();let viderForm='',DERNIER_ECHEC=null;
+const ENVOIS=new Map(),MODIFS=new Map();
+/* v63.15 : photos choisies pour la demande en cours (réduites), et photos en cours d'envoi par demande */
+let PH_D=[];const PH_ENVOI=new Map();
+let viderForm='',DERNIER_ECHEC=null;
 /* v16 : retours déjà vus sur cet ordinateur (null = jamais ouvert ici : rien d'ancien n'est annoncé) */
 let VUS=null;try{const x=localStorage.getItem('bureau-retours-vus');if(x)VUS=new Set(JSON.parse(x))}catch(e){}
 const ANNONCES=new Set();
@@ -248,7 +295,7 @@ function demo(){
   const md=['Opel Movano 2023','Iveco Daily 2025','Iveco Daily 2024','Opel Movano 2024','Opel Movano 2023','MAN TGE 2024','Opel Movano 2025','Iveco Daily 2025','Opel Movano 2024','MAN TGE 2023','Opel Movano 2025','Iveco Daily 2024','MAN TGE 2025','Iveco Daily 2023','Opel Movano 2024','MAN TGE 2024'];
   return {
     runners:[['Anis','La Def'],['Philippe','Saint-Cloud'],['Kamel','La Def'],['Tarek','Aulnay'],['Fahem','Paris-Centre']].map(r=>({prenom:r[0],code:r[0].toLowerCase()+'-demo2k7q9m',points:r[1],actif:'oui'})),
-    demandes:[{id:'D-demo1',date:TODAY,runner:'Tous',plaque:'AA-110-CD',point:'La Def',consigne:'Rentré hors planning : faire le tour du véhicule et une photo du compteur.',statut:'à faire',auteur:'Service parc'},
+    demandes:[{id:'D-demo1',date:TODAY,runner:'Tous',plaque:'AA-110-CD',point:'La Def',consigne:'Rentré hors planning : faire le tour du véhicule et une photo du compteur.',statut:'à faire',auteur:'Service parc',photos:'DEMOphoto1xxxxxxxxxxxxxxxx DEMOphoto2xxxxxxxxxxxxxxxx DEMOphoto3xxxxxxxxxxxxxxxx'},
       {id:'R-demo2',date:dayOffset(3),runner:'Anis',plaque:'AA-115-CD',point:'La Def',consigne:'Revoir le rétroviseur gauche',statut:'à faire',auteur:'Anis'}],
     passages:[
       {horodatage:TODAY+'T07:50:00',runner:'Anis',plaque:'AA-102-CD',point:'La Def',resultat:'OK',problemes:'',commentaire:'',photo:''},
@@ -345,6 +392,7 @@ function vDemandes(){
         <div class="recap" id="dRecap" aria-live="polite"></div>
       </div>
       <div class="field"><label for="dText">Demande au runner</label><textarea id="dText" placeholder="Exemple : faire le tour du véhicule et une photo du compteur." maxlength="500"></textarea></div>
+      <div class="field"><label>Photos <span class="meta" style="font-weight:400">(facultatif, ${PH_MAX} au plus)</span></label>${ed&&idsPhotos(ed.photos).length?`<div class="meta">Photos actuelles : ${idsPhotos(ed.photos).length}. Elles restent si vous n'en ajoutez pas ; si vous en ajoutez, elles sont remplacées.</div>`:''}<div class="phs" id="dPhotos">${phFormHtml()}</div><input type="file" id="dFile" accept="image/*" multiple hidden><div class="meta" id="dPhNote" ${PH_D.length?'':'hidden'}>Slack : la 1re photo dans le message, les autres en réponse dans le fil. Le runner les ouvre d'un appui dans son appli.</div></div>
       ${ed?'<div class="actions"><button type="submit" class="btn primary">Enregistrer</button><button type="button" class="btn" id="editCancel">Annuler</button></div>':'<button type="submit" class="btn primary">Ajouter</button>'}
       <div class="meta">Le jour venu, le véhicule apparaît en haut de l'appli du runner, avec le bandeau « Demandé par le service parc ». Sur une période, il y reste chaque jour jusqu'au passage d'un runner.</div>
     </form>
@@ -352,7 +400,7 @@ function vDemandes(){
   <section class="card" aria-labelledby="h-list">
     <div class="card-h"><h2 id="h-list">Demandes et rappels à faire</h2><span class="meta">${list.length}</span></div>
     ${list.length?list.map(d=>`<div class="li${d.id===edit?' editing':''}"><div class="li-b"><div><span class="plate-t">${esc(d.plaque)}</span> <span class="pill ${d.statut==='faite'?'ok':finDe(d)<TODAY?'late':'wait'}">${d.statut==='faite'?'Faite':finDe(d)<TODAY?'En retard':d.date<=TODAY&&finDe(d)>TODAY?'En cours':'À faire'}</span>${d.auteur&&d.auteur!=='Service parc'?` <span class="pill mine">Rappel de ${esc(d.auteur)}${/^\d{2}:\d{2}/.test(d.heure||'')?' · '+esc(String(d.heure).slice(0,5).replace(':','h')):''}</span>`:''}</div>
-      <div class="meta">${esc(periodeName(d))} · ${esc(d.runner==='Tous'?(d.point?'Les runners de '+d.point:'Tous les runners'):d.runner+(d.point?' · '+d.point:''))}</div>${d.consigne?`<div style="white-space:pre-line">${esc(d.consigne)}</div>`:''}</div>
+      <div class="meta">${esc(periodeName(d))} · ${esc(d.runner==='Tous'?(d.point?'Les runners de '+d.point:'Tous les runners'):d.runner+(d.point?' · '+d.point:''))}</div>${d.consigne?`<div style="white-space:pre-line">${esc(d.consigne)}</div>`:''}${phListeHtml(d)}</div>
       ${d.statut==='faite'?'':`<div class="li-a">${ENVOIS.has(d.id)?'<span class="meta">Enregistrement…</span>':`<button type="button" class="btn small" data-edit="${esc(d.id)}">Modifier</button><button type="button" class="btn small danger" data-del="${esc(d.id)}">Retirer</button>`}</div>`}</div>`).join('')
     :'<div class="empty">Aucune demande ni rappel à faire.</div>'}
   </section></div>`;
@@ -455,8 +503,8 @@ function render(){RENDU_ATTENTE=false;
   if(tab==='demandes'){plateHint();recapDate()}
 }
 /* v25 : formulaire gardé quand on change d'onglet, et remis si Google refuse l'envoi */
-function lireForm(){const v=id=>$('#'+id)?$('#'+id).value:'';return {plaque:v('dPlate'),runner:v('dRunner'),date:v('dDate'),fin:v('dFin'),point:v('dPoint'),consigne:v('dText'),creneau:CRENEAU,saisie:SAISIE,src:CR_SRC}}
-function remettre(c){if(!$('#dPlate'))return;const m={dPlate:c.plaque,dRunner:c.runner,dDate:c.date,dFin:c.fin,dPoint:c.point,dText:c.consigne};Object.keys(m).forEach(id=>{if($('#'+id)&&m[id]!=null&&m[id]!=='')$('#'+id).value=m[id]});
+function lireForm(){const v=id=>$('#'+id)?$('#'+id).value:'';return {plaque:v('dPlate'),runner:v('dRunner'),date:v('dDate'),fin:v('dFin'),point:v('dPoint'),consigne:v('dText'),creneau:CRENEAU,saisie:SAISIE,src:CR_SRC,ph:PH_D.slice()}}
+function remettre(c){if(!$('#dPlate'))return;if(c.ph&&c.ph.length&&!PH_D.length){PH_D=c.ph.slice();majPhForm()}const m={dPlate:c.plaque,dRunner:c.runner,dDate:c.date,dFin:c.fin,dPoint:c.point,dText:c.consigne};Object.keys(m).forEach(id=>{if($('#'+id)&&m[id]!=null&&m[id]!=='')$('#'+id).value=m[id]});
   /* v63.1 : le créneau (impro cochée ou heures tapées) revient aussi : avant, un envoi raté le perdait (et le renvoi créait un doublon) */
   if(c.creneau!=null){CRENEAU=String(c.creneau||'');CR_SRC=c.src||(CRENEAU&&CR_MAIN.test(CRENEAU)?'main':CRENEAU?'bo':'');SAISIE=c.saisie!=null?!!c.saisie:CR_SRC==='main'&&!!CRENEAU}}
 /* v17 : résumé de la période choisie, sous les dates */
@@ -516,6 +564,8 @@ function plateHint(){improHint();const i=$('#dPlate');if(!i)return;const p=i.val
 document.addEventListener('click',async e=>{
   const b=e.target.closest('button');if(!b)return;const d=b.dataset;
   if(d.tab){if(tab==='demandes'&&d.tab!=='demandes'&&$('#dPlate')&&($('#dPlate').value.trim()||$('#dText').value.trim()))BROUILLON=lireForm(); /* seulement s'il y a quelque chose à garder (sinon la mise à jour auto était bloquée) */tab=d.tab;confirmCode='';render();return}
+  if(d.addph){const f=$('#dFile');if(f)f.click();return}
+  if(d.rmph!=null){PH_D.splice(+d.rmph,1);majPhForm();return}
   if(d.jourp){JOUR_P=d.jourp;render();return}
   if(d.creneau!=null){CRENEAU=CRENEAU===d.creneau?'':d.creneau;CR_SRC='bo';improHint();return}
   if(d.saisie!=null){SAISIE=d.saisie==='1';CRENEAU='';improHint();if(SAISIE&&$('#iDe'))$('#iDe').focus();return}
@@ -525,12 +575,12 @@ document.addEventListener('click',async e=>{
   if(b.id==='reload'){load();return}
   if(b.id==='notifOn'){try{Notification.requestPermission().then(()=>render())}catch(err){}return}
   if(b.id==='print'){window.print();return}
-  if(d.edit){const x=D.demandes.find(y=>y.id===d.edit);if(!x)return;if(!edit&&$('#dPlate')&&($('#dPlate').value.trim()||$('#dText').value.trim()))AVANT_EDIT=lireForm();edit=x.id;
+  if(d.edit){const x=D.demandes.find(y=>y.id===d.edit);if(!x)return;if(!edit&&$('#dPlate')&&($('#dPlate').value.trim()||$('#dText').value.trim()||PH_D.length))AVANT_EDIT=lireForm();PH_D=[];edit=x.id;
     ['dPlate','dText'].forEach(id=>{if($('#'+id))$('#'+id).value=''});render();
     plage=finDe(x)>x.date&&finDe(x)>TODAY;render();
     $('#dPlate').value=x.plaque||'';$('#dRunner').value=x.runner||'Tous';$('#dDate').value=x.date<TODAY?TODAY:x.date;$('#dFin').value=plage?finDe(x):'';$('#dPoint').value=x.point||'';$('#dText').value=x.consigne||'';CRENEAU=String(x.creneau||'');CR_SRC='edit';if($('#dDate').max&&x.date>$('#dDate').max)$('#dDate').removeAttribute('max');plateHint();recapDate();
     try{$('#fDemande').scrollIntoView({block:'start',behavior:'smooth'})}catch(err){}$('#dText').focus();return}
-  if(b.id==='editCancel'){edit='';plage=false;CRENEAU='';SAISIE=false;['dPlate','dText','dFin'].forEach(id=>{if($('#'+id))$('#'+id).value=''});$('#dPoint').value='';$('#dRunner').value='Tous';$('#dDate').value=TODAY;render();rendreBrouillon();return}
+  if(b.id==='editCancel'){edit='';plage=false;PH_D=[];CRENEAU='';SAISIE=false;['dPlate','dText','dFin'].forEach(id=>{if($('#'+id))$('#'+id).value=''});$('#dPoint').value='';$('#dRunner').value='Tous';$('#dDate').value=TODAY;render();rendreBrouillon();return}
   /* v17 : retrait affiché tout de suite (avant : on attendait Google, Slack puis le rechargement complet, 5 à 10 s) ;
      si Google refuse ou s'il n'y a pas de réseau, la demande revient dans la liste avec un message */
   if(d.del){const id=d.del,x=D.demandes.find(y=>y.id===id);if(id===edit){edit='';plage=false;viderForm='retirée'}RETRAIT.add(id);render();toast((x?x.plaque+' : ':'')+'demande retirée.');
@@ -542,7 +592,10 @@ document.addEventListener('click',async e=>{
   if(d.newcode){b.disabled=true;const r=await act('runner_code',{prenom:d.newcode});confirmCode='';render();if(!r.erreur)toast('Nouveau lien créé pour '+d.newcode+'. Réinstallez l\'appli sur son téléphone.');return}
 });
 document.addEventListener('input',e=>{if(e.target.id==='dPlate'){tirets(e);plateHint()}if(e.target.id==='dDate'||e.target.id==='dFin')recapDate();if(e.target.id==='iDe'||e.target.id==='iA')creneauMain()});
-document.addEventListener('change',e=>{if(e.target.id==='dDate'||e.target.id==='dFin')recapDate();if(e.target.id==='iDe'||e.target.id==='iA')creneauMain()});
+document.addEventListener('change',async e=>{
+  if(e.target.id==='dFile'){const fs=[...e.target.files];e.target.value='';const place=PH_MAX-PH_D.length;if(fs.length>place)toast(PH_MAX+' photos au plus : '+(place>0?'seulement les '+place+' premières sont gardées.':'retirez-en une d\'abord.'));
+    for(const f of fs.slice(0,Math.max(0,place))){try{PH_D.push(await reduirePhoto(f))}catch(x){toast('Une photo n\'a pas pu être lue.')}}majPhForm();return}
+if(e.target.id==='dDate'||e.target.id==='dFin')recapDate();if(e.target.id==='iDe'||e.target.id==='iA')creneauMain()});
 document.addEventListener('submit',async e=>{
   e.preventDefault();const f=e.target;
   if(f.id==='fCode'){CODE=$('#bCode').value.trim();try{localStorage.setItem('runners-bureau',CODE)}catch(x){}err='';load();return}
@@ -556,8 +609,10 @@ document.addEventListener('submit',async e=>{
       const id=edit,champs={id,plaque,runner:$('#dRunner').value,date,fin,point:$('#dPoint').value,consigne:$('#dText').value.trim(),creneau:CRENEAU},crSrc=CR_SRC,crSai=SAISIE;
       const x=D.demandes.find(y=>y.id===id),avant=x?Object.assign({},x):null;
       if(x&&!DEMO){Object.assign(x,champs);MODIFS.set(id,champs)}
+      const phM=PH_D.slice();PH_D=[];
       edit='';plage=false;['dPlate','dText','dFin'].forEach(id=>{if($('#'+id))$('#'+id).value=''});$('#dPoint').value='';$('#dRunner').value='Tous';$('#dDate').value=TODAY;plateHint();render();rendreBrouillon();
       toast(plaque+' modifié.');
+      if(phM.length)envoyerPhotosDemande(id,plaque,phM); /* v63.15 : nouvelles photos = remplacent les anciennes */
       act('demande_modif',champs).then(r=>{MODIFS.delete(id);if(r.erreur&&D){const y=D.demandes.find(z=>z.id===id);if(y&&avant)Object.assign(y,avant);
           /* v25 : modification refusée : on revient en mode « Modifier » avec ce qui avait été tapé */
           const fini=/déjà faite|retirée|introuvable/i.test(String(r.erreur)); /* v25 : faite ou retirée entre-temps : réessayer ne sert à rien */
@@ -572,12 +627,16 @@ document.addEventListener('submit',async e=>{
     const cleDem=JSON.stringify(champs),crSrc=CR_SRC,crSai=SAISIE;
     const tmp=DERNIER_ECHEC&&DERNIER_ECHEC.cle===cleDem?DERNIER_ECHEC.id:'D'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);champs.id=tmp;
     if(!DEMO&&D){const it=Object.assign({id:tmp,statut:'à faire'},champs);ENVOIS.set(tmp,it);D.demandes=(D.demandes||[]).concat([it])}
+    const phN=PH_D.slice();PH_D=[];if(phN.length&&!DEMO)PH_ENVOI.set(tmp,phN); /* v63.15 */
     ['dPlate','dText'].forEach(id=>{if($('#'+id))$('#'+id).value=''});plateHint();render();
     toast(fin?plaque+' ajouté du '+dLabel(date)+' au '+dLabel(fin)+'. Visible chaque jour jusqu\'au passage d\'un runner.':plaque+' ajouté pour '+dayName(date).toLowerCase().replace(/\.$/,'')+'.');
+    if(DEMO&&phN.length)setTimeout(()=>{const d=D.demandes[D.demandes.length-1];if(d)d.phLocal=phN;render()},0);
     act('demande',champs).then(async r=>{
       /* v21 : réponse perdue : on regarde dans la feuille si elle est bien arrivée avant de dire « non enregistré » */
       if(r.erreur==='réseau'&&D){ENVOIS.delete(tmp);if(await load()&&load.ids.has(tmp))r={ok:true}}
       ENVOIS.delete(tmp);
+      /* v63.15 : la demande est chez Google : ses photos partent maintenant ; en échec, elles reviennent dans le formulaire */
+      if(phN.length){if(r.erreur){PH_ENVOI.delete(tmp);if(!PH_D.length)PH_D=phN}else envoyerPhotosDemande(r.id||tmp,plaque,phN)}
       /* v21 : en échec, le même identifiant resservira si on renvoie la même demande (pas de doublon si Google l'a reçue tard) */
       DERNIER_ECHEC=r.erreur?{cle:cleDem,id:tmp}:null;
       if(r.erreur&&D){D.demandes=(D.demandes||[]).filter(x=>x.id!==tmp);render();if(tab==='demandes'&&$('#dPlate')&&!$('#dPlate').value.trim()&&!edit){remettre(Object.assign({},champs,{src:crSrc,saisie:crSai}));plateHint();recapDate()}else if(tab!=='demandes'&&!BROUILLON)BROUILLON=Object.assign({},champs,{src:crSrc,saisie:crSai});toast(plaque+' non enregistré : '+(r.erreur==='réseau'?'pas de réseau':r.erreur)+'. Réessayez.')}
@@ -605,7 +664,7 @@ document.addEventListener('visibilitychange',()=>{if(!DEMO&&CODE&&D&&document.vi
    s'il a changé, la page se recharge seule, mais jamais pendant qu'on écrit ou avec une demande à moitié remplie. */
 let VERSION='',majPrete=false;
 function versionEnLigne(){return fetch('sw.js',{cache:'no-store'}).then(r=>r.ok?r.text():'').then(t=>(t.match(/runners-v\d+/)||[''])[0]).catch(()=>'')}
-function envoiEnCours(){return ENVOIS.size>0||MODIFS.size>0||RETRAIT.size>0} /* v63.1 : réponse de Google pas encore arrivée */
+function envoiEnCours(){return ENVOIS.size>0||MODIFS.size>0||RETRAIT.size>0||PH_ENVOI.size>0||PH_D.length>0} /* v63.15 : photos */ /* v63.1 : réponse de Google pas encore arrivée */
 window.addEventListener('beforeunload',e=>{if(envoiEnCours()){e.preventDefault();e.returnValue=''}});
 function majSansRisque(){const a=document.activeElement;
   return !envoiEnCours()&&!confirmCode&&!edit&&!BROUILLON&&!AVANT_EDIT&&!(a&&a.matches&&a.matches('input,textarea,select'))&&!['dPlate','dText','rName','bCode'].some(id=>$('#'+id)&&$('#'+id).value.trim())}
