@@ -10,6 +10,10 @@
 <!-- v63.12 (17/11, Fabian, GS-741-SG et GG-214-EH) : véhicule avec la case « En panne » cochée dans le BO (Sous Statut 4, envoyé par le script v34.14) retiré des véhicules à voir, du récap et de la vue planning, comme le garage depuis v63.3 ; toujours trouvable par la recherche (étiquette « En panne ») et ramené par une demande du bureau. Un improductif jaune sans la case reste visible -->
 <!-- v63.10 (10/11, Fabian) : un véhicule validé avec « Je suis à X, VU présent » puis repris (problème ajouté) reste à X : il ne repart plus en « Hors liste » (deux lignes dans Ma tournée, cas GX-257-LX) -->
 <!-- v63.9 (9/11, Fabian) : « Pas trouvé sur place » retiré du récap de fin de tournée (reste visible dans Ma tournée) ; véhicule pas prévu sur mon point : bouton « Je suis à X, VU présent » (X = point du BO) pour le vérifier sur son point sans le déplacer (avec le script v34.12) -->
+<!-- v63.19 (18/11, Fabian) : nouveau point Garches (zone ouest, vert au planning). Avec 8 points, « Autres points » ouvre 4 + 4. Il faut le script v34.19. -->
+<!-- v63.18 (18/11, Fabian) : demande du bureau : le runner voit qui l'a envoyée (« Parc · Micha » sur la carte, « Demandé par Micha (service parc) » dans la fiche ; script v34.18) -->
+<!-- v63.17 (18/11, Fabian) : véhicule en panne ramené par une demande du bureau : étiquette « En panne » sur la carte de la demande, et dans la vue planning « En panne » sous la plaque + trait rouge « demande du bureau » à gauche de la plaque (avant : rien ne le distinguait) -->
+<!-- v63.16 (18/11, Fabian, HG-216-LK) : kilométrage « 70022.193 » (bug connu du BO) : seulement les chiffres avant le point, 70 022 km au lieu de 70 millions ; virgule = milliers seulement dans « 197,205 » -->
 <!-- v63.15 (17/11, Fabian) : photos jointes par le bureau à une demande (3 au plus, script v34.16) : seulement leurs numéros arrivent avec les demandes (aucun poids en plus) ; « Voir les photos du bureau » les charge d'un appui, en taille réduite (~70 Ko chacune) -->
 <!-- v63.8 (6/11, Fabian) : bouton « Objet trouvé » dans la fiche (photo obligatoire, vaut « Tout est OK », le service parc est prévenu sur Slack avec le script v34.11) ; recherche : les véhicules en panne ou au lavage sans trajet ressortent avec quelques chiffres, avec l'étiquette « En panne » / « Au lavage » -->
 <!-- v63.7 (5/11, Fabian) : Caler pro avec ses heures (départ = début de la plage BO, arrivée = fin) dans la liste et la fiche ; motif du garage (codes du BO : DIAG, E3F…) ; « Ticket BO » + début du texte dans la carte de la liste dans « À venir », « Immobilisé garage » et le détail du planning ; événements BO (dégâts, pannes, retours clients des 30 derniers jours) dans « Déjà signalé dans le BO » (script v34.9 + 2e question Metabase) -->
@@ -252,6 +256,7 @@ input.plateinput{font-family:var(--mono);text-transform:uppercase;font-size:22px
 .pl-lab{display:flex;flex-direction:column;justify-content:center;gap:2px;height:54px;padding:0 8px 0 10px;border-bottom:1px solid var(--line);background:var(--surface);text-align:left;border-left:0;border-right:0;border-top:0;font:inherit;color:inherit}
 .pl-lab.h{height:30px}
 .pl-lab .plate{font-size:12px;align-self:flex-start}
+.pl-m{display:flex;align-items:center;gap:4px;max-width:100%;overflow:hidden}.pl-m .etq{margin:0;padding:1px 7px;font-size:11px}.pl-lab.dem{box-shadow:inset 4px 0 0 var(--red);background:var(--red-soft)}
 .pl-lab small{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .pl-sc{overflow-x:auto;position:relative;-webkit-overflow-scrolling:touch}
 .pl-tr{position:relative}
@@ -425,7 +430,7 @@ nav.tabs button{font-size:16px}
 /* v63.14 (Fabian 17/11, choix D) : fermé = mes points en grand + « Autres points » ; ouvert = 4 en haut, 3 en bas */
 .pts.ferme .pt{flex:1 1 0}
 .pt-plus{flex:0 0 auto;min-height:46px;padding:0 14px;border-radius:999px;border:1px dashed var(--line-strong);background:transparent;font:inherit;font-size:13.5px;font-weight:600;color:var(--muted);white-space:nowrap}
-.pts.ouvert{display:grid;grid-template-columns:repeat(12,minmax(0,1fr))}.pts.ouvert .pt{grid-column:span 3;min-width:0}.pts.ouvert .pt:nth-child(n+5){grid-column:span 4}
+.pts.ouvert{display:grid;grid-template-columns:repeat(12,minmax(0,1fr))}.pts.ouvert .pt{grid-column:span 3;min-width:0}.pts.ouvert .pt:nth-child(n+5){grid-column:span 4}.pts.ouvert.q4 .pt:nth-child(n+5){grid-column:span 3} /* v63.19 : 8 points = 4 + 4 */
 .pts.ouvert .pt-plus{grid-column:1/-1;min-height:44px;border:0;background:var(--accent);color:#fff;font-size:14.5px} /* Fabian 17/11 : « Fermer » bien visible */
 </style>
 </head>
@@ -459,11 +464,11 @@ const MAX_PHOTOS=3;
 const DAYS_BACK=3,DAYS_AHEAD=10,HISTORY_DAYS=7;
 const RUNNERS=['Anis','Philippe','Kamel','Tarek','Fahem'];
 /* Points City Drop d'Île-de-France (La Def : adresse à Nanterre) et noms courts des boutons */
-const LOCAL=['La Def','Saint-Cloud','Aulnay','Paris-Centre','Coignières','Évry','Mantes'];
+const LOCAL=['La Def','Saint-Cloud','Aulnay','Paris-Centre','Coignières','Évry','Mantes','Garches'];
 const SHORT={'Saint-Cloud':'St-Cloud','Paris-Centre':'Paris'};
 const FULL={'La Def':'La Défense','Aulnay':'Aulnay-sous-Bois','Mantes':'Mantes-la-Jolie'};
 /* Autres écritures possibles dans l'export, ramenées au nom du point */
-const ALIAS={'nanterre':'La Def','la def':'La Def','la defense':'La Def','paris la defense':'La Def','saint cloud':'Saint-Cloud','st cloud':'Saint-Cloud','aulnay':'Aulnay','aulnay sous bois':'Aulnay','paris centre':'Paris-Centre','coignieres':'Coignières','evry':'Évry','evry courcouronnes':'Évry','paris | evry':'Évry','mantes':'Mantes','mantes la jolie':'Mantes','paris | mantes la jolie':'Mantes'};
+const ALIAS={'nanterre':'La Def','la def':'La Def','la defense':'La Def','paris la defense':'La Def','saint cloud':'Saint-Cloud','st cloud':'Saint-Cloud','aulnay':'Aulnay','aulnay sous bois':'Aulnay','paris centre':'Paris-Centre','coignieres':'Coignières','evry':'Évry','evry courcouronnes':'Évry','paris | evry':'Évry','mantes':'Mantes','mantes la jolie':'Mantes','paris | mantes la jolie':'Mantes','garches':'Garches','paris | garches':'Garches'};
 /* v52 (Fabian) : « Voyant moteur » au lieu de « Voyant au tableau de bord », « Choc carrosserie » retiré, AdBlue et lavage ajoutés. Plusieurs choix possibles. */
 const DAMAGES=['Impact pare-brise','Pare-brise fissuré','Pneu avant à changer','Pneu arrière à changer','Rétroviseur endommagé','Feu cassé','Voyant moteur','Voyant AdBlue','Lavage à prévoir'];
 const OTHER='Autre problème';
@@ -504,6 +509,8 @@ function when(t){if(!t)return '';const [d,h]=t.split(' ');const n=dayDiff(d);
   const day=n===0?"aujourd'hui":n===1?'demain':n===-1?'hier':(l=>l.dow.toLowerCase()+' '+l.num)(dLabel(d));const [hh,mm]=h.split(':');return day+' à '+Number(hh)+'h'+(mm==='00'?'':mm)}
 
 /* ---------- Lecture de l'export (CSV chargé à la main ou tableau envoyé par Google) ---------- */
+/* v63.16 (Fabian 18/11, HG-216-LK) : « 70022.193 » = 70022 km (la suite du point est parasite) ; « 197,205 » = 197205 ; « 70022,193 » = 70022 */
+function kmNum(s){s=String(s==null?'':s).trim().split('.')[0];if(!/^\d{1,3}(,\d{3})+$/.test(s.replace(/[\s\u00a0\u202f]/g,'')))s=s.split(',')[0];s=s.replace(/\D/g,'');return s?parseInt(s,10):null}
 const COLS={
   plaque:['plaque','immat','immatriculation'],categorie:['categorie','catégorie'],modele:['modele','modèle','marque_modele','marque modèle','marque_modele_annee','vehicule','véhicule'],km:['km','kilometrage','kilométrage'],
   villeDep:['ville_depart','ville départ'],dateDep:['date_depart','date départ','date'],heureDep:['heure_depart','heure départ'],
@@ -554,8 +561,8 @@ function parseTable(head,rows){
     if(type){const debut=dt(g('improDeb')),fin=dt(g('improFin'));if(debut)impros.push({plaque,type,debut,fin,libelle:g('improLib'),lieu:g('improLieu'),presta:g('improPresta'),motif:g('improMotif')});return}
     const dep=dt(g('dateDep'),g('heureDep'));if(!dep)return;
     const arr=dt(g('dateArr')||g('dateDep'),g('heureArr'));
-    const km=parseInt(g('km').replace(/\D/g,''),10);
-    loc.push({plaque,modele:g('modele'),categorie:g('categorie'),km:isNaN(km)?null:km,villeDep:city(g('villeDep')),dep,villeArr:city(g('villeArr')),arr,events:parseEvents(g('events'))});
+    const km=kmNum(g('km'));
+    loc.push({plaque,modele:g('modele'),categorie:g('categorie'),km,villeDep:city(g('villeDep')),dep,villeArr:city(g('villeArr')),arr,events:parseEvents(g('events'))});
   });
   RADIO=radio;
   return {loc,impros};
@@ -571,7 +578,7 @@ function splitLine(line,sep){
 function readPlan(pl){
   if(pl&&pl.erreur)throw new Error(pl.erreur);
   if(pl&&pl.v===2){RADIO=pl.radio||{};PANNE=new Set(pl.panne||[]);return {
-    loc:pl.loc.map(a=>({plaque:a[0],modele:a[1],categorie:a[2],km:a[3]===''||a[3]==null?null:+a[3],villeDep:a[4],dep:a[5],villeArr:a[6],arr:a[7],events:a[8]?parseEvents(a[8]):[],caler:!!a[9],calerP:Array.isArray(a[9])&&a[9].length===2?a[9].map(String):null})),
+    loc:pl.loc.map(a=>({plaque:a[0],modele:a[1],categorie:a[2],km:kmNum(a[3]),villeDep:a[4],dep:a[5],villeArr:a[6],arr:a[7],events:a[8]?parseEvents(a[8]):[],caler:!!a[9],calerP:Array.isArray(a[9])&&a[9].length===2?a[9].map(String):null})),
     impros:pl.impros.map(a=>({plaque:a[0],type:a[1],debut:a[2],fin:a[3],libelle:a[4],lieu:a[5]||'',presta:a[6]||'',motif:a[7]||''}))}}
   return parseTable(pl.entetes,pl.lignes);
 }
@@ -969,6 +976,8 @@ function parti(s,day){return (day||TODAY)===TODAY&&!!s.to&&s.to<nowStr()}
    pas pour les jours passés). Un improductif jaune sans la case reste à voir. */
 function plaquesEnPanne(day){const d=day||TODAY,now=nowStr(),de=d===TODAY?now:d+' 00:00',a=d===TODAY?now:d+' 23:59';
   const s=new Set(S.impros.filter(i=>i.type==='meca'&&i.debut<=a&&(!i.fin||i.fin>=de)).map(i=>i.plaque));if(d>=TODAY)PANNE.forEach(p=>s.add(p));return s}
+/* v63.17 (Fabian 18/11) : étiquette « En panne » (ou « Au lavage ») d'une plaque de pan = plaquesEnPanne(day) : recherche, carte de demande, vue planning */
+function etqPanne(p,pan,day){if(!pan.has(p))return '';const d=day||TODAY,n=d===TODAY?nowStr():d+' 12:00',i=S.impros.find(i=>i.plaque===p&&i.type==='meca'&&i.debut<=n&&(!i.fin||i.fin>=n));return i&&estLavage(i)?'<span class="etq lav">Au lavage</span>':'<span class="etq">En panne</span>'}
 function restants(day){day=day||TODAY;const asks=new Set(openAsks(day).map(d=>d.plaque)),panne=plaquesEnPanne(day);return staysOn(day).filter(s=>!vuSejour(s)&&!asks.has(s.plaque)&&!s.ailleurs&&!panne.has(s.plaque))}
 function todo(day){return restants(day).filter(s=>!parti(s,day))}
 function partis(day){return restants(day).filter(s=>parti(s,day))}
@@ -1168,7 +1177,7 @@ async function run(force){
         if(!r.partiel&&!got.length)S.depuis='';
         if(r.vp===undefined)S.depuis='';S.vp=r.vp;
         savePassages();
-        S.demandes=(r.demandes||[]).filter(d=>normDate(d.date)).map(d=>({id:d.id,date:normDate(d.date),runner:d.runner,plaque:String(d.plaque||'').toUpperCase(),point:d.point?city(d.point):'',consigne:d.consigne,statut:d.statut,auteur:d.auteur||'Service parc',fin:normDate(d.fin)||'',creneau:String(d.creneau||'').slice(0,40),heure:/^\d{2}:\d{2}/.test(String(d.heure||''))?String(d.heure).slice(0,5):'',vise:d.vise!==false,photos:idsPhotos(d.photos)}));
+        S.demandes=(r.demandes||[]).filter(d=>normDate(d.date)).map(d=>({id:d.id,date:normDate(d.date),runner:d.runner,plaque:String(d.plaque||'').toUpperCase(),point:d.point?city(d.point):'',consigne:d.consigne,statut:d.statut,auteur:d.auteur||'Service parc',fin:normDate(d.fin)||'',creneau:String(d.creneau||'').slice(0,40),heure:/^\d{2}:\d{2}/.test(String(d.heure||''))?String(d.heure).slice(0,5):'',vise:d.vise!==false,photos:idsPhotos(d.photos),par:(d.auteur||'Service parc')==='Service parc'?String(d.envoye_par||'').trim().slice(0,30):''}));
         const autreRunner=S.who&&S.who!==r.runner.prenom; /* v58 : autre lien ouvert sur ce téléphone : on reprend les points de ce runner */
         S.who=r.runner.prenom;
         /* v63.14 (Fabian 17/11) : points donnés au runner dans la feuille : toujours en haut. Au 1er démarrage, ou quand le
@@ -1227,7 +1236,7 @@ function phBureau(d){const ids=d.photos||[];if(!ids.length||d.auteur===S.who)ret
 function phPill(d){const n=(d.photos||[]).length;return n&&d.auteur!==S.who?`<span class="pill phc">${I.cam}${n}</span>`:''}
 function askBlock(d){
   const mine=d.auteur===S.who;const late=d.date<TODAY?' · prévu '+dayWord(d.date):jusqua(d)?' · '+jusqua(d):d.date!==TODAY?' · '+dayWord(d.date):'';
-  return `<div class="imp ${mine?'mine':'info'}"><div class="imp-h"><i></i>${mine?'Mon rappel'+esc(hhmm(d.heure)):'Demandé par le service parc'}${esc(late)}</div><div class="imp-t">${esc(d.consigne||'Passer voir ce véhicule.')}</div>${!mine&&d.point?`<div class="imp-p">${esc(d.point)}</div>`:''}${phBureau(d)}${mine?`<button type="button" class="lnk" data-unremind="${esc(d.id)}">Supprimer ce rappel</button>`:''}</div>`;
+  return `<div class="imp ${mine?'mine':'info'}"><div class="imp-h"><i></i>${mine?'Mon rappel'+esc(hhmm(d.heure)):d.par?'Demandé par '+esc(d.par)+' (service parc)':'Demandé par le service parc'}${esc(late)}</div><div class="imp-t">${esc(d.consigne||'Passer voir ce véhicule.')}</div>${!mine&&d.point?`<div class="imp-p">${esc(d.point)}</div>`:''}${phBureau(d)}${mine?`<button type="button" class="lnk" data-unremind="${esc(d.id)}">Supprimer ce rappel</button>`:''}</div>`;
 }
 /* « aujourd'hui », « demain », « hier » ou « jeu. 22 oct. » */
 function dayWord(d){const n=dayDiff(d);return n===0?"aujourd'hui":n===1?'demain':n===-1?'hier':(l=>l.dow.toLowerCase()+' '+l.num)(dLabel(d))}
@@ -1267,7 +1276,7 @@ function gate(title,text,btn){return `<div class="gate"><b>${title}</b><p>${text
    Mêmes véhicules que la liste, sur 3 jours ; une barre par période (sur place, location, garage, improductif).
    Toucher une barre montre le détail et ouvre la fiche. Couleurs des locations : celles du BO, selon le point parisien
    d'où part ou où arrive le véhicule (zones données par Fabian le 1/11 ; Paris-Centre en noir, Meaux = Paris Est). */
-const ZONE={'La Def':'ouest','Saint-Cloud':'ouest','Coignières':'ouest','Aulnay':'nord','Paris-Centre':'centre','Meaux':'est','Paris - Meaux':'est','Évry':'sud','Mantes':'ouest'}; /* v63.13 : Évry bleu comme dans le BO */ /* v63.6 : nom de Meaux dans l'export */
+const ZONE={'La Def':'ouest','Saint-Cloud':'ouest','Coignières':'ouest','Aulnay':'nord','Paris-Centre':'centre','Meaux':'est','Paris - Meaux':'est','Évry':'sud','Mantes':'ouest','Garches':'ouest'}; /* v63.13 : Évry bleu comme dans le BO */ /* v63.6 : nom de Meaux dans l'export */
 const PL_H=7; /* pixels par heure */
 let PSEL=null; /* barre choisie : {pt, p, cle} */
 const cleBarre=r=>r.k+'|'+(r.a0||'')+'|'+(r.b0||'')+'|'+r.t;
@@ -1303,7 +1312,11 @@ function vPlanning(pt){
   const d=DAY.split('-').map(Number),D0=new Date(d[0],d[1]-1,d[2]).getTime(),D1=new Date(d[0],d[1]-1,d[2]+1).getTime(),debut=DAY===TODAY?now:D0;
   const sej={};stays().forEach(s=>{if(s.point===pt&&(!s.from||enMs(s.from)<b)&&(!s.to||enMs(s.to)>a))(sej[s.plaque]=sej[s.plaque]||[]).push(s)});
   /* v63.12 : case « En panne » cochée dans le BO : retiré du planning, sauf demande du bureau (le garage reste dessiné en rouge, v63.5) */
-  if(DAY>=TODAY&&PANNE.size){const dem=new Set(openAsks(DAY).map(d=>d.plaque));Object.keys(sej).forEach(p=>{if(PANNE.has(p)&&!dem.has(p))delete sej[p]})}
+  const dem=new Set(openAsks(DAY).map(d=>d.plaque)),pan=plaquesEnPanne(DAY);
+  if(DAY>=TODAY&&PANNE.size)Object.keys(sej).forEach(p=>{if(PANNE.has(p)&&!dem.has(p))delete sej[p]});
+  /* v63.17 (Fabian 18/11) : sous la plaque, « En panne » (ou « Au lavage ») à la place du modèle ; demande du bureau ce jour-là :
+     trait rouge à gauche, comme le cadre rouge des cartes de demande */
+  const marques=(p,vu)=>{const e=etqPanne(p,pan,DAY);return e?`<span class="pl-m">${vu?'<small>✓</small>':''}${e}</span>`:''};
   const ps=Object.keys(sej);
   if(!ps.length)return '<div class="empty small"><b>Aucun véhicule sur ce point cette semaine</b></div>';
   const de=s=>s.from?enMs(s.from):-Infinity,a_=s=>s.to?enMs(s.to):Infinity;
@@ -1314,7 +1327,7 @@ function vPlanning(pt){
   ici.sort(tri(prochain));fut.sort(tri(arrive));par.sort(tri(p=>-parti(p)));
   const ks=new Set(),nl=now>a&&now<b?x(now):'',nx=DAY===TODAY?nl:x(Math.max(a,D0+6*36e5)); /* nl : trait « maintenant » ; nx : où caler le planning */
   const det=l=>PSEL&&PSEL.pt===pt&&l.includes(PSEL.p)?detailBarre(pt):'';
-  const bloc=l=>{const labs=l.map(p=>{const v=vehicle(p)||{},st=stayFor(p,DAY),vu=st&&st.point===pt&&vuSejour(st);return `<button type="button" class="pl-lab" data-open="${esc(p)}"><span class="plate">${esc(p)}</span><small>${vu?'✓ Vu · ':''}${esc(v.modele||'')}</small></button>`}).join('');
+  const bloc=l=>{const labs=l.map(p=>{const v=vehicle(p)||{},st=stayFor(p,DAY),vu=st&&st.point===pt&&vuSejour(st);return `<button type="button" class="pl-lab${dem.has(p)?' dem':''}" data-open="${esc(p)}"${dem.has(p)?` aria-label="${esc(p)} : demande du bureau"`:''}><span class="plate">${esc(p)}</span>${marques(p,vu)||`<small>${vu?'✓ Vu · ':''}${esc(v.modele||'')}</small>`}</button>`}).join('');
     const lanes=l.map(p=>`<div class="pl-ln">${barresDe(p,pt,W).map(r=>{const on=PSEL&&PSEL.pt===pt&&PSEL.p===p&&PSEL.cle===cleBarre(r);ks.add(r.k);return `<button type="button" class="pb ${r.k}${r.s&&r.s.ici?' ici':''}${on?' sel':''}" style="left:${x(r.a)}px;width:${Math.max(x(r.b)-x(r.a),12)}px" data-pbar="${esc(cleBarre(r))}" data-pt="${esc(pt)}" data-pp="${esc(p)}" aria-label="${esc(p+' : '+r.t)}"><span>${esc(r.t)}</span></button>`}).join('')}</div>`).join('');
     return `<div class="pl"><div>${labs}</div><div class="pl-sc" data-plsc="${esc(cle)}" data-nowx="${nx}"><div class="pl-tr" style="width:${larg}px">${lanes}${nl!==''?`<div class="pl-now" style="left:${nl}px"></div>`:''}</div></div></div>${det(l)}`};
   const groupe=(k,titre,l,ouvert)=>{if(!l.length)return '';const o=(pt+'|'+k) in PLG?PLG[pt+'|'+k]:ouvert;return `<button type="button" class="pl-grp" data-plgrp="${esc(pt+'|'+k)}" aria-expanded="${o}"><span>${titre} <b>${l.length}</b></span><span aria-hidden="true">${o?'▾':'▸'}</span></button>${o?bloc(l):''}`};
@@ -1375,7 +1388,7 @@ function vHome(){
   <div class="days" role="group" aria-label="Jour">${days.map((d,i)=>dayChip(d,i,'data-day',DAY)).join('')}</div>
   ${(()=>{/* v63.14 (Fabian 17/11, choix D) : fermé = seulement les points du runner, en grand, + « Autres points » ; ouvert = tous (4 + 3) */
     const fiche=S.ptsFiche||[],ouvert=PTS_OUVERT||!(fiche.length||S.myPoints.length),vis=ouvert?pts:pts.filter(p=>fiche.includes(p)||S.myPoints.includes(p)); /* ses points (feuille) restent en haut même éteints */
-    return `<div class="pts ${ouvert?'ouvert':'ferme'}" role="group" aria-label="Mes points">${vis.map(p=>{const on=S.myPoints.includes(p);return `<button type="button" class="pt ${on?'on':''}" data-point="${esc(p)}" aria-pressed="${on}" title="${esc(full(p))}">${esc(SHORT[p]||p)}</button>`}).join('')}${(fiche.length||S.myPoints.length)?`<button type="button" class="pt-plus" data-ptsplus="1" aria-expanded="${ouvert}">${ouvert?'✓ Fermer la liste':'+ Autres points'}</button>`:''}</div>`})()}
+    return `<div class="pts ${ouvert?'ouvert':'ferme'}${vis.length%4===0?' q4':''}" role="group" aria-label="Mes points">${vis.map(p=>{const on=S.myPoints.includes(p);return `<button type="button" class="pt ${on?'on':''}" data-point="${esc(p)}" aria-pressed="${on}" title="${esc(full(p))}">${esc(SHORT[p]||p)}</button>`}).join('')}${(fiche.length||S.myPoints.length)?`<button type="button" class="pt-plus" data-ptsplus="1" aria-expanded="${ouvert}">${ouvert?'✓ Fermer la liste':'+ Autres points'}</button>`:''}</div>`})()}
   <div class="vues" role="group" aria-label="Affichage"><button type="button" data-vue="liste" aria-pressed="${S.vue!=='plan'}">Liste</button><button type="button" data-vue="plan" aria-pressed="${S.vue==='plan'}">Planning</button></div>
   <button type="button" class="askbtn ${asks.length?'':'none'}" id="openAsks"><span>Rappels et demandes</span><span class="askn">${(()=>{const n=DEMO?0:newAsks().length;return n?`<span class="newn">${n} nouvelle${n>1?'s':''}</span>`:''})()}${asks.length?`<b>${asks.length}</b>`:'aucun'}${I.chev}</span></button>
   ${now?'':`<div class="later">${past?'Journée':'Planning'} ${esc(duWord(DAY))} : à consulter seulement. Les véhicules se valident le jour même.</div>`}
@@ -1399,9 +1412,9 @@ function vHome(){
 
 /* Point d'un rappel : celui choisi, sinon celui du planning ce jour-là */
 function askPt(d){return d.point||((stayFor(d.plaque,DAY)||{}).point)||''}
-function askPill(d){return d.date<TODAY?`<span class="pill late">Prévu ${esc(dayWord(d.date))}</span>`:d.auteur===S.who?'<span class="pill mine">Mon rappel'+esc(hhmm(d.heure))+'</span>':'<span class="pill ask">Service parc</span>'}
+function askPill(d){return d.date<TODAY?`<span class="pill late">Prévu ${esc(dayWord(d.date))}</span>`:d.auteur===S.who?'<span class="pill mine">Mon rappel'+esc(hhmm(d.heure))+'</span>':'<span class="pill ask">'+(d.par?'Parc · '+esc(d.par):'Service parc')+'</span>'}
 /* Rappel ou demande dans la liste du point, même si le planning ne met pas le véhicule ici */
-function askCard(d,s,ou){const v=vehicle(d.plaque)||{};return rowHtml(d.plaque,`<span class="row-t"><span class="plate">${esc(d.plaque)}</span>${askPill(d)}${phPill(d)}</span>${v.modele?`<span class="model">${esc(v.modele)}</span>`:''}<span class="consigne">${esc(d.consigne||'Passer voir ce véhicule.')}</span>${jusqua(d)?`<span class="spec periode">${esc(cap(jusqua(d)))}</span>`:''}${ou?`<span class="spec">${esc(ou)}</span>`:''}${s?timesHtml(s)+bloque(d,s)+improsDemande(d,s).map(improMini).join(''):'<span class="spec">Pas prévu ici dans le planning</span>'+bloque(d,s)}`,'ask')}
+function askCard(d,s,ou){const v=vehicle(d.plaque)||{};return rowHtml(d.plaque,`<span class="row-t"><span class="plate">${esc(d.plaque)}</span>${askPill(d)}${phPill(d)}${etqPanne(d.plaque,plaquesEnPanne(DAY),DAY)}</span>${v.modele?`<span class="model">${esc(v.modele)}</span>`:''}<span class="consigne">${esc(d.consigne||'Passer voir ce véhicule.')}</span>${jusqua(d)?`<span class="spec periode">${esc(cap(jusqua(d)))}</span>`:''}${ou?`<span class="spec">${esc(ou)}</span>`:''}${s?timesHtml(s)+bloque(d,s)+improsDemande(d,s).map(improMini).join(''):'<span class="spec">Pas prévu ici dans le planning</span>'+bloque(d,s)}`,'ask')}
 function cap(t){return t.charAt(0).toUpperCase()+t.slice(1)}
 /* v55 (Fabian) : sur une demande, le créneau où le véhicule est bloqué dans le BO (improductif) le jour de la demande,
    encadré « Véhicule immobilisé » (jaune pour un improductif, rouge pour la méca) puis une ligne par impro (heures, motif). Si le bureau a coché
@@ -1425,7 +1438,7 @@ function vAsks(){
   const now=DAY===TODAY,cur=openAsks(DAY),from=DAY>TODAY?DAY:TODAY;
   const later=allAsks().filter(d=>pourMoi(d)&&d.date>from).sort((a,b)=>a.date.localeCompare(b.date));
   /* v43 : horaires d'arrivée et de départ (planning Metabase) sur chaque demande, comme dans la liste des véhicules */
-  const row=d=>{const v=vehicle(d.plaque)||{};const st=stayFor(d.plaque,d.date<TODAY?TODAY:d.date);const pt=d.point||(st||{}).point||'';return rowHtml(d.plaque,`<span class="row-t"><span class="plate">${esc(d.plaque)}</span>${d.auteur===S.who?'<span class="pill mine">Mon rappel'+esc(hhmm(d.heure))+'</span>':'<span class="pill ask">Service parc</span>'}${sheet&&sheet.nouv&&sheet.nouv.includes(d.id)?'<span class="pill new">Nouvelle</span>':''}${phPill(d)}</span>${v.modele?`<span class="model">${esc(v.modele)}</span>`:''}<span class="consigne">${esc(d.consigne||'Passer voir ce véhicule.')}</span><span class="spec">${esc((d.date<TODAY?'Prévu '+dayWord(d.date):jusqua(d)?cap(jusqua(d)):cap(dayWord(d.date)))+(pt?' · '+full(pt):''))}</span>${st?timesHtml(st)+bloque(d,st)+improsDemande(d,st).map(improMini).join(''):'<span class="spec">Pas dans le planning ce jour-là</span>'+bloque(d,st)}`,'ask')};
+  const row=d=>{const v=vehicle(d.plaque)||{};const st=stayFor(d.plaque,d.date<TODAY?TODAY:d.date);const pt=d.point||(st||{}).point||'';return rowHtml(d.plaque,`<span class="row-t"><span class="plate">${esc(d.plaque)}</span>${d.auteur===S.who?'<span class="pill mine">Mon rappel'+esc(hhmm(d.heure))+'</span>':'<span class="pill ask">'+(d.par?'Parc · '+esc(d.par):'Service parc')+'</span>'}${sheet&&sheet.nouv&&sheet.nouv.includes(d.id)?'<span class="pill new">Nouvelle</span>':''}${phPill(d)}${etqPanne(d.plaque,plaquesEnPanne(d.date<TODAY?TODAY:d.date),d.date<TODAY?TODAY:d.date)}</span>${v.modele?`<span class="model">${esc(v.modele)}</span>`:''}<span class="consigne">${esc(d.consigne||'Passer voir ce véhicule.')}</span><span class="spec">${esc((d.date<TODAY?'Prévu '+dayWord(d.date):jusqua(d)?cap(jusqua(d)):cap(dayWord(d.date)))+(pt?' · '+full(pt):''))}</span>${st?timesHtml(st)+bloque(d,st)+improsDemande(d,st).map(improMini).join(''):'<span class="spec">Pas dans le planning ce jour-là</span>'+bloque(d,st)}`,'ask')};
   return `<div class="sh-top pad"><button type="button" class="back" id="closeSheet">${I.back}Retour</button></div>
   <div class="sh-body pad">
     <div class="q">Rappels et demandes</div>
@@ -1467,7 +1480,7 @@ function vDone(){
 function searchResults(){
   const q=norm(query);const res=q.length>=2?[...vehicles().values()].filter(v=>norm(v.plaque).includes(q)).slice(0,8):[];
   const raw=query.trim().toUpperCase();
-  const pan=plaquesEnPanne(TODAY),etq=p=>{if(!pan.has(p))return '';const n=nowStr(),i=S.impros.find(i=>i.plaque===p&&i.type==='meca'&&i.debut<=n&&(!i.fin||i.fin>=n));return i&&estLavage(i)?'<span class="etq lav">Au lavage</span>':'<span class="etq">En panne</span>'}; /* v63.8 : caché des tournées, mais trouvé ici */
+  const pan=plaquesEnPanne(TODAY),etq=p=>etqPanne(p,pan); /* v63.8 : caché des tournées, mais trouvé ici */
   return `${res.map(v=>rowHtml(v.plaque,`<span class="plate">${esc(v.plaque)}</span>${etq(v.plaque)}<span class="model">${esc(v.modele||'')}</span>`)).join('')}
     ${q.length>=2&&!res.length?'<div class="meta">Aucun véhicule de la flotte ne correspond.</div>':''}
     ${q.length>=7&&!vehicles().has(raw)&&!res.some(v=>norm(v.plaque)===q)?(()=>{const p=/^[A-Z]{2}\d{3}[A-Z]{2}$/.test(q)?q.slice(0,2)+'-'+q.slice(2,5)+'-'+q.slice(5):raw;return `<button type="button" class="btn wide" data-open="${esc(p)}">Continuer avec ${esc(p)}</button>`})():''}`; /* v59 : seulement pour une plaque complète qui n'est pas dans la flotte */
