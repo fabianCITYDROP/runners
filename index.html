@@ -395,6 +395,30 @@ body{font-size:17px}
 nav.tabs button{font-size:16px}
 .cnt{font-size:14px}
 .toast{font-size:16px}
+/* v63.22 (Fabian 20/11) : 3e onglet « Week-end » (astreinte) : icône au-dessus du texte pour que les 3 tiennent */
+nav.tabs div.t3{grid-template-columns:1fr 1fr 1fr}
+nav.tabs div.t3 button{flex-direction:column;gap:2px;font-size:14px;min-height:62px}
+nav.tabs div.t3 button span{display:flex;align-items:center;gap:4px}
+nav.tabs div.t3 .cnt{font-size:12.5px;min-width:20px;padding:1px 5px}
+nav.tabs button .cnt.we{background:var(--red);color:#fff}
+.we-t{display:flex;flex-direction:column;gap:8px;padding:14px;border-radius:14px;background:var(--surface);border:1px solid var(--line)}
+.we-t.orange{background:var(--warn-soft);border-color:#F1C7A6}
+.we-t .l{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:15px}.we-t .l b{font-size:22px;white-space:nowrap}
+.we-t.orange .l b{color:var(--warn)}
+.we-bar{position:relative;height:12px;border-radius:99px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line-strong);overflow:hidden;display:flex}
+.we-bar:after{content:'';position:absolute;top:0;bottom:0;left:93.33%;right:0;background:repeating-linear-gradient(135deg,#F3C9A6 0 4px,#FBEADF 4px 8px);border-left:2px solid #C25A12}
+.we-bar span{position:relative;z-index:1;display:block;height:100%;flex:none;background:var(--accent)}.we-bar span.rest{background:#9CC3B0}.we-bar span.or{background:#E07A2E}
+.we-leg{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13px;color:var(--muted)}.we-leg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.we-t .m{font-size:14px;color:var(--muted)}
+.we-chg{text-align:center;font-size:14px;color:var(--muted);margin:-4px 0}
+.pband .we-n{display:inline-flex;width:28px;height:28px;border-radius:50%;background:var(--head-fg);color:var(--head);font-size:15px;align-items:center;justify-content:center;margin-right:10px;vertical-align:3px}
+.pband.we-fini{background:var(--accent)}
+.we-first{margin:-4px 4px 0;font-size:15px;color:var(--warn)}.we-first b{font-weight:700}
+.row.dep1 .tgrid>span:last-child small,.row.dep1 .tgrid>span:last-child b{color:var(--warn)}
+.row.we-vu{opacity:.72}
+.we-fin{display:flex;flex-direction:column;align-items:center;gap:6px;padding:20px 16px;border-radius:14px;background:var(--surface);border:2px solid var(--accent);text-align:center}
+.we-fin .ok{width:52px;height:52px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700}
+.we-fin b{font-size:19px}
 .photos{display:flex;gap:10px;flex-wrap:wrap}
 .ph{position:relative;width:84px;height:84px;border-radius:12px;overflow:hidden;border:1px solid var(--line)}
 .ph img{width:100%;height:100%;object-fit:cover;display:block}
@@ -895,8 +919,14 @@ function pourMoi(d){return d.runner!=='Tous'||d.vise!==false||S.myPoints.include
 function openAsks(day,tout){day=day||TODAY;return allAsks().filter(d=>(tout||pourMoi(d))&&(day===TODAY?d.date<=TODAY:d.fin?d.debut<=day&&day<=d.fin:d.date===day)).sort((a,b)=>a.date.localeCompare(b.date))}
 /* v36 : nouvelles demandes du bureau : bandeau, vibration, pastille sur l'icône de l'appli, notification si autorisée.
    « Nouvelle » = pas encore ouverte par le runner (bouton Rappels et demandes) */
-function newAsks(){const vus=S.vus||[];return allAsks().filter(d=>pourMoi(d)&&d.auteur!==S.who&&!d.pending&&!vus.includes(d.id))}
+function newAsks(){const vus=S.vus||[];return allAsks().filter(d=>!d.astreinte&&pourMoi(d)&&d.auteur!==S.who&&!d.pending&&!vus.includes(d.id))}
 function badge(){const n=DEMO?0:newAsks().length;try{if(navigator.setAppBadge){if(n)navigator.setAppBadge(n);else navigator.clearAppBadge()}}catch(e){}return n}
+/* v63.22 (Fabian 20/11) : astreinte du week-end = demandes du bureau avec la colonne « astreinte » (rang), pour ce runner, ce jour-là.
+   Elles ont leur onglet « Week-end » : plus dans « Rappels et demandes » ni dans « À faire ». Les autres jours, rien ne change. */
+function estAstr(d){return !!(d&&d.astreinte)&&d.date===TODAY&&d.runner===S.who}
+function horsAstr(l){return l.filter(d=>!estAstr(d))}
+function astrJour(){return (S.demandes||[]).filter(d=>d.astreinte&&d.date===TODAY&&d.runner===S.who&&d.statut!=='supprimée')}
+function passageDem(id){for(let i=PL.length-1;i>=0;i--)if(String(PL[i].demande||'').split(',').includes(id))return PL[i];return null}
 function markAsksSeen(){S.vus=allAsks().map(d=>d.id).concat(S.vus||[]).filter((x,i,a)=>a.indexOf(x)===i).slice(0,300);save();badge()}
 /* v44 : toucher la notification ouvre « Rappels et demandes » et va chercher la demande tout de suite ; en attendant
    Google (2 à 10 s), le texte de la notification s'affiche en haut de la page. Jamais pendant une fiche ou une saisie. */
@@ -1177,7 +1207,7 @@ async function run(force){
         if(!r.partiel&&!got.length)S.depuis='';
         if(r.vp===undefined)S.depuis='';S.vp=r.vp;
         savePassages();
-        S.demandes=(r.demandes||[]).filter(d=>normDate(d.date)).map(d=>({id:d.id,date:normDate(d.date),runner:d.runner,plaque:String(d.plaque||'').toUpperCase(),point:d.point?city(d.point):'',consigne:d.consigne,statut:d.statut,auteur:d.auteur||'Service parc',fin:normDate(d.fin)||'',creneau:String(d.creneau||'').slice(0,40),heure:/^\d{2}:\d{2}/.test(String(d.heure||''))?String(d.heure).slice(0,5):'',vise:d.vise!==false,photos:idsPhotos(d.photos),par:(d.auteur||'Service parc')==='Service parc'?String(d.envoye_par||'').trim().slice(0,30):''}));
+        S.demandes=(r.demandes||[]).filter(d=>normDate(d.date)).map(d=>({id:d.id,date:normDate(d.date),runner:d.runner,plaque:String(d.plaque||'').toUpperCase(),point:d.point?city(d.point):'',consigne:d.consigne,statut:d.statut,auteur:d.auteur||'Service parc',fin:normDate(d.fin)||'',creneau:String(d.creneau||'').slice(0,40),heure:/^\d{2}:\d{2}/.test(String(d.heure||''))?String(d.heure).slice(0,5):'',vise:d.vise!==false,photos:idsPhotos(d.photos),par:(d.auteur||'Service parc')==='Service parc'?String(d.envoye_par||'').trim().slice(0,30):'',astreinte:/^\d{1,3}$/.test(String(d.astreinte==null?'':d.astreinte).trim())?String(d.astreinte).trim():'' /* v63.22 : rang dans la liste d'astreinte du week-end */}));
         const autreRunner=S.who&&S.who!==r.runner.prenom; /* v58 : autre lien ouvert sur ce téléphone : on reprend les points de ce runner */
         S.who=r.runner.prenom;
         /* v63.14 (Fabian 17/11) : points donnés au runner dans la feuille : toujours en haut. Au 1er démarrage, ou quand le
@@ -1382,7 +1412,7 @@ document.addEventListener('scroll',e=>{const t=e.target;if(!t||!t.dataset||t.dat
 function vHome(){
   const pts=LOCAL.concat(allPoints().filter(p=>S.myPoints.includes(p)&&!LOCAL.includes(p)));
   const order=S.myPoints.slice().sort((a,b)=>pts.indexOf(a)-pts.indexOf(b));
-  const now=DAY===TODAY,past=DAY<TODAY;const list=past?(pn=>staysOn(DAY).filter(s=>vuSejour(s)||!pn.has(s.plaque)))(plaquesEnPanne(DAY)) /* v63.3 : pas de « Pas vu » pour un véhicule au garage ce jour-là */:todo(DAY),asks=openAsks(DAY),gone=now?partis(DAY):[];
+  const now=DAY===TODAY,past=DAY<TODAY;const list=past?(pn=>staysOn(DAY).filter(s=>vuSejour(s)||!pn.has(s.plaque)))(plaquesEnPanne(DAY)) /* v63.3 : pas de « Pas vu » pour un véhicule au garage ce jour-là */:todo(DAY),asks=horsAstr(openAsks(DAY)),gone=now?partis(DAY):[];
   const days=[];for(let i=-DAYS_BACK;i<=DAYS_AHEAD;i++)days.push(plusDays(i));
   return `${alertesHtml(true)}
   <div class="days" role="group" aria-label="Jour">${days.map((d,i)=>dayChip(d,i,'data-day',DAY)).join('')}</div>
@@ -1435,8 +1465,8 @@ function bloque(d,s){
   const un=m=>hh(m.debut)+' → '+(m.fin?hh(m.fin):'fin non prévue');
   return `<span class="blq${l.some(m=>m.type==='meca')?' meca':''}"><small><i></i>Véhicule immobilisé</small>${l.map(m=>`<span class="l"><b>${esc(un(m))}</b><span class="m">${esc(m.type==='meca'?(estLavage(m)?'Lavage':'Garage'):m.libelle||'Improductif')}</span></span>`).join('')}</span>`}
 function vAsks(){
-  const now=DAY===TODAY,cur=openAsks(DAY),from=DAY>TODAY?DAY:TODAY;
-  const later=allAsks().filter(d=>pourMoi(d)&&d.date>from).sort((a,b)=>a.date.localeCompare(b.date));
+  const now=DAY===TODAY,cur=horsAstr(openAsks(DAY)),from=DAY>TODAY?DAY:TODAY;
+  const later=allAsks().filter(d=>pourMoi(d)&&!d.astreinte&&d.date>from).sort((a,b)=>a.date.localeCompare(b.date));
   /* v43 : horaires d'arrivée et de départ (planning Metabase) sur chaque demande, comme dans la liste des véhicules */
   const row=d=>{const v=vehicle(d.plaque)||{};const st=stayFor(d.plaque,d.date<TODAY?TODAY:d.date);const pt=d.point||(st||{}).point||'';return rowHtml(d.plaque,`<span class="row-t"><span class="plate">${esc(d.plaque)}</span>${d.auteur===S.who?'<span class="pill mine">Mon rappel'+esc(hhmm(d.heure))+'</span>':'<span class="pill ask">'+(d.par?'Parc · '+esc(d.par):'Service parc')+'</span>'}${sheet&&sheet.nouv&&sheet.nouv.includes(d.id)?'<span class="pill new">Nouvelle</span>':''}${phPill(d)}${etqPanne(d.plaque,plaquesEnPanne(d.date<TODAY?TODAY:d.date),d.date<TODAY?TODAY:d.date)}</span>${v.modele?`<span class="model">${esc(v.modele)}</span>`:''}<span class="consigne">${esc(d.consigne||'Passer voir ce véhicule.')}</span><span class="spec">${esc((d.date<TODAY?'Prévu '+dayWord(d.date):jusqua(d)?cap(jusqua(d)):cap(dayWord(d.date)))+(pt?' · '+full(pt):''))}</span>${st?timesHtml(st)+bloque(d,st)+improsDemande(d,st).map(improMini).join(''):'<span class="spec">Pas dans le planning ce jour-là</span>'+bloque(d,st)}`,'ask')};
   return `<div class="sh-top pad"><button type="button" class="back" id="closeSheet">${I.back}Retour</button></div>
@@ -1451,6 +1481,37 @@ function vAsks(){
   </div>`;
 }
 
+const WE_MIN=30,WE_CHG=60,WE_MAX=420,WE_MARGE=450;
+function hMin(m){const h=Math.floor(m/60),r=m%60;return h?h+' h'+(r?' '+String(r).padStart(2,'0'):''):r+' min'}
+function weStatut(x){if(!x)return '';const pb=x.pb||[];return pb.length?(pb.length===1&&pb[0]==='Pas trouvé sur place'?'<span class="pill dep">Pas trouvé</span>':'<span class="pill dep">Défaut signalé</span>'):'<span class="pill seen">Vu · OK</span>'}
+function weGroupes(){
+  const l=astrJour().map(d=>{const st=stayFor(d.plaque,TODAY);return {d,st,pt:d.point||(st||{}).point||'',dep:st&&st.to&&!st.toCaler?st.to:'',x:FAITES.has(d.id)?passageDem(d.id)||{pb:[]}:null}});
+  const g={};l.forEach(v=>{(g[v.pt]=g[v.pt]||[]).push(v)});
+  const tri=(a,b)=>(a.dep||'9999').localeCompare(b.dep||'9999')||(+a.d.astreinte||0)-(+b.d.astreinte||0);
+  return Object.keys(g).map(pt=>{const vs=g[pt].sort(tri);return {pt,vs,dep:vs.map(v=>v.dep).filter(Boolean).sort()[0]||'',rang:Math.min(...vs.map(v=>+v.d.astreinte||99))}})
+    .sort((a,b)=>(a.dep||'9999').localeCompare(b.dep||'9999')||a.rang-b.rang);
+}
+function vWeekend(){
+  const gs=weGroupes(),all=gs.reduce((a,g)=>a.concat(g.vs),[]),n=all.length,faits=all.filter(v=>v.x).length,reste=n-faits;
+  const prevu=n*WE_MIN+Math.max(0,gs.length-1)*WE_CHG;
+  const gr=gs.filter(g=>g.vs.some(v=>!v.x)),entame=gr.some(g=>g.vs.some(v=>v.x));
+  const resteMin=reste*WE_MIN+Math.max(0,gr.length-(faits===0||entame?1:0))*WE_CHG;
+  const pc=m=>(Math.min(m,WE_MARGE)/WE_MARGE*100).toFixed(2)+'%',fait=Math.max(0,prevu-resteMin),orange=prevu>WE_MAX;
+  const par=(all.find(v=>v.d.par)||{d:{}}).d.par;
+  const barre=`<div class="we-bar">${fait?`<span style="width:${pc(fait)}"></span>`:''}${resteMin?`<span class="rest" style="width:${pc(Math.min(resteMin,WE_MAX-Math.min(fait,WE_MAX)))}"></span>`:''}${orange&&Math.min(prevu,WE_MARGE)>Math.max(WE_MAX,fait)?`<span class="or" style="width:${pc(Math.min(prevu,WE_MARGE)-Math.max(WE_MAX,fait))}"></span>`:''}</div>
+    <div class="we-leg"><span><i style="background:#9CC3B0"></i>jusqu'à 7 h</span><span><i style="background:#E07A2E"></i>7 h → 7 h 30 : marge si galère</span></div>`;
+  const tete=!reste?`<div class="we-fin"><span class="ok">✓</span><b>Liste terminée, merci !</b><span class="meta">${plural(n,'véhicule')} vu${n>1?'s':''}${(k=>k?' · '+plural(k,'problème')+' signalé'+(k>1?'s':''):'')(all.filter(v=>v.x&&v.x.pb&&v.x.pb.length).length)}</span><button type="button" class="btn big primary" data-tab="done">Terminer ma tournée</button><span class="meta">Le rapport part sur Slack, comme en semaine.</span></div>`
+    :`<div class="we-t${orange?' orange':''}"><div class="l"><span>${faits?'Il reste environ':"Temps prévu aujourd'hui"}</span><b>${faits?hMin(resteMin):hMin(prevu)+(orange?' · marge comprise':'')}</b></div>${barre}<div class="m">${faits?`${faits} véhicule${faits>1?'s':''} vu${faits>1?'s':''} sur ${n}`:`${plural(n,'véhicule')} × 30 min${gs.length>1?' + '+plural(gs.length-1,'changement')+' de point × 1 h':''}`}${par?' · liste envoyée par '+esc(par):''}</div></div>`;
+  let premier=true;
+  return tete+gs.map((g,i)=>{const r=g.vs.filter(v=>!v.x).length,dep1=g.vs.find(v=>!v.x&&v.dep);
+    const first=r&&premier;if(r)premier=false;
+    return `${i?'<div class="we-chg">→ Changement de point · 1 h</div>':''}<section class="psec">
+    <div class="pband${r?'':' we-fini'}"><h2><span class="we-n">${r?i+1:'✓'}</span>${esc(g.pt?full(g.pt):'Point non précisé')}</h2><div class="pband-n">${r?`<b>${r}</b> à voir`:'fini'}</div></div>
+    ${r&&dep1?`<div class="we-first">Premier départ : <b>${esc(short(dep1.dep).replace(' à ',' '))}</b>${first?' · commence ici':''}</div>`:r&&first?'<div class="we-first">Commence ici</div>':''}
+    ${g.vs.map(v=>{const d=v.d,vh=vehicle(d.plaque)||{},cons=d.consigne&&d.consigne!=='Passer voir ce véhicule.'?d.consigne:'';
+      return rowHtml(d.plaque,`<span class="row-t"><span class="plate">${esc(d.plaque)}</span>${v.x?weStatut(v.x):'<span class="pill unseen">≈ 30 min</span>'}${phPill(d)}${etqPanne(d.plaque,plaquesEnPanne(TODAY),TODAY)}</span>${vh.modele?`<span class="model">${esc(vh.modele)}</span>`:''}${cons?`<span class="consigne">${esc(cons)}</span>`:''}${v.st?timesHtml(v.st)+bloque(d,v.st):'<span class="spec">Pas dans le planning aujourd\'hui</span>'+bloque(d,v.st)}`,(v.x?'we-vu':'')+(v===dep1?' dep1':''))}).join('')}
+  </section>`}).join('')+(reste?'<p class="meta" style="text-align:center">Appuie sur un véhicule pour faire le contrôle, comme d\'habitude.</p>':'');
+}
 function vDone(){
   const d=doneOn(DONE_DAY);const pb=d.filter(x=>x.pb.length).length;const today=DONE_DAY===TODAY;
   const hist=[];for(let i=-(HISTORY_DAYS-1);i<=0;i++)hist.push(plusDays(i));
@@ -1615,7 +1676,10 @@ function put(el,html){if(el._h===html)return;el._h=html;
 function render(bg){const r=render0(bg);syncHist();return r}
 function render0(bg){
   index();badge();
-  const sc=S.screen==='done'?'done':'home';const l=dLabel(TODAY);
+  const astr=astrJour(),weReste=astr.filter(d=>!FAITES.has(d.id)).length;
+  /* v63.22 : le jour de l'astreinte, l'appli s'ouvre une fois sur l'onglet Week-end */
+  if(astr.length&&S.weOuvert!==TODAY&&!sheet&&!showReport){S.weOuvert=TODAY;S.screen='we';save()}
+  const sc=S.screen==='done'?'done':S.screen==='we'&&astr.length?'we':'home';const l=dLabel(TODAY);
   const ws=$('#whoSlot');
   const sombre=document.documentElement.dataset.theme==='dark';
   const tb=`<button type="button" id="themeBtn" class="themebtn" aria-label="${sombre?'Passer en mode clair':'Passer en mode sombre'}" title="${sombre?'Mode clair':'Mode sombre'}">${sombre?I.sun:I.moon}</button>`;
@@ -1632,16 +1696,18 @@ function render0(bg){
   else if(!DEMO&&S.syncErr&&!S.loc.length)blocked=gate('Google ne répond pas','Le planning n\'a pas pu être chargé. Nouvel essai automatique dans un instant.');
   else if(!DEMO&&!ready)blocked=gate('Chargement…','Ouverture de votre planning.');
   else if(!DEMO&&!S.synced)blocked=S.offline?gate(navigator.onLine===false?'Pas de réseau':'Google ne répond pas','L\'appli a besoin d\'internet la première fois. Nouvel essai automatique dans 30 secondes.','<button type="button" class="btn wide primary" id="refresh">Réessayer</button>'):gate('Chargement…','Récupération de votre planning.');
-  $('#title').textContent=blocked?'Runners':sc==='done'?'Ma tournée':DAY===TODAY?'Véhicules à voir':'Planning à venir';
+  $('#title').textContent=blocked?'Runners':sc==='done'?'Ma tournée':sc==='we'?'Mon week-end':DAY===TODAY?'Véhicules à voir':'Planning à venir';
   $('#nav').hidden=!!blocked;
   put($('#hsSlot'),blocked?'':`<button type="button" class="hsearch" id="openSearch">${I.search}<span>Chercher une plaque</span></button>`);
   if(blocked){$('#source').hidden=!!(DEMO||!CODE||S.blocked);put($('#view'),blocked);sheet=null}
   else{
     $('#source').hidden=!alert;
-    put($('#view'),(picker?`<div class="picker" role="group" aria-label="Choisir le runner"><div class="mlabel">Qui fait la tournée ?</div><div class="choice">${RUNNERS.map(r=>`<button type="button" class="opt-row ${r===S.who?'on':''}" data-runner="${esc(r)}" aria-pressed="${r===S.who}"><span class="box">${r===S.who?I.tick:''}</span>${esc(r)}</button>`).join('')}</div><label for="csvFile" class="lnk2">Démonstration : charger un export Metabase</label></div>`:'')+(sc==='done'?vDone:vHome)());
+    put($('#view'),(picker?`<div class="picker" role="group" aria-label="Choisir le runner"><div class="mlabel">Qui fait la tournée ?</div><div class="choice">${RUNNERS.map(r=>`<button type="button" class="opt-row ${r===S.who?'on':''}" data-runner="${esc(r)}" aria-pressed="${r===S.who}"><span class="box">${r===S.who?I.tick:''}</span>${esc(r)}</button>`).join('')}</div><label for="csvFile" class="lnk2">Démonstration : charger un export Metabase</label></div>`:'')+(sc==='done'?vDone:sc==='we'?vWeekend:vHome)());
     const ck=sc+DAY+DONE_DAY;if(ck!==lastCk){lastCk=ck;centerDays()}
-    const n=new Set(todo().map(x=>x.plaque).concat(openAsks().map(d=>d.plaque))).size,dn=doneToday().length; /* v59 : un véhicule compte une fois (comme sur les points) */
-    put($('#tabs'),[['home','À faire',I.todo,n],['done','Ma tournée',I.done,dn]].map(([k,t,ic,c])=>`<button type="button" class="${k===sc?'on':''}" data-tab="${k}" aria-current="${k===sc?'page':'false'}">${ic}<span>${t} <b class="cnt">${c}</b></span></button>`).join(''));
+    const n=new Set(todo().map(x=>x.plaque).concat(horsAstr(openAsks()).map(d=>d.plaque))).size,dn=doneToday().length; /* v59 : un véhicule compte une fois (comme sur les points) */
+    const tabs=[['home','À faire',I.todo,n],['done','Ma tournée',I.done,dn]].concat(astr.length?[['we','Week-end',I.sun,weReste]]:[]);
+    $('#tabs').classList.toggle('t3',tabs.length===3);
+    put($('#tabs'),tabs.map(([k,t,ic,c])=>`<button type="button" class="${k===sc?'on':''}" data-tab="${k}" aria-current="${k===sc?'page':'false'}">${ic}<span>${t} <b class="cnt${k==='we'&&c?' we':''}">${c}</b></span></button>`).join(''));
   }
   /* Une mise à jour en arrière-plan ne redessine pas la fiche ouverte (on ne perd pas la saisie) */
   if(bg&&sheet){
