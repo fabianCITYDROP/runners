@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Runners · Bureau</title>
 <!-- Page bureau de l'appli Runners, v4 : liens des runners, demandes à n'importe quelle date, rappels des runners, passages du jour ; v4 : actualisation automatique, un passage peut clore plusieurs demandes ; v6 (suite de la v4, la v5 est la version pro à part) : envois passés dans l'adresse (GET) car certains appareils bloquaient les envois classiques ; v7 : un véhicule ajouté s'affiche tout de suite (envoi en arrière-plan) ; v8 : « Photos en cours d'envoi » quand les photos suivent le passage ; v9 : « aperçu » tant que seule la photo allégée est arrivée ; v10 : photo effacée au bout de 5 jours indiquée ; v11 : plus rapide (planning retéléchargé seulement s'il a changé), actualisée toutes les 30 secondes ; v12 : indique combien de téléphones ont reçu l'alerte d'une nouvelle demande ; v13 : mise à jour automatique sans recharger à la main ; v14 : page laissée ouverte la nuit remise au nouveau jour le matin, liens photo vérifiés, polices sans bloquer l'affichage ; v15 : demandes et rappels à faire modifiables (bouton Modifier, avec le script v20) ; v16 : onglet « Retours runners » (véhicules demandés vus par un runner, alerte avec bandeau, son et notification de l'ordinateur ; retiré si le runner annule), état de Slack (avec le script v21) ; v17 (appli v48) : demande sur un jour ou sur plusieurs jours (du … au …) ; v18 (appli v49) : « Date unique / Période », termes revus ; v19 (appli v51) : onglet « Planifier » (avant « Dernière minute »), tirets de la plaque mis tout seuls ; v20 (appli v53) : liste « à faire » seulement, la plus récente en haut, 7 jours au plus ; passages du jour rangés par runner ; v21 (appli v54) : panne passagère de Google sans perdre la page, ajout sans doublon si la réponse se perd, actualisation lente ne défait plus un ajout ou un retrait, modification annulée proprement si la demande est faite entre-temps, plaque à moitié tapée refusée, téléphone étroit -->
+<!-- v63.21 (20/11, Fabian) : onglet « Week-end » : bouton « Télécharger le récap astreintes (Excel) » (script v34.21, action « astreintes_recap ») : un fichier Excel (Lisez-moi, Astreintes, Par astreinte, Par runner) à envoyer à Mickaël et Jérôme, sans leur partager la feuille -->
+<!-- v63.20 (20/11, Fabian) : onglet « Week-end » : liste d'astreinte d'un runner pour un samedi ou un dimanche, envoyée d'un coup (script v34.20) ; temps calculé (30 min par véhicule, + 1 h par changement de point), vert jusqu'à 7 h, orange jusqu'à 7 h 30, au-delà envoi bloqué ; bandeau à partir du jeudi tant qu'un jour du week-end n'a pas de liste ; les véhicules d'astreinte ne sont plus dans la liste de « Planifier » -->
 <!-- v63.18 (18/11, Fabian) : « Qui envoie ? » obligatoire sur une demande (Micha, Fabian, Brahim, Auric : liste dans la ligne bureau_noms des Réglages), gardé sur cet appareil ; le nom part dans le message Slack et chez le runner (script v34.18) -->
 <!-- v63.15 (17/11, Fabian) : jusqu'à 3 photos jointes à une demande (réduites à 1280 px, envoyées juste après la demande) ; Slack : la 1re dans le message, les autres en réponse dans le fil ; le runner les ouvre d'un appui (script v34.16) -->
 <!-- v25 (29/10) : actualisation et annonces des retours même quand un champ a le curseur ; nouvel essai tout seul si Google ne répond pas à l'ouverture ; heures à la minute ; formulaire gardé entre onglets et remis si l'envoi échoue ; heure des rappels des runners -->
@@ -110,6 +112,33 @@ button.bo-r{cursor:pointer}button.bo-r:hover{background:var(--surface-2)}
 .seg.exp button{flex:1 1 auto}
 .seg.exp.need{border-color:var(--red);box-shadow:0 0 0 3px var(--red-soft)}
 .exp-m{font-size:12px;color:var(--red);margin-top:4px}
+/* v63.20 : astreintes du week-end */
+:root{--blue:#23477A;--blue-soft:#E4EAF4;--orange:#B45309;--orange-soft:#FDEBD3}
+:root[data-theme="dark"]{--blue:#9DB8E3;--blue-soft:#1D2A3D;--orange:#F5B26B;--orange-soft:#3A2A14}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--blue:#9DB8E3;--blue-soft:#1D2A3D;--orange:#F5B26B;--orange-soft:#3A2A14}}
+.we-h{background:var(--blue);border-bottom:0}.we-h h2,.we-h .meta{color:var(--surface)}.we-h.ok{background:var(--accent)}.we-h.vide{background:var(--muted)}
+.we-l{display:block;font-size:13px;font-weight:600;margin-bottom:6px}
+.we-g{border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:6px}
+.we-g.orange{border-color:var(--orange)}.we-g.rouge{border-color:var(--red)}
+.we-gt{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.we-gb{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}.we-gb small{font-size:13px;color:var(--muted);font-weight:600}
+.we-g.orange .we-gb{color:var(--orange)}.we-g.rouge .we-gb{color:var(--red)}
+.we-bar{position:relative;height:10px;border-radius:99px;background:var(--surface-2);border:1px solid var(--line);overflow:hidden}
+.we-bar i{position:absolute;left:0;top:0;bottom:0;background:var(--accent)}.we-g.orange .we-bar i{background:var(--orange)}.we-g.rouge .we-bar i{background:var(--red)}
+.we-bar b{position:absolute;top:-1px;bottom:-1px;width:2px;background:var(--fg);opacity:.5}
+.pill.we-o{background:var(--orange-soft);color:var(--orange)}.pill.we-r{background:var(--red-soft);color:var(--red)}
+.we-msg{font-size:13px;border-radius:8px;padding:8px 10px}.we-msg.o{background:var(--orange-soft);color:var(--orange)}.we-msg.r{background:var(--red-soft);color:var(--red)}
+.we-gh{display:flex;justify-content:space-between;align-items:center;padding:9px 16px;background:var(--surface-2);font-weight:700;font-size:13.5px;border-top:1px solid var(--line)}
+.we-move{padding:6px 16px;font-size:12.5px;font-weight:600;color:var(--blue);background:var(--blue-soft);border-top:1px dashed var(--line-strong)}
+.we-v{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 16px;border-top:1px solid var(--line)}
+.we-v .x{flex:none;width:36px;height:36px;border-radius:8px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted);font-weight:700}
+.we-add{display:flex;flex-direction:column;gap:8px}
+.we-addr{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 48px;gap:8px;align-items:end}
+.we-plus{padding:0;font-size:20px}
+.we-send{width:100%}
+.we-rappel{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:12px;background:var(--yellow-soft);border:1px solid var(--yellow);color:var(--yellow);font-size:13.5px}
+.we-dl{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}.we-dl .meta{flex:1 1 220px}
+.we-rappel b{display:block;font-size:14.5px}.we-rappel span{font-size:18px}.we-rappel .bo-lien{color:var(--yellow);margin-top:4px}
 .when .recap{font-size:13px;color:var(--muted)}
 .when .recap b{color:var(--fg)}
 .hidden{display:none!important}
@@ -301,7 +330,7 @@ function bandeauRetours(){
   return `<div class="alertb" role="status"><span>${n.length===1?'Nouveau retour : '+esc(libRetour(n[0])):n.length+' nouveaux retours des runners'}</span><button type="button" class="btn small" data-tab="retours">Voir</button></div>`;
 }
 /* v13 : après une mise à jour automatique, on revient sur le même onglet */
-try{const t=sessionStorage.getItem('bureau-onglet');if(t){sessionStorage.removeItem('bureau-onglet');if(/^(demandes|retours|passages|runners)$/.test(t))tab=t}}catch(e){}
+try{const t=sessionStorage.getItem('bureau-onglet');if(t){sessionStorage.removeItem('bureau-onglet');if(/^(demandes|weekend|retours|passages|runners)$/.test(t))tab=t}}catch(e){}
 try{const b=JSON.parse(sessionStorage.getItem('bureau-brouillon')||'null');sessionStorage.removeItem('bureau-brouillon');if(b&&typeof b==='object'){if(!/^\d{4}-\d{2}-\d{2}$/.test(String(b.date||''))||b.date<dayOffset(0))b.date='';if(!/^\d{4}-\d{2}-\d{2}$/.test(String(b.fin||''))||b.fin<dayOffset(0))b.fin='';BROUILLON=b}}catch(e){} /* v63.1 : brouillon gardé au changement de jour */
 function demo(){
   const pl=['AA-101-CD','AA-102-CD','AA-103-CD','AA-104-CD','AA-105-CD','AA-106-CD','AA-107-CD','AA-108-CD','AA-109-CD','AA-110-CD','AA-111-CD','AA-112-CD','AA-113-CD','AA-114-CD','AA-115-CD','AA-116-CD'];
@@ -315,7 +344,7 @@ function demo(){
       {horodatage:TODAY+'T09:12:00',runner:'Tarek',plaque:'AA-104-CD',point:'Aulnay',resultat:'Problème',problemes:'Rétroviseur endommagé',commentaire:'côté droit, coque fendue',photo:'#'},
       {horodatage:TODAY+'T10:05:00',runner:'Kamel',plaque:'AA-113-CD',point:'La Def',resultat:'OK',problemes:'',commentaire:'',photo:''}
     ],
-    planning:{entetes:['plaque','modele'],lignes:pl.map((p,i)=>[p,md[i]])},
+    planning:{entetes:['plaque','modele','ville_arrivee','date_arrivee','heure_arrivee'],lignes:pl.map((p,i)=>[p,md[i],['Coignières','Mantes','Garches','La Def'][i%4],dayOffset(-1),'10:00'])}, /* v63.20 : ville pour le point auto du Week-end */
     misAJour:new Date(Date.now()-2*3600e3).toISOString()
   };
 }
@@ -329,12 +358,13 @@ function call(params,body){
 }
 async function act(action,fields){
   if(DEMO){demoAct(action,fields);render();return {ok:true}}
-  try{const r=await call(null,Object.assign({bureau:CODE,action},fields));if(r.erreur){toast(r.erreur==='Action inconnue'?'Script Google à mettre à jour (v20) : rien n\'a été enregistré.':r.erreur);return r}if(!r.ok&&!r.id&&!r.code&&!r.lien){toast('Script Google à mettre à jour (v8) : rien n\'a été enregistré.');return {erreur:'script'}}await load();return r}
-  catch(e){if(action!=='demande')toast('Pas de réseau. Réessayez.');return {erreur:'réseau'}} /* v21 : pour un ajout, on vérifie d'abord dans la feuille */
+  try{const r=await call(null,Object.assign({bureau:CODE,action},fields));if(r.erreur){toast(r.erreur==='Action inconnue'?'Script Google à mettre à jour ('+(action==='astreinte'?'v34.20':'v20')+') : rien n\'a été enregistré.':r.erreur);return r}if(!r.ok&&!r.id&&!r.code&&!r.lien){toast('Script Google à mettre à jour (v8) : rien n\'a été enregistré.');return {erreur:'script'}}await load();return r}
+  catch(e){if(action!=='demande'&&action!=='astreinte')toast('Pas de réseau. Réessayez.');return {erreur:'réseau'}} /* v21 : pour un ajout, on vérifie d'abord dans la feuille */
 }
 function demoAct(action,f){
   if(action==='demande')D.demandes.push(Object.assign({id:'D-'+Date.now().toString(36),statut:'à faire'},f));
   if(action==='demande_suppr')D.demandes=D.demandes.filter(d=>d.id!==f.id);
+  if(action==='astreinte'){const r0=D.demandes.filter(d=>d.astreinte&&d.date===f.date&&d.runner===f.runner).length;f.vehicules.forEach((v,k)=>D.demandes.push(Object.assign({statut:'à faire',auteur:'Service parc',date:f.date,runner:f.runner,envoye_par:f.par,astreinte:String(r0+k+1)},v)))}
   if(action==='demande_modif'){const d=D.demandes.find(x=>x.id===f.id);if(d)Object.assign(d,f)}
   if(action==='runner_ajout')D.runners.push({prenom:f.prenom,code:f.prenom.toLowerCase()+'-demo'+Math.random().toString(36).slice(2,8),points:f.points,actif:'oui'});
   if(action==='runner_code'){const r=D.runners.find(x=>x.prenom===f.prenom);if(r)r.code=r.prenom.toLowerCase()+'-demo'+Math.random().toString(36).slice(2,8)}
@@ -374,6 +404,121 @@ function fleet(){
   return m;
 }
 
+/* ---------- v63.20 (20/11, Fabian) : astreintes du week-end (onglet « Week-end ») ----------
+   La liste d'un runner pour un jour part d'un coup (action « astreinte », script v34.20) : une demande par véhicule,
+   colonne « astreinte » = rang dans la liste. Temps prévu : 30 min par véhicule + 1 h par changement de point
+   (le trajet vers le 1er point n'est pas compté). Vert jusqu'à 7 h, orange jusqu'à 7 h 30 (marge en cas de galère),
+   rouge au-delà : envoi impossible. Brouillon gardé sur cet appareil tant que la liste n'est pas envoyée. */
+const WE_VEH=30,WE_PT=60,WE_MAX=7*60,WE_MARGE=30;
+const ALIAS_V={'nanterre':'La Def','la def':'La Def','la defense':'La Def','paris la defense':'La Def','saint cloud':'Saint-Cloud','st cloud':'Saint-Cloud','aulnay':'Aulnay','aulnay sous bois':'Aulnay','paris centre':'Paris-Centre','coignieres':'Coignières','evry':'Évry','evry courcouronnes':'Évry','paris | evry':'Évry','mantes':'Mantes','mantes la jolie':'Mantes','paris | mantes la jolie':'Mantes','garches':'Garches','paris | garches':'Garches'};
+function cityV(s){s=String(s||'').trim();const k=s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[-_]/g,' ').replace(/\s+/g,' ');return ALIAS_V[k]||s}
+function nomPt(p){return ({'La Def':'La Défense','Mantes':'Mantes-la-Jolie'})[p]||p||'Point à choisir'}
+function weMinutes(points){const d=[];points.forEach(p=>{if(!d.includes(p))d.push(p)});return points.length*WE_VEH+Math.max(0,d.length-1)*WE_PT}
+function weDuree(m){const h=Math.floor(m/60),r=m%60;if(!h)return r+' min';return h+' h'+(r?' '+String(r).padStart(2,'0'):'')}
+function weZone(m){return m>WE_MAX+WE_MARGE?'rouge':m>WE_MAX?'orange':'vert'}
+/* Samedis et dimanches des 8 prochains jours (aujourd'hui compris) */
+function weJours(){const l=[];for(let n=0;n<=7;n++){const j=dayOffset(n);const [y,m,d]=j.split('-').map(Number);const w=new Date(y,m-1,d).getDay();if(w===6||w===0)l.push(j)}return l}
+/* Le week-end qui vient (ou en cours) : à partir du jeudi, un jour sans liste fait un bandeau */
+function weProches(){const w=new Date().getDay();if(![4,5,6,0].includes(w))return [];return weJours().filter(j=>j<=dayOffset(w===4?3:w===5?2:w===6?1:0))}
+function weEnvoyees(jour){return D?D.demandes.filter(d=>d.astreinte&&d.date===jour&&d.statut!=='supprimée'&&!RETRAIT.has(d.id)&&(d.auteur||'Service parc')==='Service parc'):[]}
+function weManquants(){return weProches().filter(j=>!weEnvoyees(j).length)}
+let WE_BR={};try{const x=JSON.parse(localStorage.getItem('bureau-weekend')||'{}');if(x&&typeof x==='object')Object.keys(x).forEach(j=>{if(/^\d{4}-\d{2}-\d{2}$/.test(j)&&j>=dayOffset(0)&&x[j]&&Array.isArray(x[j].items))WE_BR[j]={runner:String(x[j].runner||''),items:x[j].items.filter(i=>i&&i.plaque).slice(0,40)}})}catch(e){}
+function weSauver(){try{localStorage.setItem('bureau-weekend',JSON.stringify(WE_BR))}catch(e){}}
+const WE_ENVOI=new Set();let WE_ANNUL='';
+/* Où sera le véhicule ce jour-là d'après le BO : ville d'arrivée de son dernier trajet arrivé au plus tard ce jour-là */
+function isoDe(s){s=String(s||'').trim();let m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);if(m)return m[1]+'-'+m[2]+'-'+m[3];m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);return m?m[3]+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0'):''}
+function pointBO(plaque,jour){
+  if(!D||!D.planning)return '';const h=(D.planning.entetes||[]).map(x=>String(x).trim().toLowerCase()),ix=k=>h.indexOf(k);
+  const ip=h.findIndex(x=>['plaque','immat','immatriculation'].includes(x)),va=ix('ville_arrivee'),da=ix('date_arrivee'),ha=ix('heure_arrivee'),vd=ix('ville_depart'),dd=ix('date_depart'),hd=ix('heure_depart');
+  if(ip<0||va<0||da<0)return '';let best=null,first=null;
+  (D.planning.lignes||[]).forEach(r=>{if(norm(String(r[ip]||''))!==norm(plaque))return;
+    const ja=isoDe(r[da]);if(ja&&ja<=jour){const t=ja+' '+String(ha<0?'':r[ha]||'');if(!best||t>best.t)best={t,v:r[va]}}
+    const jd=dd<0?'':isoDe(r[dd]);if(jd&&vd>=0){const t=jd+' '+String(hd<0?'':r[hd]||'');if(!first||t<first.t)first={t,v:r[vd]}}});
+  const v=cityV(best?best.v:first?first.v:'');return POINTS.includes(v)?v:'';
+}
+/* Véhicules rangés par point, dans l'ordre d'arrivée des points dans la liste */
+function weGroupes(items){const pts=[];items.forEach(i=>{if(!pts.includes(i.point))pts.push(i.point)});return pts.map(p=>({p,l:items.filter(i=>i.point===p)}))}
+function weJauge(points){
+  const m=weMinutes(points),z=weZone(m),n=points.length,c=Math.max(0,new Set(points).size-1),pc=x=>Math.min(100,x/(WE_MAX+WE_MARGE)*100).toFixed(1);
+  const pill=z==='rouge'?`<span class="pill we-r">${weDuree(m-WE_MAX-WE_MARGE)} de trop</span>`:z==='orange'?`<span class="pill we-o">Marge galère utilisée</span>`:n?`<span class="pill ok">Reste ${weDuree(WE_MAX-m)}</span>`:'';
+  return `<div class="we-g ${z}"><div class="we-gt"><div class="we-gb">${weDuree(m)} <small>/ 7 h · marge 7 h 30</small></div>${pill}</div>
+    <div class="we-bar" aria-hidden="true"><i style="width:${pc(m)}%"></i><b style="left:${pc(WE_MAX)}%"></b></div>
+    <div class="meta">${n} véhicule${n>1?'s':''} × 30 min${c?' + '+c+' changement'+(c>1?'s':'')+' de point × 1 h':''}</div>
+    ${z==='orange'?'<div class="we-msg o">Entre 7 h et 7 h 30 : on garde 30 min de marge en cas de galère. L\'envoi reste possible.</div>':z==='rouge'?'<div class="we-msg r"><b>Trop long pour une journée.</b> Retirez un véhicule ou mettez-le sur l\'autre jour.</div>':''}</div>`;
+}
+function weAjoutHtml(jour,envoye){return `<form class="we-add" data-weform="${jour}" autocomplete="off">
+  <div class="we-addr"><div class="field"><label for="wP_${jour}">Plaque</label><input id="wP_${jour}" data-keep="1" class="plate" maxlength="20" list="fleet" placeholder="AA-123-CD"></div>
+  <div class="field"><label for="wT_${jour}">Point</label><select id="wT_${jour}" data-keep="1"><option value="">Auto (BO)</option>${POINTS.map(p=>`<option value="${esc(p)}">${esc(nomPt(p))}</option>`).join('')}</select></div>
+  <button type="submit" class="btn primary we-plus" aria-label="Ajouter ce véhicule">+</button></div>
+  <div class="field"><input id="wC_${jour}" data-keep="1" maxlength="500" placeholder="Demande au runner (facultatif)"></div>
+  ${envoye?'<div class="meta">Ajouté à la liste déjà envoyée : il part tout de suite chez le runner.</div>':'<div class="meta">Le point se met tout seul d\'après le BO. Changez-le si besoin.</div>'}</form>`}
+function weStatut(d){const x=D.passages.filter(p=>String(p.demande_id||'').split(',').map(s=>s.trim()).includes(d.id));const p=x[x.length-1];
+  return d.statut==='faite'?(p&&p.resultat==='Problème'?'<span class="pill ko">Problème</span>':'<span class="pill ok">Vu OK</span>'):ENVOIS.has(d.id)?'<span class="meta">Envoi…</span>':'<span class="pill wait">À faire</span>'}
+function weCarte(jour){
+  const env=weEnvoyees(jour).slice().sort((a,b)=>(parseInt(a.astreinte,10)||0)-(parseInt(b.astreinte,10)||0)),br=WE_BR[jour],titre=cap1(dLabel(jour));
+  if(env.length){
+    const run=env[0].runner,par=env[0].envoye_par,afaire=env.filter(d=>d.statut==='à faire'&&!ENVOIS.has(d.id)),faits=env.filter(d=>d.statut==='faite').length;
+    const items=env.map(d=>({id:d.id,plaque:d.plaque,point:d.point,d}));
+    return `<section class="card we-c"><div class="card-h we-h ok"><h2>${esc(titre)}</h2><span class="meta">Envoyée à ${esc(run)} · ${faits}/${env.length} fait${faits>1?'s':''}</span></div>
+      <div class="card-b">${weJauge(items.map(i=>i.point))}<div class="meta">Runner d'astreinte : <b>${esc(run)}</b>${par?' · liste envoyée par '+esc(par):''}</div></div>
+      ${weGroupes(items).map((g,k)=>`${k?'<div class="we-move">Changement de point : + 1 h</div>':''}<div class="we-gh"><span>${k+1} · ${esc(nomPt(g.p))}</span><span class="meta">${g.l.length} véh. · ${weDuree(g.l.length*WE_VEH)}</span></div>
+        ${g.l.map(i=>`<div class="we-v"><div><span class="plate-t">${esc(i.plaque)}</span> ${weStatut(i.d)}${i.d.consigne?`<div class="meta">${esc(i.d.consigne)}</div>`:''}</div>${i.d.statut==='à faire'&&!ENVOIS.has(i.d.id)?`<button type="button" class="x" data-del="${esc(i.d.id)}" aria-label="Retirer ${esc(i.plaque)}">✕</button>`:''}</div>`).join('')}`).join('')}
+      <div class="card-b">${weAjoutHtml(jour,true)}
+      ${afaire.length?(WE_ANNUL===jour?`<div class="actions"><button type="button" class="btn danger" data-weannul="${jour}" data-ok="1">Oui, retirer les ${afaire.length} véhicule${afaire.length>1?'s':''} à faire</button><button type="button" class="btn" data-weannul="">Non</button></div>`:`<button type="button" class="btn danger" data-weannul="${jour}">Annuler la liste</button>`):''}</div></section>`;
+  }
+  if(!br)return `<section class="card we-c"><div class="card-h we-h vide"><h2>${esc(titre)}</h2><span class="meta">Pas de liste</span></div><div class="card-b"><button type="button" class="btn" data-weprep="${jour}">Préparer la liste</button></div></section>`;
+  const runners=D.runners.filter(r=>estActif(r)).map(r=>r.prenom),m=weMinutes(br.items.map(i=>i.point)),ko=weZone(m)==='rouge',sans=br.items.filter(i=>!i.point).length;
+  const envoi=WE_ENVOI.has(jour);
+  return `<section class="card we-c"><div class="card-h we-h"><h2>${esc(titre)}</h2><span class="meta">Brouillon, pas encore envoyé</span></div>
+    <div class="card-b"><div class="field"><span class="lbl we-l">Runner d'astreinte</span><div class="seg exp" role="radiogroup">${runners.map(p=>`<button type="button" role="radio" data-werun="${esc(p)}" data-jour="${jour}" class="${br.runner===p?'on':''}" aria-checked="${br.runner===p}">${esc(p)}</button>`).join('')}</div></div>
+    ${weJauge(br.items.map(i=>i.point))}${weAjoutHtml(jour,false)}</div>
+    ${br.items.length?weGroupes(br.items).map((g,k)=>`${k?'<div class="we-move">Changement de point : + 1 h</div>':''}<div class="we-gh"><span>${k+1} · ${esc(nomPt(g.p))}</span><span class="meta">${g.l.length} véh. · ${weDuree(g.l.length*WE_VEH)}</span></div>
+      ${g.l.map(i=>`<div class="we-v"><div><span class="plate-t">${esc(i.plaque)}</span>${i.consigne?`<div class="meta">${esc(i.consigne)}</div>`:''}${!i.point?'<div class="we-msg r">Point inconnu dans le BO : retirez-le et remettez-le en choisissant le point.</div>':''}</div><button type="button" class="x" data-werm="${esc(i.id)}" data-jour="${jour}" aria-label="Retirer ${esc(i.plaque)}">✕</button></div>`).join('')}`).join(''):''}
+    <div class="card-b"><button type="button" class="btn primary we-send" data-wesend="${jour}" ${!br.runner||!br.items.length||ko||sans||envoi?'disabled':''}>${envoi?'Envoi en cours…':br.runner?'Envoyer la liste à '+esc(br.runner):'Choisissez le runner'}</button>
+    ${ko?'<div class="meta">Le bouton reste grisé tant que ça dépasse 7 h 30.</div>':''}<button type="button" class="btn small" data-wejeter="${jour}">Jeter ce brouillon</button></div></section>`;
+}
+function bandeauWeekend(){const l=weManquants();if(!l.length)return '';
+  return `<div class="we-rappel" role="status"><span aria-hidden="true">⚠</span><div><b>${l.map(j=>cap1(dLabel(j))).join(' et ')} : pas encore de liste d'astreinte</b>${tab==='weekend'?'Ce bandeau reste tant qu\'un jour du week-end n\'a pas de liste envoyée.':'<button type="button" class="bo-lien" data-tab="weekend">Préparer maintenant</button>'}</div></div>`}
+function vWeekend(){const plates=[...fleet().keys()];
+  return `${bandeauWeekend()}<section class="card"><div class="card-b">${expHtml()}<div class="meta">Une liste par jour et par runner : 30 min par véhicule, + 1 h à chaque changement de point, 7 h par jour (7 h 30 avec la marge). Le runner la voit en haut de son appli le jour venu ; le suivi part dans Slack en un seul message.</div><div class="we-dl"><button type="button" class="btn small" id="weRecap" ${RECAP_EN_COURS?'disabled':''}>${RECAP_EN_COURS?'Préparation du fichier…':'Télécharger le récap astreintes (Excel)'}</button><span class="meta">Toutes les astreintes faites : à envoyer à Mickaël et Jérôme.</span></div></div></section><datalist id="fleet">${plates.map(p=>`<option value="${esc(p)}">`).join('')}</datalist>
+  ${weJours().map(weCarte).join('')}`}
+/* Ajout d'une plaque (brouillon, ou liste déjà envoyée : part tout de suite) */
+async function weAjouter(jour){
+  const pe=$('#wP_'+jour),te=$('#wT_'+jour),ce=$('#wC_'+jour);if(!pe)return;
+  const plaque=fmtPlaque(pe.value.trim());if(!plaqueOk(plaque)){toast('Plaque incomplète.');pe.focus();return}
+  const point=te.value||pointBO(plaque,jour),consigne=ce.value.trim();
+  if(!point){toast(plaque+' : point inconnu dans le BO, choisissez-le dans la liste.');te.focus();return}
+  const env=weEnvoyees(jour);
+  if(env.length){
+    if(env.some(d=>norm(d.plaque)===norm(plaque))){toast(plaque+' est déjà dans la liste.');return}
+    const m=weMinutes(env.map(d=>d.point).concat([point]));if(weZone(m)==='rouge'){toast('Trop long : '+weDuree(m)+' prévues (7 h 30 au plus).');return}
+    const par=expOk();if(!par){toast('Choisissez qui envoie.');return}
+    pe.value='';ce.value='';te.value='';
+    weEnvoyer(jour,env[0].runner,par,[{id:'D'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),plaque,point,consigne}]);return}
+  const br=WE_BR[jour]||(WE_BR[jour]={runner:'',items:[]});
+  if(br.items.some(i=>norm(i.plaque)===norm(plaque))){toast(plaque+' est déjà dans la liste.');return}
+  if(br.items.length>=40){toast('40 véhicules au plus.');return}
+  br.items.push({id:'D'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),plaque,point,consigne});weSauver();
+  pe.value='';ce.value='';te.value='';render();const n=$('#wP_'+jour);if(n)n.focus();
+  if(weZone(weMinutes(br.items.map(i=>i.point)))==='rouge')toast(plaque+' fait dépasser 7 h 30 : retirez un véhicule.');
+}
+async function weEnvoyer(jour,runner,par,vehicules){
+  if(WE_ENVOI.has(jour))return;WE_ENVOI.add(jour);
+  /* affiché tout de suite comme les demandes (retiré si Google refuse) */
+  const rangs=weEnvoyees(jour).reduce((m,d)=>Math.max(m,parseInt(d.astreinte,10)||0),0);
+  const tmp=vehicules.map((v,k)=>Object.assign({statut:'à faire',auteur:'Service parc',date:jour,runner,envoye_par:par,astreinte:String(rangs+k+1)},v));
+  if(!DEMO&&D){tmp.forEach(x=>{ENVOIS.set(x.id,x)});D.demandes=D.demandes.concat(tmp)}
+  render();
+  let r=await act('astreinte',{date:jour,runner,par,vehicules});
+  if(r.erreur==='réseau'&&D){tmp.forEach(x=>ENVOIS.delete(x.id));if(await load()&&tmp.every(x=>load.ids.has(x.id)))r={ok:true,ajoutes:tmp.length}}
+  tmp.forEach(x=>ENVOIS.delete(x.id));WE_ENVOI.delete(jour);
+  if(r.erreur){if(D)D.demandes=D.demandes.filter(d=>!tmp.some(x=>x.id===d.id));render();toast('Liste non envoyée : '+(r.erreur==='réseau'?'pas de réseau':r.erreur)+'. Réessayez.');return false}
+  if(WE_BR[jour]&&vehicules.length&&WE_BR[jour].items===vehicules){delete WE_BR[jour];weSauver()}
+  render();
+  toast((vehicules.length>1?'Liste envoyée à '+runner:vehicules[0].plaque+' ajouté à la liste de '+runner)+(r.ignores&&r.ignores.length?' ('+r.ignores.join(', ')+' déjà dedans)':'')+(r.prevenus>0?' · alerte sur son téléphone.':'.'));
+  return true;
+}
+
 /* ---------- Écrans ---------- */
 function vDemandes(){
   const runners=D.runners.filter(r=>estActif(r));
@@ -381,7 +526,7 @@ function vDemandes(){
      la plus récente en haut (celle qu'on vient d'ajouter, puis les autres par date de création) */
   const recente=d=>ENVOIS.has(d.id)?'~':String(d.cree_le||'');
   const rang=new Map(D.demandes.map((d,i)=>[d.id,i])); /* même minute : l'ordre de la feuille (la dernière ligne est la plus récente) */
-  const list=D.demandes.filter(d=>d.statut==='à faire'&&!RETRAIT.has(d.id)&&finDe(d)>=dayOffset(-7)).sort((a,b)=>recente(b).localeCompare(recente(a))||rang.get(b.id)-rang.get(a.id));
+  const list=D.demandes.filter(d=>d.statut==='à faire'&&!d.astreinte&&!RETRAIT.has(d.id)&&finDe(d)>=dayOffset(-7)) /* v63.20 : astreintes dans l'onglet Week-end */.sort((a,b)=>recente(b).localeCompare(recente(a))||rang.get(b.id)-rang.get(a.id));
   const plates=[...fleet().keys()];
   /* v15 : demande en cours de modification (même formulaire que l'ajout) */
   const ed=edit?list.find(d=>d.id===edit&&d.statut==='à faire'):null;if(edit&&!ed){edit='';plage=false;viderForm=viderForm||'perdue'} /* v21 : faite ou retirée pendant la modification */
@@ -497,15 +642,15 @@ function render(){RENDU_ATTENTE=false;
   $('#mode').textContent=DEMO?'Démonstration · données fictives':D&&D.misAJour?(()=>{const d=new Date(D.misAJour);return isNaN(d)?'':'Planning du '+d.getDate()+' '+MON[d.getMonth()]+' à '+String(d.getHours()).padStart(2,'0')+'h'+String(d.getMinutes()).padStart(2,'0')+(D.importErreur?' · Dernier export refusé ('+D.importErreur+')':'')})():'';
   $('#sub').textContent=dLabel(TODAY).replace(/^./,c=>c.toUpperCase());
   if(!D){$('#tabs').innerHTML='';$('#view').innerHTML=loading?'<div class="empty">Chargement…</div>':gate();return}
-  const nb={demandes:D.demandes.filter(d=>d.statut==='à faire'&&!RETRAIT.has(d.id)).length,passages:D.passages.filter(x=>String(x.horodatage).slice(0,10)===TODAY).length,runners:D.runners.filter(r=>estActif(r)).length};
+  const nb={demandes:D.demandes.filter(d=>d.statut==='à faire'&&!d.astreinte&&!RETRAIT.has(d.id)).length,weekend:weJours().filter(j=>weEnvoyees(j).length).length+'/'+weJours().length,passages:D.passages.filter(x=>String(x.horodatage).slice(0,10)===TODAY).length,runners:D.runners.filter(r=>estActif(r)).length};
   if(tab==='retours'&&!DEMO&&document.visibilityState==='visible')marquerVus(); /* v25 : onglet resté ouvert en arrière-plan : le son et la notification partent quand même */
   const nv=DEMO?0:nouveaux().length;nb.retours=nv||retours().length;
-  $('#tabs').innerHTML=[['demandes','Planifier'],['retours','Retours runners'],['passages','Passages'],['runners','Runners et liens']].map(([k,t])=>`<button type="button" class="${k===tab?'on':''}" data-tab="${k}" aria-current="${k===tab?'page':'false'}">${t}<span class="cnt${k==='retours'&&nv?' hot':''}">${nb[k]}</span></button>`).join('')+(DEMO?'':'<button type="button" id="reload">Actualiser</button>');
-  const keep=['dPlate','dRunner','dDate','dFin','dPoint','dText','rName','iDe','iA'].map(id=>[id,$('#'+id)&&$('#'+id).value]);
+  $('#tabs').innerHTML=[['demandes','Planifier'],['weekend','Week-end'],['retours','Retours runners'],['passages','Passages'],['runners','Runners et liens']].map(([k,t])=>`<button type="button" class="${k===tab?'on':''}" data-tab="${k}" aria-current="${k===tab?'page':'false'}">${t}<span class="cnt${k==='retours'&&nv||k==='weekend'&&weManquants().length?' hot':''}">${nb[k]}</span></button>`).join('')+(DEMO?'':'<button type="button" id="reload">Actualiser</button>');
+  const keep=['dPlate','dRunner','dDate','dFin','dPoint','dText','rName','iDe','iA'].concat([...document.querySelectorAll('#view [data-keep]')].map(x=>x.id)).map(id=>[id,$('#'+id)&&$('#'+id).value]);
   /* v59 (bureau v25) : le champ où l'on tape garde le curseur quand l'écran se redessine (réponse de Google pendant la frappe) */
   const fa=document.activeElement,fid=fa&&fa.id&&keep.some(([id])=>id===fa.id)?fa.id:'';let sel=null;try{if(fid&&fa.selectionStart!=null)sel=[fa.selectionStart,fa.selectionEnd]}catch(e){}
   const coches=[...document.querySelectorAll('input[name=rPt]:checked')].map(x=>x.value);
-  $('#view').innerHTML=bandeauRetours()+(tab==='passages'?vPassages():tab==='retours'?vRetours():tab==='runners'?vRunners():vDemandes());
+  $('#view').innerHTML=bandeauRetours()+(tab==='demandes'?bandeauWeekend():'')+(tab==='passages'?vPassages():tab==='retours'?vRetours():tab==='runners'?vRunners():tab==='weekend'?vWeekend():vDemandes());
   if(tab==='retours')document.title='Service parc · Runners';
   keep.forEach(([id,v])=>{if(v!=null&&$('#'+id))$('#'+id).value=v});
   if(fid&&$('#'+fid)&&!viderForm){const el=$('#'+fid);try{el.focus({preventScroll:true});if(sel)el.setSelectionRange(sel[0],sel[1])}catch(e){}}
@@ -574,6 +719,74 @@ function plateHint(){improHint();const i=$('#dPlate');if(!i)return;const p=i.val
   const hit=[...f.keys()].find(k=>norm(k)===norm(p));
   h.textContent=hit?(f.get(hit)||'Véhicule de la flotte'):'Pas dans l\'export : la demande sera créée quand même.';h.className='hint'+(hit?' ok':'')}
 
+/* ---------- v63.21 (20/11, Fabian) : récap des astreintes en Excel, pour Mickaël et Jérôme ----------
+   Les lignes viennent de l'onglet « Astreintes » de la feuille (script v34.21, action « astreintes_recap ») ; le fichier
+   est fabriqué ici (bibliothèque ExcelJS, chargée seulement au clic). C'est ce fichier qu'on envoie : la feuille
+   (Réglages, liens des runners…) n'est jamais partagée. Véhicules retirés de la liste : pas dans le fichier. */
+let RECAP_EN_COURS=false;
+const EXCELJS_URL='https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js';
+function chargerExcelJS(){if(window.ExcelJS)return Promise.resolve(window.ExcelJS);return new Promise((ok,ko)=>{const s=document.createElement('script');s.src=EXCELJS_URL;s.onload=()=>window.ExcelJS?ok(window.ExcelJS):ko(new Error('ExcelJS'));s.onerror=()=>ko(new Error('ExcelJS'));document.head.appendChild(s)})}
+function recapDemo(){const l=[];const J=['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+  [[dayOffset(-6),'Philippe',[['Coignières',3],['Mantes',2],['Garches',2]]],[dayOffset(-5),'Kamel',[['Paris-Centre',3],['Saint-Cloud',2]]]].forEach(([j,r,pts])=>{let o=0,av=null;const [y,m,d]=j.split('-').map(Number);
+    pts.forEach(([p,n])=>{for(let k=0;k<n;k++){o++;const res=o===3?'Défauts signalés':o===5?'Pas trouvé sur place':o===7?'Pas fait':'OK';l.push([j,J[new Date(y,m-1,d).getDay()],r,p,'AA-'+(100+o)+'-CD',String(o),String(30+(av&&av!==p?60:0)),res==='Pas fait'?'':String(8+o).padStart(2,'0')+':30',res,res==='Défauts signalés'?'Rayure pare-choc AR':'','Fabian','Ddemo'+o]);av=p}})});return l}
+async function recapExcel(){
+  if(RECAP_EN_COURS)return;RECAP_EN_COURS=true;render();
+  try{
+    let lignes;
+    if(DEMO)lignes=recapDemo();
+    else{const r=await call(null,{bureau:CODE,action:'astreintes_recap'});
+      if(r.erreur){toast(r.erreur==='Action inconnue'?'Script Google à mettre à jour (v34.21).':r.erreur);return}
+      lignes=Array.isArray(r.lignes)?r.lignes:[]}
+    lignes=lignes.filter(x=>Array.isArray(x)&&x[8]!=='Retiré de la liste');
+    if(!lignes.length){toast('Aucune astreinte enregistrée pour l\'instant.');return}
+    let EJ;try{EJ=await chargerExcelJS()}catch(e){toast('Impossible de préparer le fichier (pas de réseau ?). Réessayez.');return}
+    const buf=await classeurAstreintes(EJ,lignes).xlsx.writeBuffer();
+    const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));
+    a.download='recap-astreintes-'+TODAY+'.xlsx';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},4000);
+    toast('Fichier téléchargé : '+a.download);
+  }catch(e){toast('Pas de réseau. Réessayez.')}
+  finally{RECAP_EN_COURS=false;render()}
+}
+/* Lignes : [date, jour, runner, point, plaque, ordre, minutes prévues, heure, résultat, défauts, envoyé par, id] */
+function classeurAstreintes(EJ,lignes){
+  const FAIT=['OK','Défauts signalés','Pas trouvé sur place'],COUL={'OK':'FFE2EFDA','Défauts signalés':'FFFCE4D6','Pas trouvé sur place':'FFFFF2CC','Pas fait':'FFEDEDED','À faire':'FFDDEBF7'};
+  const dt=s=>{const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(s));return m?new Date(Date.UTC(+m[1],+m[2]-1,+m[3])):String(s)};
+  const hr=s=>{const m=/^(\d{1,2}):(\d{2})/.exec(String(s||''));return m?(+m[1]*60+ +m[2])/1440:''};
+  const L=lignes.slice().sort((a,b)=>String(a[0]).localeCompare(String(b[0]))||String(a[2]).localeCompare(String(b[2]))||(+a[5]||0)-(+b[5]||0));
+  const wb=new EJ.Workbook();wb.creator='Appli Runners City Drop';wb.created=new Date();
+  const bord={top:{style:'thin',color:{argb:'FFBFBFBF'}},bottom:{style:'thin',color:{argb:'FFBFBFBF'}},left:{style:'thin',color:{argb:'FFBFBFBF'}},right:{style:'thin',color:{argb:'FFBFBFBF'}}};
+  const onglet=(nom,cols)=>{const ws=wb.addWorksheet(nom,{views:[{state:'frozen',ySplit:1}]});ws.columns=cols.map(([h,w])=>({header:h,width:w}));
+    const r=ws.getRow(1);r.height=32;r.eachCell(c=>{c.font={bold:true,color:{argb:'FFFFFFFF'}};c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1F4E78'}};c.alignment={horizontal:'center',vertical:'middle',wrapText:true};c.border=bord});return ws};
+  const lis=wb.addWorksheet('Lisez-moi');lis.getColumn(1).width=100;
+  ['Récap des astreintes du week-end · fichier fait le '+TODAY.split('-').reverse().join('/'),'',
+   '• Onglet « Astreintes » : une ligne par véhicule de la liste donnée au runner (remplie par l\'appli).',
+   '• Onglet « Par astreinte » : une ligne par jour d\'astreinte (prévus, faits, défauts, temps prévu, heure de début et de fin).',
+   '• Onglet « Par runner » : le total par runner.','',
+   'Temps prévu = 30 min par véhicule + 1 h à chaque changement de point (le trajet vers le 1er point n\'est pas compté).',
+   'Normal : 7 h au plus. Orange = entre 7 h et 7 h 30 (marge en cas de galère). Rouge = plus de 7 h 30.',
+   'Résultats : OK / Défauts signalés / Pas trouvé sur place / Pas fait (jour passé sans passage) / À faire (jour pas encore passé).',
+   'Heure de passage = heure où le runner a validé le véhicule dans l\'appli.'].forEach((t,i)=>{const c=lis.getCell(i+1,1);c.value=t;if(!i)c.font={bold:true,size:13,color:{argb:'FFC00000'}}});
+  const ws=onglet('Astreintes',[['Date',12],['Jour',11],['Runner',11],['Point',14],['Plaque',12],['Ordre',7],['Temps prévu (min)',10],['Heure de passage',11],['Résultat',20],['Défauts / remarque',36],['Liste envoyée par',12]]);
+  L.forEach(x=>{const r=ws.addRow([dt(x[0]),x[1],x[2],x[3],x[4],+x[5]||x[5],+x[6]||0,hr(x[7]),x[8],x[9],x[10]]);
+    r.getCell(1).numFmt='dd/mm/yyyy';r.getCell(8).numFmt='hh:mm';r.eachCell({includeEmpty:true},c=>{c.border=bord;c.alignment={vertical:'middle',wrapText:c.col===10}});
+    if(COUL[x[8]])r.getCell(9).fill={type:'pattern',pattern:'solid',fgColor:{argb:COUL[x[8]]}}});
+  ws.autoFilter={from:{row:1,column:1},to:{row:L.length+1,column:11}};
+  /* Par astreinte (date + runner) */
+  const grp=new Map();L.forEach(x=>{const k=x[0]+'|'+x[2];if(!grp.has(k))grp.set(k,[]);grp.get(k).push(x)});
+  const pa=onglet('Par astreinte',[['Date',12],['Jour',11],['Runner',11],['Véhicules prévus',10],['Faits',8],['Avec défauts',10],['Pas trouvés',10],['Pas faits',9],['Temps prévu (h)',10],['Début',9],['Fin',9]]);
+  const tot=new Map();
+  grp.forEach(l=>{const x=l[0],h=l.map(y=>y[7]).filter(Boolean).sort(),min=l.reduce((t,y)=>t+(+y[6]||0),0);
+    const n={prevus:l.length,faits:l.filter(y=>FAIT.includes(y[8])).length,def:l.filter(y=>y[8]==='Défauts signalés').length,pt:l.filter(y=>y[8]==='Pas trouvé sur place').length,pf:l.filter(y=>y[8]==='Pas fait'||y[8]==='À faire').length};
+    const r=pa.addRow([dt(x[0]),x[1],x[2],n.prevus,n.faits,n.def,n.pt,n.pf,Math.round(min/6)/10,h.length?hr(h[0]):'',h.length?hr(h[h.length-1]):'']);
+    r.getCell(1).numFmt='dd/mm/yyyy';r.getCell(9).numFmt='0.0';r.getCell(10).numFmt='hh:mm';r.getCell(11).numFmt='hh:mm';r.eachCell({includeEmpty:true},c=>{c.border=bord});
+    if(min>450){r.getCell(9).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFF7C80'}};r.getCell(9).font={bold:true,color:{argb:'FF9C0006'}}}
+    else if(min>420){r.getCell(9).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFFC000'}};r.getCell(9).font={bold:true}}
+    const t=tot.get(x[2])||{a:0,f:0,d:0,p:0,m:0};t.a++;t.f+=n.faits;t.d+=n.def;t.p+=n.pt;t.m+=min;tot.set(x[2],t)});
+  pa.addRow([]);pa.addRow(['Temps prévu : orange = entre 7 h et 7 h 30 (marge en cas de galère) ; rouge = plus de 7 h 30.']).getCell(1).font={italic:true,color:{argb:'FF808080'}};
+  const pr=onglet('Par runner',[['Runner',12],['Astreintes faites',11],['Véhicules faits',10],['Avec défauts',10],['Pas trouvés',10],['Heures prévues',10]]);
+  [...tot.entries()].sort((a,b)=>a[0].localeCompare(b[0])).forEach(([nom,t])=>{const r=pr.addRow([nom,t.a,t.f,t.d,t.p,Math.round(t.m/6)/10]);r.getCell(6).numFmt='0.0';r.eachCell(c=>{c.border=bord})});
+  return wb}
+
 /* ---------- Événements ---------- */
 document.addEventListener('click',async e=>{
   const b=e.target.closest('button');if(!b)return;const d=b.dataset;
@@ -581,6 +794,19 @@ document.addEventListener('click',async e=>{
   /* v63.18 : choix du nom, sans redessiner le formulaire (ce qui est tapé reste) */
   if(d.exp!=null){EXP=d.exp;EXP_MANQUE=false;try{localStorage.setItem('bureau-expediteur',EXP)}catch(x){}document.querySelectorAll('#dExp [data-exp]').forEach(x=>{const on=x.dataset.exp===EXP;x.classList.toggle('on',on);x.setAttribute('aria-checked',on)});const g=$('#dExp');if(g)g.classList.remove('need');const m=$('#dExpM');if(m)m.remove();return}
   if(d.addph){const f=$('#dFile');if(f)f.click();return}
+  /* v63.20 : onglet Week-end */
+  if(d.weprep){WE_BR[d.weprep]={runner:'',items:[]};weSauver();render();const n=$('#wP_'+d.weprep);if(n)n.focus();return}
+  if(d.werun!=null){const br=WE_BR[d.jour];if(br){br.runner=d.werun;weSauver();render()}return}
+  if(d.werm){const br=WE_BR[d.jour];if(br){br.items=br.items.filter(i=>i.id!==d.werm);weSauver();render()}return}
+  if(d.wejeter){if(b.dataset.sur!=='1'){b.dataset.sur='1';b.textContent='Sûr ? Appuyez encore pour jeter';return}delete WE_BR[d.wejeter];weSauver();render();return}
+  if(d.weannul!=null){if(!d.ok){WE_ANNUL=d.weannul;render();return}const jour=d.weannul;WE_ANNUL='';const l=weEnvoyees(jour).filter(x=>x.statut==='à faire'&&!ENVOIS.has(x.id));l.forEach(x=>RETRAIT.add(x.id));render();
+    let ko=0;for(const x of l){const r=await act('demande_suppr',{id:x.id});RETRAIT.delete(x.id);if(r&&r.erreur&&r.erreur!=='déjà faite par un runner')ko++;else if(!r.erreur)x.statut='supprimée'}
+    render();toast(ko?ko+' véhicule'+(ko>1?'s':'')+' non retiré'+(ko>1?'s':'')+'. Réessayez.':'Liste annulée.');return}
+  if(d.wesend){const jour=d.wesend,br=WE_BR[jour];if(!br||!br.items.length||!br.runner)return;
+    const par=expOk();if(!par){EXP_MANQUE=true;render();const g=$('#dExp');if(g)g.scrollIntoView({block:'center',behavior:'smooth'});toast('Choisissez qui envoie la liste.');return}
+    if(weZone(weMinutes(br.items.map(i=>i.point)))==='rouge'){toast('Trop long : retirez un véhicule.');return}
+    if(weEnvoyees(jour).length){toast('Une liste existe déjà ce jour-là : ajoutez les véhicules dedans.');return}
+    weEnvoyer(jour,br.runner,par,br.items);return}
   if(d.rmph!=null){PH_D.splice(+d.rmph,1);majPhForm();return}
   if(d.jourp){JOUR_P=d.jourp;render();return}
   if(d.creneau!=null){CRENEAU=CRENEAU===d.creneau?'':d.creneau;CR_SRC='bo';improHint();return}
@@ -588,6 +814,7 @@ document.addEventListener('click',async e=>{
   if(d.quick){$('#dDate').value=d.quick;recapDate();return}
   if(d.plage!=null){plage=d.plage==='1';if(plage){const a=$('#dDate').value||TODAY,f=$('#dFin');if(f&&(!f.value||f.value<=a))f.value=plusJours(a,2)}render();return}
   if(d.duree){const a=$('#dDate').value||TODAY;$('#dDate').value=a;$('#dFin').value=plusJours(a,+d.duree-1);recapDate();return}
+  if(b.id==='weRecap'){recapExcel();return} /* v63.21 */
   if(b.id==='reload'){load();return}
   if(b.id==='notifOn'){try{Notification.requestPermission().then(()=>render())}catch(err){}return}
   if(b.id==='print'){window.print();return}
@@ -614,6 +841,7 @@ document.addEventListener('change',async e=>{
 if(e.target.id==='dDate'||e.target.id==='dFin')recapDate();if(e.target.id==='iDe'||e.target.id==='iA')creneauMain()});
 document.addEventListener('submit',async e=>{
   e.preventDefault();const f=e.target;
+  if(f.dataset&&f.dataset.weform){weAjouter(f.dataset.weform);return} /* v63.20 */
   if(f.id==='fCode'){CODE=$('#bCode').value.trim();try{localStorage.setItem('runners-bureau',CODE)}catch(x){}err='';load();return}
   if(f.id==='fDemande'){
     /* v63.18 : nom obligatoire pour une nouvelle demande */
@@ -682,10 +910,10 @@ document.addEventListener('visibilitychange',()=>{if(!DEMO&&CODE&&D&&document.vi
    s'il a changé, la page se recharge seule, mais jamais pendant qu'on écrit ou avec une demande à moitié remplie. */
 let VERSION='',majPrete=false;
 function versionEnLigne(){return fetch('sw.js',{cache:'no-store'}).then(r=>r.ok?r.text():'').then(t=>(t.match(/runners-v\d+/)||[''])[0]).catch(()=>'')}
-function envoiEnCours(){return ENVOIS.size>0||MODIFS.size>0||RETRAIT.size>0||PH_ENVOI.size>0||PH_D.length>0} /* v63.15 : photos */ /* v63.1 : réponse de Google pas encore arrivée */
+function envoiEnCours(){return WE_ENVOI.size>0||ENVOIS.size>0||MODIFS.size>0||RETRAIT.size>0||PH_ENVOI.size>0||PH_D.length>0} /* v63.15 : photos */ /* v63.1 : réponse de Google pas encore arrivée */
 window.addEventListener('beforeunload',e=>{if(envoiEnCours()){e.preventDefault();e.returnValue=''}});
 function majSansRisque(){const a=document.activeElement;
-  return !envoiEnCours()&&!confirmCode&&!edit&&!BROUILLON&&!AVANT_EDIT&&!(a&&a.matches&&a.matches('input,textarea,select'))&&!['dPlate','dText','rName','bCode'].some(id=>$('#'+id)&&$('#'+id).value.trim())}
+  return !envoiEnCours()&&!confirmCode&&!edit&&!BROUILLON&&!AVANT_EDIT&&!(a&&a.matches&&a.matches('input,textarea,select'))&&!['dPlate','dText','rName','bCode'].some(id=>$('#'+id)&&$('#'+id).value.trim())&&![...document.querySelectorAll('#view [data-keep]')].some(x=>x.value.trim())}
 function appliquerMaj(){if(!majPrete||document.visibilityState!=='visible'||!majSansRisque())return;
   try{const t=+sessionStorage.getItem('bureau-maj')||0;if(Date.now()-t<60000)return;sessionStorage.setItem('bureau-maj',String(Date.now()));sessionStorage.setItem('bureau-onglet',tab)}catch(e){}
   location.reload()}
