@@ -419,7 +419,12 @@ nav.tabs button .cnt.we{background:var(--red);color:#fff}
 .we-fin{display:flex;flex-direction:column;align-items:center;gap:6px;padding:20px 16px;border-radius:14px;background:var(--surface);border:2px solid var(--accent);text-align:center}
 .we-fin .ok{width:52px;height:52px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700}
 .we-fin b{font-size:19px}
-.we-demain{margin:-6px 2px 0;font-size:14.5px;line-height:1.4;color:var(--info)}
+.we-jours{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:8px}
+.we-jour{display:flex;flex-direction:column;align-items:center;gap:2px;min-height:58px;padding:8px 6px;border-radius:14px;border:2px solid var(--line-strong);background:var(--surface);color:var(--fg)}
+.we-jour b{font-size:16px}.we-jour small{font-size:13px;color:var(--muted)}
+.we-jour.on{border-color:var(--accent);background:var(--accent);color:var(--accent-fg)}.we-jour.on small{color:var(--accent-fg);opacity:.85}
+.we-titre{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px;margin:4px 2px -2px}.we-titre span{font-size:15px;color:var(--muted)}.we-titre b{font-size:24px;font-weight:800}.we-titre small{font-size:15px;color:var(--muted)}
+.we-passe{padding:10px 12px;border-radius:12px;background:#FFF4D6;color:#6B4E00;font-size:14.5px;line-height:1.4}
 .photos{display:flex;gap:10px;flex-wrap:wrap}
 .ph{position:relative;width:84px;height:84px;border-radius:12px;overflow:hidden;border:1px solid var(--line)}
 .ph img{width:100%;height:100%;object-fit:cover;display:block}
@@ -941,14 +946,18 @@ function newAsks(){const vus=S.vus||[];return allAsks().filter(d=>!d.astreinte&&
 function badge(){const n=DEMO?0:newAsks().length;try{if(navigator.setAppBadge){if(n)navigator.setAppBadge(n);else navigator.clearAppBadge()}}catch(e){}return n}
 /* v63.22 (Fabian 20/11) : astreinte du week-end = demandes du bureau avec la colonne « astreinte » (rang), pour ce runner, ce jour-là.
    Elles ont leur onglet « Week-end » : plus dans « Rappels et demandes » ni dans « À faire ». Les autres jours, rien ne change. */
-function estAstr(d){return !!(d&&d.astreinte)&&d.date===TODAY&&d.runner===S.who}
+/* v63.27 : une astreinte reste dans son onglet tant qu'elle est visible, et ne revient jamais dans À faire / Rappels (ex. samedi pas fini, vu dimanche) */
+function estAstr(d){return !!(d&&d.astreinte)&&d.runner===S.who}
 function horsAstr(l){return l.filter(d=>!estAstr(d))}
 function astrJour(day){day=day||TODAY;return (S.demandes||[]).filter(d=>d.astreinte&&d.date===day&&d.runner===S.who&&d.statut!=='supprimée')}
 /* v63.23 (Fabian 20/11) : la liste de demain est déjà visible (le runner peut passer la veille au soir, ex. véhicule qui repart à 6h) ;
    validé depuis l'onglet Week-end, le passage ferme la demande d'astreinte et compte dans le rapport du jour de la liste (script v34.22) */
 const DEMAIN=dayOffset(1);
 /* v63.25 (Fabian 20/11) : toutes les listes à venir sont visibles dès que le bureau les envoie (ex. samedi ET dimanche dès le vendredi) */
-function astrJours(){return (S.demandes||[]).filter(d=>d.astreinte&&d.date>=TODAY&&d.runner===S.who&&d.statut!=='supprimée').map(d=>d.date).filter((x,i,a)=>a.indexOf(x)===i).sort()}
+/* v63.27 (Fabian 20/11) : une liste reste visible jusqu'au lundi 6h (samedi ou dimanche) ; un autre jour, jusqu'au lendemain 6h.
+   Ex. un véhicule de samedi qui repart dimanche 14h peut être fait dimanche. */
+function astrFin(j){const [y,m,d]=j.split('-').map(Number),x=new Date(y,m-1,d),w=x.getDay();x.setDate(d+(w===6?2:1));return iso(x)+' 06:00'}
+function astrJours(){const n=nowStr();return (S.demandes||[]).filter(d=>d.astreinte&&(d.date>=TODAY||n<astrFin(d.date))&&d.runner===S.who&&d.statut!=='supprimée').map(d=>d.date).filter((x,i,a)=>a.indexOf(x)===i).sort()}
 function astrIds(p){return S.screen==='we'?astrJours().reduce((l,j)=>l.concat(astrJour(j)),[]).filter(d=>d.plaque===p).map(d=>d.id):[]}
 function passageDem(id){for(let i=PL.length-1;i>=0;i--)if(String(PL[i].demande||'').split(',').includes(id))return PL[i];return null}
 function markAsksSeen(){S.vus=allAsks().map(d=>d.id).concat(S.vus||[]).filter((x,i,a)=>a.indexOf(x)===i).slice(0,300);save();badge()}
@@ -1507,20 +1516,28 @@ function vAsks(){
 
 const WE_MIN=30,WE_CHG=60,WE_MAX=420,WE_MARGE=450;
 function hMin(m){const h=Math.floor(m/60),r=m%60;return h?h+' h'+(r?' '+String(r).padStart(2,'0'):''):r+' min'}
-function weStatut(x){if(!x)return '';const pb=x.pb||[];return pb.length?(pb.length===1&&pb[0]==='Pas trouvé sur place'?'<span class="pill dep">Pas trouvé</span>':'<span class="pill dep">Défaut signalé</span>'):'<span class="pill seen">Vu · OK</span>'}
+function weStatut(x){if(!x)return '';if(x.parti)return '<span class="pill">Reparti, pas vu</span>';const pb=x.pb||[];return pb.length?(pb.length===1&&pb[0]==='Pas trouvé sur place'?'<span class="pill dep">Pas trouvé</span>':'<span class="pill dep">Défaut signalé</span>'):'<span class="pill seen">Vu · OK</span>'}
 function weGroupes(day){
-  const l=astrJour(day).map(d=>{const st=sejourAstr(d.plaque,d.point,day);return {d,st,pt:d.point||(st||{}).point||'',dep:st&&st.to&&!st.toCaler?st.to:'',x:FAITES.has(d.id)?passageDem(d.id)||{pb:[]}:null}});
+  const l=astrJour(day).map(d=>{const st=sejourAstr(d.plaque,d.point,day);return {d,st,pt:d.point||(st||{}).point||'',dep:st&&st.to&&!st.toCaler?st.to:'',x:FAITES.has(d.id)?passageDem(d.id)||{pb:[]}:null}}).map(v=>{ /* v63.27 : liste d'un jour passé (ex. samedi vu dimanche) : véhicule déjà reparti = plus à voir */
+    if(!v.x&&day<TODAY&&v.dep&&v.dep<nowStr())v.x={pb:[],parti:true};return v});
   const g={};l.forEach(v=>{(g[v.pt]=g[v.pt]||[]).push(v)});
   const tri=(a,b)=>(a.dep||'9999').localeCompare(b.dep||'9999')||(+a.d.astreinte||0)-(+b.d.astreinte||0);
   return Object.keys(g).map(pt=>{const vs=g[pt].sort(tri);return {pt,vs,dep:vs.map(v=>v.dep).filter(Boolean).sort()[0]||'',rang:Math.min(...vs.map(v=>+v.d.astreinte||99))}})
     .sort((a,b)=>(a.dep||'9999').localeCompare(b.dep||'9999')||a.rang-b.rang);
 }
+function weReste(j){return weGroupes(j).reduce((n,g)=>n+g.vs.filter(v=>!v.x).length,0)}
 function vWeekend(){
+  /* v63.27 (Fabian 20/11) : un bouton par jour (Samedi / Dimanche), une seule liste à la fois : pas de mélange entre les jours */
   const js=astrJours();
-  if(js.length===1&&js[0]===TODAY)return weListe(TODAY);
-  const tl=d=>(l=>l.dow+' '+l.num)(dLabel(d));
-  return js.map((j,i)=>{const n=dayDiff(j),nom=n===0?"Aujourd'hui":n===1?'Demain':cap(fullDay(j).split(' ')[0].toLowerCase());
-    return `<div class="mlabel" style="margin-top:${i?'18px':'0'}">${n>1?esc(fullDay(j)):esc(nom)+' · '+esc(tl(j))}</div>${n>0?`<div class="we-demain">Liste ${n===1?'de demain':'de '+esc(fullDay(j).split(' ')[0].toLowerCase())}. Tu peux déjà t'organiser${n===1?', et passer ce soir si le véhicule part tôt':''} : un véhicule validé ici compte dans le rapport de ce jour-là.</div>`:''}${weListe(j)}`}).join('');
+  const reste=weReste;
+  if(!js.includes(S.weJour))S.weJour=js.includes(TODAY)&&reste(TODAY)?TODAY:js.find(reste)||js[0];
+  const j=S.weJour,n=dayDiff(j),jour=fullDay(j).split(' ')[0];
+  const quand=n===0?"aujourd'hui":n===1?'demain':n===-1?'hier':'';
+  const sel=js.length?`<div class="we-jours" role="group" aria-label="Jour de la liste">${js.map(x=>{const r=reste(x),on=x===j;
+    return `<button type="button" class="we-jour${on?' on':''}" data-wejour="${x}" aria-pressed="${on}"><b>${esc(fullDay(x).split(' ').slice(0,2).join(' '))}</b><small>${r?plural(r,'véhicule')+' à voir':'✓ fini'}</small></button>`}).join('')}</div>`:'';
+  const titre=`<div class="we-titre"><span>Liste du</span><b>${esc(fullDay(j).replace(/ \d{4}$/,'').toLowerCase())}</b>${quand?`<small>${quand}</small>`:''}</div>`;
+  const passe=n<0&&reste(j)?`<div class="we-passe">Pas fini ${esc(jour.toLowerCase())}. Tu peux encore les faire tant qu'ils sont sur place (liste visible jusqu'à lundi 6h).</div>`:'';
+  return sel+titre+passe+weListe(j);
 }
 function weListe(day){
   const gs=weGroupes(day),all=gs.reduce((a,g)=>a.concat(g.vs),[]),n=all.length,faits=all.filter(v=>v.x).length,reste=n-faits;
@@ -1533,13 +1550,13 @@ function weListe(day){
   const par=(all.find(v=>v.d.par)||{d:{}}).d.par;
   const barre=`<div class="we-bar">${fait?`<span style="width:${pc(fait)}"></span>`:''}${resteMin?`<span class="rest" style="width:${pc(Math.min(resteMin,WE_MAX-Math.min(fait,WE_MAX)))}"></span>`:''}${orange&&Math.min(prevu,WE_MARGE)>Math.max(WE_MAX,fait)?`<span class="or" style="width:${pc(Math.min(prevu,WE_MARGE)-Math.max(WE_MAX,fait))}"></span>`:''}</div>
     <div class="we-leg"><span><i style="background:#9CC3B0"></i>jusqu'à 7 h</span><span><i style="background:#E07A2E"></i>7 h → 7 h 30 : marge si galère</span></div>`;
-  const tete=!reste?`<div class="we-fin"><span class="ok">✓</span><b>Liste terminée, merci !</b><span class="meta">${plural(n,'véhicule')} vu${n>1?'s':''}${(k=>k?' · '+plural(k,'problème')+' signalé'+(k>1?'s':''):'')(all.filter(v=>v.x&&v.x.pb&&v.x.pb.length).length)}</span>${day===TODAY?'<button type="button" class="btn big primary" data-tab="done">Terminer ma tournée</button><span class="meta">Le rapport part sur Slack, comme en semaine.</span>':'<span class="meta">Ils compteront dans le rapport de demain.</span>'}</div>`
-    :`<div class="we-t${orange?' orange':''}"><div class="l"><span>${faits?'Il reste environ':day===TODAY?"Temps prévu aujourd'hui":'Temps prévu'}</span><b>${faits?hMin(resteMin):hMin(prevu)+(orange?' · marge comprise':'')}</b></div>${barre}<div class="m">${faits?`${faits} véhicule${faits>1?'s':''} vu${faits>1?'s':''} sur ${n}`:`${plural(n,'véhicule')} × 30 min${gs.length>1?' + '+plural(gs.length-1,'changement')+' de point × 1 h':''}${retour?' + 1 h de retour':''}`}${par?' · liste envoyée par '+esc(par):''}</div></div>`;
+  const tete=!reste?`<div class="we-fin"><span class="ok">✓</span><b>Liste terminée, merci !</b><span class="meta">${(k=>plural(k,'véhicule')+' vu'+(k>1?'s':''))(all.filter(v=>v.x&&!v.x.parti).length)}${(k=>k?' · '+plural(k,'problème')+' signalé'+(k>1?'s':''):'')(all.filter(v=>v.x&&v.x.pb&&v.x.pb.length).length)}</span>${day<=TODAY?'<button type="button" class="btn big primary" data-tab="done">Terminer ma tournée</button><span class="meta">Le rapport part sur Slack, comme en semaine.</span>':'<span class="meta">Ils compteront dans le rapport de ce jour-là.</span>'}</div>`
+    :`<div class="we-t${orange?' orange':''}"><div class="l"><span>${faits?'Il reste environ':day===TODAY?"Temps prévu aujourd'hui":'Temps prévu'}</span><b>${faits?hMin(resteMin):hMin(prevu)+(orange?' · marge comprise':'')}</b></div>${barre}<div class="m">${faits?(k=>`${k} véhicule${k>1?'s':''} vu${k>1?'s':''} sur ${n}`)(all.filter(v=>v.x&&!v.x.parti).length)+(k=>k?` · ${k} reparti${k>1?'s':''} sans être vu${k>1?'s':''}`:'')(all.filter(v=>v.x&&v.x.parti).length):`${plural(n,'véhicule')} × 30 min${gs.length>1?' + '+plural(gs.length-1,'changement')+' de point × 1 h':''}${retour?' + 1 h de retour':''}`}${par?' · liste envoyée par '+esc(par):''}</div></div>`;
   let premier=true;
-  return tete+gs.map((g,i)=>{const r=g.vs.filter(v=>!v.x).length,dep1=g.vs.find(v=>!v.x&&v.dep);
+  return (day<TODAY&&reste?'':tete)+gs.map((g,i)=>{const r=g.vs.filter(v=>!v.x).length,dep1=g.vs.find(v=>!v.x&&v.dep);
     const first=r&&premier;if(r)premier=false;
     return `${i?'<div class="we-chg">→ Changement de point · 1 h</div>':''}<section class="psec">
-    <div class="pband${r?'':' we-fini'}"><h2><span class="we-n">${r?i+1:'✓'}</span>${esc(g.pt?full(g.pt):'Point non précisé')}</h2><div class="pband-n">${r?`<b>${r}</b> à voir`:'fini'}</div></div>
+    <div class="pband${r?'':' we-fini'}"><h2><span class="we-n">${r?i+1:'✓'}</span>${esc(g.pt?full(g.pt):'Point non précisé')}</h2><div class="pband-n">${r?`<b>${r}</b> à voir`:g.vs.every(v=>v.x&&v.x.parti)?'reparti':'fini'}</div></div>
     ${r&&dep1?`<div class="we-first">Premier départ : <b>${esc(short(dep1.dep).replace(' à ',' '))}</b>${first?' · commence ici':''}</div>`:r&&first?'<div class="we-first">Commence ici</div>':''}
     ${g.vs.map(v=>{const d=v.d,vh=vehicle(d.plaque)||{},cons=d.consigne&&d.consigne!=='Passer voir ce véhicule.'?d.consigne:'';
       return rowHtml(d.plaque,`<span class="row-t"><span class="plate">${esc(d.plaque)}</span>${v.x?weStatut(v.x):'<span class="pill unseen">≈ 30 min</span>'}${phPill(d)}${etqPanne(d.plaque,plaquesEnPanne(day),day)}</span>${vh.modele?`<span class="model">${esc(vh.modele)}</span>`:''}${cons?`<span class="consigne">${esc(cons)}</span>`:''}${v.st?timesHtml(v.st)+bloque(d,v.st):'<span class="spec">'+(day===TODAY?'Pas dans le planning aujourd\'hui':day===DEMAIN?'Pas dans le planning demain':'Pas dans le planning ce jour-là')+'</span>'+bloque(d,v.st)}`,(v.x?'we-vu':'')+(v===dep1?' dep1':''))}).join('')}
@@ -1709,7 +1726,7 @@ function put(el,html){if(el._h===html)return;el._h=html;
 function render(bg){const r=render0(bg);syncHist();return r}
 function render0(bg){
   index();badge();
-  const astrA=astrJour(TODAY),astr=astrA.length?astrA:astrJour(astrJours()[0]||DEMAIN),weReste=astr.filter(d=>!FAITES.has(d.id)).length;
+  const astrA=astrJour(TODAY),astr=astrJours().reduce((l,j)=>l.concat(astrJour(j)),[]),weN=astrJours().reduce((n,j)=>n+weReste(j),0); /* v63.27 : pastille = toutes les listes visibles */
   /* v63.22 : le jour de l'astreinte, l'appli s'ouvre une fois sur l'onglet Week-end (pas la veille) */
   if(astrA.length&&S.weOuvert!==TODAY&&!sheet&&!showReport){S.weOuvert=TODAY;S.screen='we';save()}
   const sc=S.screen==='done'?'done':S.screen==='we'&&astr.length?'we':'home';const l=dLabel(TODAY);
@@ -1738,7 +1755,7 @@ function render0(bg){
     put($('#view'),(picker?`<div class="picker" role="group" aria-label="Choisir le runner"><div class="mlabel">Qui fait la tournée ?</div><div class="choice">${RUNNERS.map(r=>`<button type="button" class="opt-row ${r===S.who?'on':''}" data-runner="${esc(r)}" aria-pressed="${r===S.who}"><span class="box">${r===S.who?I.tick:''}</span>${esc(r)}</button>`).join('')}</div><label for="csvFile" class="lnk2">Démonstration : charger un export Metabase</label></div>`:'')+(sc==='done'?vDone:sc==='we'?vWeekend:vHome)());
     const ck=sc+DAY+DONE_DAY;if(ck!==lastCk){lastCk=ck;centerDays()}
     const n=new Set(todo().map(x=>x.plaque).concat(horsAstr(openAsks()).map(d=>d.plaque))).size,dn=doneToday().length; /* v59 : un véhicule compte une fois (comme sur les points) */
-    const tabs=[['home','À faire',I.todo,n],['done','Ma tournée',I.done,dn]].concat(astr.length?[['we','Week-end',I.sun,weReste]]:[]);
+    const tabs=[['home','À faire',I.todo,n],['done','Ma tournée',I.done,dn]].concat(astr.length?[['we','Week-end',I.sun,weN]]:[]);
     $('#tabs').classList.toggle('t3',tabs.length===3);
     put($('#tabs'),tabs.map(([k,t,ic,c])=>`<button type="button" class="${k===sc?'on':''}" data-tab="${k}" aria-current="${k===sc?'page':'false'}">${ic}<span>${t} <b class="cnt${k==='we'&&c?' we':''}">${c}</b></span></button>`).join(''));
   }
@@ -1803,6 +1820,7 @@ document.addEventListener('click',e=>{
   if(d.runner){picker=false;set({who:d.runner});toast('Tournée de '+d.runner+'.');return}
   if(d.tab){showReport=false;if(d.tab==='done'){DAY=TODAY;DONE_DAY=TODAY}set({screen:d.tab});window.scrollTo(0,0);return}
   if(d.day){if(dragged)return;DAY=d.day;render();window.scrollTo(0,0);return}
+  if(d.wejour){S.weJour=d.wejour;render();window.scrollTo(0,0);return}
   if(d.doneday){if(dragged)return;DONE_DAY=d.doneday;showReport=false;render();return}
   if(b.id==='remBtn'){rdraft=newRemind(sheet.plaque);sheet.step='rappel';render();$('#sheet').scrollTop=0;return}
   if(d.rdate){rdraft.date=d.rdate;rdraft.other=false;render();majRem();return}
