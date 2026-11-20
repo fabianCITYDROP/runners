@@ -419,6 +419,7 @@ nav.tabs button .cnt.we{background:var(--red);color:#fff}
 .we-fin{display:flex;flex-direction:column;align-items:center;gap:6px;padding:20px 16px;border-radius:14px;background:var(--surface);border:2px solid var(--accent);text-align:center}
 .we-fin .ok{width:52px;height:52px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700}
 .we-fin b{font-size:19px}
+.we-demain{margin:-6px 2px 0;font-size:14.5px;line-height:1.4;color:var(--info)}
 .photos{display:flex;gap:10px;flex-wrap:wrap}
 .ph{position:relative;width:84px;height:84px;border-radius:12px;overflow:hidden;border:1px solid var(--line)}
 .ph img{width:100%;height:100%;object-fit:cover;display:block}
@@ -925,7 +926,13 @@ function badge(){const n=DEMO?0:newAsks().length;try{if(navigator.setAppBadge){i
    Elles ont leur onglet « Week-end » : plus dans « Rappels et demandes » ni dans « À faire ». Les autres jours, rien ne change. */
 function estAstr(d){return !!(d&&d.astreinte)&&d.date===TODAY&&d.runner===S.who}
 function horsAstr(l){return l.filter(d=>!estAstr(d))}
-function astrJour(){return (S.demandes||[]).filter(d=>d.astreinte&&d.date===TODAY&&d.runner===S.who&&d.statut!=='supprimée')}
+function astrJour(day){day=day||TODAY;return (S.demandes||[]).filter(d=>d.astreinte&&d.date===day&&d.runner===S.who&&d.statut!=='supprimée')}
+/* v63.23 (Fabian 20/11) : la liste de demain est déjà visible (le runner peut passer la veille au soir, ex. véhicule qui repart à 6h) ;
+   validé depuis l'onglet Week-end, le passage ferme la demande d'astreinte et compte dans le rapport du jour de la liste (script v34.22) */
+const DEMAIN=dayOffset(1);
+/* v63.25 (Fabian 20/11) : toutes les listes à venir sont visibles dès que le bureau les envoie (ex. samedi ET dimanche dès le vendredi) */
+function astrJours(){return (S.demandes||[]).filter(d=>d.astreinte&&d.date>=TODAY&&d.runner===S.who&&d.statut!=='supprimée').map(d=>d.date).filter((x,i,a)=>a.indexOf(x)===i).sort()}
+function astrIds(p){return S.screen==='we'?astrJours().reduce((l,j)=>l.concat(astrJour(j)),[]).filter(d=>d.plaque===p).map(d=>d.id):[]}
 function passageDem(id){for(let i=PL.length-1;i>=0;i--)if(String(PL[i].demande||'').split(',').includes(id))return PL[i];return null}
 function markAsksSeen(){S.vus=allAsks().map(d=>d.id).concat(S.vus||[]).filter((x,i,a)=>a.indexOf(x)===i).slice(0,300);save();badge()}
 /* v44 : toucher la notification ouvre « Rappels et demandes » et va chercher la demande tout de suite ; en attendant
@@ -1025,7 +1032,7 @@ const LABO_CHOIX={};
 function record(p,types,comment,photos,faits,objet){
   const st=stayFor(p),ask=askFor(p),ici=ICI_CHOIX[p]&&!types.includes('Pas trouvé sur place')?ICI_CHOIX[p]:'',labo=LABO_CHOIX[p]||'';delete ICI_CHOIX[p];delete LABO_CHOIX[p];
   const at=nowStr(),bo=ici?(st&&st.point!==ici?st.point:ouBO(p))||'?':'';
-  const q={id:uid(),action:'passage',cle:ici?p+'|'+at+'|'+ici:keyFor(p),plaque:p,point:ici||(st?st.point:labo||(P['manual|'+TODAY+'|'+p]||{}).point||(ask&&ask.point)||'Hors liste') /* v63.10 : repris le même jour : même lieu que la 1re fois */,problemes:types,commentaire:comment,faits:types.length&&faits?String(faits).slice(0,500):'',photos:(photos||[]).slice(0,MAX_PHOTOS),demande_id:asksFor(p).map(d=>d.id).join(','),at,by:S.who};if(bo)q.bo=bo;if(objet)q.objet=String(objet).slice(0,300); /* v63.8 */
+  const q={id:uid(),action:'passage',cle:ici?p+'|'+at+'|'+ici:keyFor(p),plaque:p,point:ici||(st?st.point:labo||(P['manual|'+TODAY+'|'+p]||{}).point||(ask&&ask.point)||'Hors liste') /* v63.10 : repris le même jour : même lieu que la 1re fois */,problemes:types,commentaire:comment,faits:types.length&&faits?String(faits).slice(0,500):'',photos:(photos||[]).slice(0,MAX_PHOTOS),demande_id:asksFor(p).map(d=>d.id).concat(astrIds(p)).filter((x,i,a)=>a.indexOf(x)===i).join(','),at,by:S.who};if(bo)q.bo=bo;if(objet)q.objet=String(objet).slice(0,300); /* v63.8 */
   if(q.photos.length&&MINI.get(q.photos[0]))q.mini=MINI.get(q.photos[0]);
   if(DEMO){const x=fromQueue(q);delete x.pending;S.passages.push(x)}else{S.queue.push(q);savePhotos(q)}
   save();run();
@@ -1484,24 +1491,33 @@ function vAsks(){
 const WE_MIN=30,WE_CHG=60,WE_MAX=420,WE_MARGE=450;
 function hMin(m){const h=Math.floor(m/60),r=m%60;return h?h+' h'+(r?' '+String(r).padStart(2,'0'):''):r+' min'}
 function weStatut(x){if(!x)return '';const pb=x.pb||[];return pb.length?(pb.length===1&&pb[0]==='Pas trouvé sur place'?'<span class="pill dep">Pas trouvé</span>':'<span class="pill dep">Défaut signalé</span>'):'<span class="pill seen">Vu · OK</span>'}
-function weGroupes(){
-  const l=astrJour().map(d=>{const st=stayFor(d.plaque,TODAY);return {d,st,pt:d.point||(st||{}).point||'',dep:st&&st.to&&!st.toCaler?st.to:'',x:FAITES.has(d.id)?passageDem(d.id)||{pb:[]}:null}});
+function weGroupes(day){
+  const l=astrJour(day).map(d=>{const st=stayFor(d.plaque,day);return {d,st,pt:d.point||(st||{}).point||'',dep:st&&st.to&&!st.toCaler?st.to:'',x:FAITES.has(d.id)?passageDem(d.id)||{pb:[]}:null}});
   const g={};l.forEach(v=>{(g[v.pt]=g[v.pt]||[]).push(v)});
   const tri=(a,b)=>(a.dep||'9999').localeCompare(b.dep||'9999')||(+a.d.astreinte||0)-(+b.d.astreinte||0);
   return Object.keys(g).map(pt=>{const vs=g[pt].sort(tri);return {pt,vs,dep:vs.map(v=>v.dep).filter(Boolean).sort()[0]||'',rang:Math.min(...vs.map(v=>+v.d.astreinte||99))}})
     .sort((a,b)=>(a.dep||'9999').localeCompare(b.dep||'9999')||a.rang-b.rang);
 }
 function vWeekend(){
-  const gs=weGroupes(),all=gs.reduce((a,g)=>a.concat(g.vs),[]),n=all.length,faits=all.filter(v=>v.x).length,reste=n-faits;
-  const prevu=n*WE_MIN+Math.max(0,gs.length-1)*WE_CHG;
+  const js=astrJours();
+  if(js.length===1&&js[0]===TODAY)return weListe(TODAY);
+  const tl=d=>(l=>l.dow+' '+l.num)(dLabel(d));
+  return js.map((j,i)=>{const n=dayDiff(j),nom=n===0?"Aujourd'hui":n===1?'Demain':cap(fullDay(j).split(' ')[0].toLowerCase());
+    return `<div class="mlabel" style="margin-top:${i?'18px':'0'}">${n>1?esc(fullDay(j)):esc(nom)+' · '+esc(tl(j))}</div>${n>0?`<div class="we-demain">Liste ${n===1?'de demain':'de '+esc(fullDay(j).split(' ')[0].toLowerCase())}. Tu peux déjà t'organiser${n===1?', et passer ce soir si le véhicule part tôt':''} : un véhicule validé ici compte dans le rapport de ce jour-là.</div>`:''}${weListe(j)}`}).join('');
+}
+function weListe(day){
+  const gs=weGroupes(day),all=gs.reduce((a,g)=>a.concat(g.vs),[]),n=all.length,faits=all.filter(v=>v.x).length,reste=n-faits;
+  /* v63.25 (Fabian 20/11) : + 1 h de retour vers son point (1er point de l'onglet Runners) si la liste ne finit pas dessus ; même règle que la page bureau */
+  const chez=(S.ptsFiche||[])[0]||'',dernier=gs.length?gs[gs.length-1].pt:'',retour=gs.length&&(!chez||city(dernier)!==chez)?WE_CHG:0;
+  const prevu=n*WE_MIN+Math.max(0,gs.length-1)*WE_CHG+retour;
   const gr=gs.filter(g=>g.vs.some(v=>!v.x)),entame=gr.some(g=>g.vs.some(v=>v.x));
-  const resteMin=reste*WE_MIN+Math.max(0,gr.length-(faits===0||entame?1:0))*WE_CHG;
+  const resteMin=reste?reste*WE_MIN+Math.max(0,gr.length-(faits===0||entame?1:0))*WE_CHG+retour:0;
   const pc=m=>(Math.min(m,WE_MARGE)/WE_MARGE*100).toFixed(2)+'%',fait=Math.max(0,prevu-resteMin),orange=prevu>WE_MAX;
   const par=(all.find(v=>v.d.par)||{d:{}}).d.par;
   const barre=`<div class="we-bar">${fait?`<span style="width:${pc(fait)}"></span>`:''}${resteMin?`<span class="rest" style="width:${pc(Math.min(resteMin,WE_MAX-Math.min(fait,WE_MAX)))}"></span>`:''}${orange&&Math.min(prevu,WE_MARGE)>Math.max(WE_MAX,fait)?`<span class="or" style="width:${pc(Math.min(prevu,WE_MARGE)-Math.max(WE_MAX,fait))}"></span>`:''}</div>
     <div class="we-leg"><span><i style="background:#9CC3B0"></i>jusqu'à 7 h</span><span><i style="background:#E07A2E"></i>7 h → 7 h 30 : marge si galère</span></div>`;
-  const tete=!reste?`<div class="we-fin"><span class="ok">✓</span><b>Liste terminée, merci !</b><span class="meta">${plural(n,'véhicule')} vu${n>1?'s':''}${(k=>k?' · '+plural(k,'problème')+' signalé'+(k>1?'s':''):'')(all.filter(v=>v.x&&v.x.pb&&v.x.pb.length).length)}</span><button type="button" class="btn big primary" data-tab="done">Terminer ma tournée</button><span class="meta">Le rapport part sur Slack, comme en semaine.</span></div>`
-    :`<div class="we-t${orange?' orange':''}"><div class="l"><span>${faits?'Il reste environ':"Temps prévu aujourd'hui"}</span><b>${faits?hMin(resteMin):hMin(prevu)+(orange?' · marge comprise':'')}</b></div>${barre}<div class="m">${faits?`${faits} véhicule${faits>1?'s':''} vu${faits>1?'s':''} sur ${n}`:`${plural(n,'véhicule')} × 30 min${gs.length>1?' + '+plural(gs.length-1,'changement')+' de point × 1 h':''}`}${par?' · liste envoyée par '+esc(par):''}</div></div>`;
+  const tete=!reste?`<div class="we-fin"><span class="ok">✓</span><b>Liste terminée, merci !</b><span class="meta">${plural(n,'véhicule')} vu${n>1?'s':''}${(k=>k?' · '+plural(k,'problème')+' signalé'+(k>1?'s':''):'')(all.filter(v=>v.x&&v.x.pb&&v.x.pb.length).length)}</span>${day===TODAY?'<button type="button" class="btn big primary" data-tab="done">Terminer ma tournée</button><span class="meta">Le rapport part sur Slack, comme en semaine.</span>':'<span class="meta">Ils compteront dans le rapport de demain.</span>'}</div>`
+    :`<div class="we-t${orange?' orange':''}"><div class="l"><span>${faits?'Il reste environ':day===TODAY?"Temps prévu aujourd'hui":'Temps prévu'}</span><b>${faits?hMin(resteMin):hMin(prevu)+(orange?' · marge comprise':'')}</b></div>${barre}<div class="m">${faits?`${faits} véhicule${faits>1?'s':''} vu${faits>1?'s':''} sur ${n}`:`${plural(n,'véhicule')} × 30 min${gs.length>1?' + '+plural(gs.length-1,'changement')+' de point × 1 h':''}${retour?' + 1 h de retour':''}`}${par?' · liste envoyée par '+esc(par):''}</div></div>`;
   let premier=true;
   return tete+gs.map((g,i)=>{const r=g.vs.filter(v=>!v.x).length,dep1=g.vs.find(v=>!v.x&&v.dep);
     const first=r&&premier;if(r)premier=false;
@@ -1509,8 +1525,8 @@ function vWeekend(){
     <div class="pband${r?'':' we-fini'}"><h2><span class="we-n">${r?i+1:'✓'}</span>${esc(g.pt?full(g.pt):'Point non précisé')}</h2><div class="pband-n">${r?`<b>${r}</b> à voir`:'fini'}</div></div>
     ${r&&dep1?`<div class="we-first">Premier départ : <b>${esc(short(dep1.dep).replace(' à ',' '))}</b>${first?' · commence ici':''}</div>`:r&&first?'<div class="we-first">Commence ici</div>':''}
     ${g.vs.map(v=>{const d=v.d,vh=vehicle(d.plaque)||{},cons=d.consigne&&d.consigne!=='Passer voir ce véhicule.'?d.consigne:'';
-      return rowHtml(d.plaque,`<span class="row-t"><span class="plate">${esc(d.plaque)}</span>${v.x?weStatut(v.x):'<span class="pill unseen">≈ 30 min</span>'}${phPill(d)}${etqPanne(d.plaque,plaquesEnPanne(TODAY),TODAY)}</span>${vh.modele?`<span class="model">${esc(vh.modele)}</span>`:''}${cons?`<span class="consigne">${esc(cons)}</span>`:''}${v.st?timesHtml(v.st)+bloque(d,v.st):'<span class="spec">Pas dans le planning aujourd\'hui</span>'+bloque(d,v.st)}`,(v.x?'we-vu':'')+(v===dep1?' dep1':''))}).join('')}
-  </section>`}).join('')+(reste?'<p class="meta" style="text-align:center">Appuie sur un véhicule pour faire le contrôle, comme d\'habitude.</p>':'');
+      return rowHtml(d.plaque,`<span class="row-t"><span class="plate">${esc(d.plaque)}</span>${v.x?weStatut(v.x):'<span class="pill unseen">≈ 30 min</span>'}${phPill(d)}${etqPanne(d.plaque,plaquesEnPanne(day),day)}</span>${vh.modele?`<span class="model">${esc(vh.modele)}</span>`:''}${cons?`<span class="consigne">${esc(cons)}</span>`:''}${v.st?timesHtml(v.st)+bloque(d,v.st):'<span class="spec">'+(day===TODAY?'Pas dans le planning aujourd\'hui':day===DEMAIN?'Pas dans le planning demain':'Pas dans le planning ce jour-là')+'</span>'+bloque(d,v.st)}`,(v.x?'we-vu':'')+(v===dep1?' dep1':''))}).join('')}
+  </section>`}).join('')+(retour&&reste?`<div class="we-chg">→ Retour${chez?' vers '+esc(full(chez)):''} · 1 h</div>`:'')+(reste?'<p class="meta" style="text-align:center">Appuie sur un véhicule pour faire le contrôle, comme d\'habitude.</p>':'');
 }
 function vDone(){
   const d=doneOn(DONE_DAY);const pb=d.filter(x=>x.pb.length).length;const today=DONE_DAY===TODAY;
@@ -1676,9 +1692,9 @@ function put(el,html){if(el._h===html)return;el._h=html;
 function render(bg){const r=render0(bg);syncHist();return r}
 function render0(bg){
   index();badge();
-  const astr=astrJour(),weReste=astr.filter(d=>!FAITES.has(d.id)).length;
-  /* v63.22 : le jour de l'astreinte, l'appli s'ouvre une fois sur l'onglet Week-end */
-  if(astr.length&&S.weOuvert!==TODAY&&!sheet&&!showReport){S.weOuvert=TODAY;S.screen='we';save()}
+  const astrA=astrJour(TODAY),astr=astrA.length?astrA:astrJour(astrJours()[0]||DEMAIN),weReste=astr.filter(d=>!FAITES.has(d.id)).length;
+  /* v63.22 : le jour de l'astreinte, l'appli s'ouvre une fois sur l'onglet Week-end (pas la veille) */
+  if(astrA.length&&S.weOuvert!==TODAY&&!sheet&&!showReport){S.weOuvert=TODAY;S.screen='we';save()}
   const sc=S.screen==='done'?'done':S.screen==='we'&&astr.length?'we':'home';const l=dLabel(TODAY);
   const ws=$('#whoSlot');
   const sombre=document.documentElement.dataset.theme==='dark';

@@ -6,6 +6,7 @@
 <title>Runners · Bureau</title>
 <!-- Page bureau de l'appli Runners, v4 : liens des runners, demandes à n'importe quelle date, rappels des runners, passages du jour ; v4 : actualisation automatique, un passage peut clore plusieurs demandes ; v6 (suite de la v4, la v5 est la version pro à part) : envois passés dans l'adresse (GET) car certains appareils bloquaient les envois classiques ; v7 : un véhicule ajouté s'affiche tout de suite (envoi en arrière-plan) ; v8 : « Photos en cours d'envoi » quand les photos suivent le passage ; v9 : « aperçu » tant que seule la photo allégée est arrivée ; v10 : photo effacée au bout de 5 jours indiquée ; v11 : plus rapide (planning retéléchargé seulement s'il a changé), actualisée toutes les 30 secondes ; v12 : indique combien de téléphones ont reçu l'alerte d'une nouvelle demande ; v13 : mise à jour automatique sans recharger à la main ; v14 : page laissée ouverte la nuit remise au nouveau jour le matin, liens photo vérifiés, polices sans bloquer l'affichage ; v15 : demandes et rappels à faire modifiables (bouton Modifier, avec le script v20) ; v16 : onglet « Retours runners » (véhicules demandés vus par un runner, alerte avec bandeau, son et notification de l'ordinateur ; retiré si le runner annule), état de Slack (avec le script v21) ; v17 (appli v48) : demande sur un jour ou sur plusieurs jours (du … au …) ; v18 (appli v49) : « Date unique / Période », termes revus ; v19 (appli v51) : onglet « Planifier » (avant « Dernière minute »), tirets de la plaque mis tout seuls ; v20 (appli v53) : liste « à faire » seulement, la plus récente en haut, 7 jours au plus ; passages du jour rangés par runner ; v21 (appli v54) : panne passagère de Google sans perdre la page, ajout sans doublon si la réponse se perd, actualisation lente ne défait plus un ajout ou un retrait, modification annulée proprement si la demande est faite entre-temps, plaque à moitié tapée refusée, téléphone étroit -->
 <!-- v63.21 (20/11, Fabian) : onglet « Week-end » : bouton « Télécharger le récap astreintes (Excel) » (script v34.21, action « astreintes_recap ») : un fichier Excel (Lisez-moi, Astreintes, Par astreinte, Par runner) à envoyer à Mickaël et Jérôme, sans leur partager la feuille -->
+<!-- v63.24 (20/11, Fabian, GP-184-FQ) : onglet Week-end : point du BO = là où le véhicule est garé pendant ce jour-là (avant : sa dernière arrivée du jour, Lille pour un véhicule à La Défense jusqu'à 8h) ; point demandé seulement si 2 points ce jour-là ou aucun ; « Part en location à 8h : passer avant (ou la veille au soir) » sous le véhicule -->
 <!-- v63.20 (20/11, Fabian) : onglet « Week-end » : liste d'astreinte d'un runner pour un samedi ou un dimanche, envoyée d'un coup (script v34.20) ; temps calculé (30 min par véhicule, + 1 h par changement de point), vert jusqu'à 7 h, orange jusqu'à 7 h 30, au-delà envoi bloqué ; bandeau à partir du jeudi tant qu'un jour du week-end n'a pas de liste ; les véhicules d'astreinte ne sont plus dans la liste de « Planifier » -->
 <!-- v63.18 (18/11, Fabian) : « Qui envoie ? » obligatoire sur une demande (Micha, Fabian, Brahim, Auric : liste dans la ligne bureau_noms des Réglages), gardé sur cet appareil ; le nom part dans le message Slack et chez le runner (script v34.18) -->
 <!-- v63.15 (17/11, Fabian) : jusqu'à 3 photos jointes à une demande (réduites à 1280 px, envoyées juste après la demande) ; Slack : la 1re dans le message, les autres en réponse dans le fil ; le runner les ouvre d'un appui (script v34.16) -->
@@ -413,7 +414,13 @@ const WE_VEH=30,WE_PT=60,WE_MAX=7*60,WE_MARGE=30;
 const ALIAS_V={'nanterre':'La Def','la def':'La Def','la defense':'La Def','paris la defense':'La Def','saint cloud':'Saint-Cloud','st cloud':'Saint-Cloud','aulnay':'Aulnay','aulnay sous bois':'Aulnay','paris centre':'Paris-Centre','coignieres':'Coignières','evry':'Évry','evry courcouronnes':'Évry','paris | evry':'Évry','mantes':'Mantes','mantes la jolie':'Mantes','paris | mantes la jolie':'Mantes','garches':'Garches','paris | garches':'Garches'};
 function cityV(s){s=String(s||'').trim();const k=s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[-_]/g,' ').replace(/\s+/g,' ');return ALIAS_V[k]||s}
 function nomPt(p){return ({'La Def':'La Défense','Mantes':'Mantes-la-Jolie'})[p]||p||'Point à choisir'}
-function weMinutes(points){const d=[];points.forEach(p=>{if(!d.includes(p))d.push(p)});return points.length*WE_VEH+Math.max(0,d.length-1)*WE_PT}
+/* v63.24 (Fabian 20/11) : + 1 h de retour à la fin si la liste ne finit pas sur le point du runner (1er point de sa
+   colonne « points », onglet Runners ; sans point connu : retour toujours compté). maison undefined = runner pas encore choisi. */
+function wePoints(points){const d=[];points.forEach(p=>{if(!d.includes(p))d.push(p)});return d}
+function weRetour(points,maison){const d=wePoints(points);return maison!==undefined&&d.length&&d[d.length-1]!==maison?WE_PT:0}
+function weMinutes(points,maison){const d=wePoints(points);return points.length*WE_VEH+Math.max(0,d.length-1)*WE_PT+weRetour(points,maison)}
+function weMaison(prenom){if(!prenom)return undefined;const r=D&&D.runners.find(x=>String(x.prenom).trim().toLowerCase()===String(prenom).trim().toLowerCase());return r?cityV(String(r.points||'').split(/[,;]/)[0]):''}
+function weRetourHtml(points,maison){return weRetour(points,maison)?`<div class="we-move">Retour vers ${maison?esc(nomPt(maison)):'son point'} : + 1 h</div>`:''}
 function weDuree(m){const h=Math.floor(m/60),r=m%60;if(!h)return r+' min';return h+' h'+(r?' '+String(r).padStart(2,'0'):'')}
 function weZone(m){return m>WE_MAX+WE_MARGE?'rouge':m>WE_MAX?'orange':'vert'}
 /* Samedis et dimanches des 8 prochains jours (aujourd'hui compris) */
@@ -425,25 +432,57 @@ function weManquants(){return weProches().filter(j=>!weEnvoyees(j).length)}
 let WE_BR={};try{const x=JSON.parse(localStorage.getItem('bureau-weekend')||'{}');if(x&&typeof x==='object')Object.keys(x).forEach(j=>{if(/^\d{4}-\d{2}-\d{2}$/.test(j)&&j>=dayOffset(0)&&x[j]&&Array.isArray(x[j].items))WE_BR[j]={runner:String(x[j].runner||''),items:x[j].items.filter(i=>i&&i.plaque).slice(0,40)}})}catch(e){}
 function weSauver(){try{localStorage.setItem('bureau-weekend',JSON.stringify(WE_BR))}catch(e){}}
 const WE_ENVOI=new Set();let WE_ANNUL='';
-/* Où sera le véhicule ce jour-là d'après le BO : ville d'arrivée de son dernier trajet arrivé au plus tard ce jour-là */
+/* v63.24 (Fabian 20/11, GP-184-FQ) : où est garé le véhicule pendant ce jour-là, d'après le BO. Avant : ville d'arrivée
+   du dernier trajet arrivé ce jour-là, donc Lille pour un véhicule à La Défense jusqu'à 8h puis loué vers Lille.
+   Maintenant : périodes où il est garé (d'une arrivée au départ suivant) qui touchent ce jour, sur nos points. */
 function isoDe(s){s=String(s||'').trim();let m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);if(m)return m[1]+'-'+m[2]+'-'+m[3];m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);return m?m[3]+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0'):''}
-function pointBO(plaque,jour){
-  if(!D||!D.planning)return '';const h=(D.planning.entetes||[]).map(x=>String(x).trim().toLowerCase()),ix=k=>h.indexOf(k);
+function hDe(s){const m=String(s||'').match(/(\d{1,2})[:hH](\d{2})/);return m?m[1].padStart(2,'0')+':'+m[2]:'00:00'}
+/* [{p, de, a}] : points où il est garé ce jour-là (de / a = « aaaa-mm-jj hh:mm », '' = avant ou après le planning connu) */
+function presenceBO(plaque,jour){
+  if(!D||!D.planning)return null;const h=(D.planning.entetes||[]).map(x=>String(x).trim().toLowerCase()),ix=k=>h.indexOf(k);
   const ip=h.findIndex(x=>['plaque','immat','immatriculation'].includes(x)),va=ix('ville_arrivee'),da=ix('date_arrivee'),ha=ix('heure_arrivee'),vd=ix('ville_depart'),dd=ix('date_depart'),hd=ix('heure_depart');
-  if(ip<0||va<0||da<0)return '';let best=null,first=null;
-  (D.planning.lignes||[]).forEach(r=>{if(norm(String(r[ip]||''))!==norm(plaque))return;
-    const ja=isoDe(r[da]);if(ja&&ja<=jour){const t=ja+' '+String(ha<0?'':r[ha]||'');if(!best||t>best.t)best={t,v:r[va]}}
-    const jd=dd<0?'':isoDe(r[dd]);if(jd&&vd>=0){const t=jd+' '+String(hd<0?'':r[hd]||'');if(!first||t<first.t)first={t,v:r[vd]}}});
-  const v=cityV(best?best.v:first?first.v:'');return POINTS.includes(v)?v:'';
+  if(ip<0||va<0||da<0)return null;
+  const tr=[];(D.planning.lignes||[]).forEach(r=>{if(norm(String(r[ip]||''))!==norm(plaque))return;
+    const jA=isoDe(r[da]),jD=dd<0?'':isoDe(r[dd]);if(!jA&&!jD)return; /* lignes d'improductif : pas de trajet */
+    tr.push({vd:vd<0?'':cityV(r[vd]),dep:jD?jD+' '+hDe(hd<0?'':r[hd]):'',va:cityV(r[va]),arr:jA?jA+' '+hDe(ha<0?'':r[ha]):''})});
+  if(!tr.length)return null;
+  tr.sort((a,b)=>(a.dep||a.arr).localeCompare(b.dep||b.arr));
+  const per=[];
+  /* avant le 1er trajet connu : garé à sa ville de départ ; puis à chaque arrivée, jusqu'au départ suivant */
+  if(tr[0].vd&&tr[0].dep)per.push({v:tr[0].vd,de:'',a:tr[0].dep});
+  tr.forEach((t,i)=>{if(!t.va||!t.arr)return;const n=tr.slice(i+1).find(x=>x.dep&&x.dep>=t.arr);per.push({v:t.va,de:t.arr,a:n?n.dep:''})});
+  const d0=jour+' 00:00',d1=jour+' 23:59',out=[];
+  per.filter(x=>POINTS.includes(x.v)&&(!x.de||x.de<=d1)&&(!x.a||x.a>d0)&&(!x.de||!x.a||x.a>x.de)).forEach(x=>{const o=out.find(y=>y.p===x.v);if(o){if(!x.de||x.de<o.de)o.de=x.de;if(!x.a||(o.a&&x.a>o.a))o.a=x.a}else out.push({p:x.v,de:x.de,a:x.a})});
+  return out;
+}
+function pointBO(plaque,jour){const l=presenceBO(plaque,jour);return l&&l.length===1?l[0].p:''}
+/* « Part en location à 8h : passer avant (ou la veille au soir) », « Arrive à 15h », etc. ('' = là toute la journée) */
+function dispoTxt(plaque,jour,point){
+  const l=presenceBO(plaque,jour);const x=l&&l.find(y=>y.p===point);if(!x)return l&&l.length?'Le BO ne le met pas à '+nomPt(point)+' ce jour-là.':'';
+  const hh=t=>{const h=Number(t.slice(11,13)),m=t.slice(14,16);return h+'h'+(m==='00'?'':m)};
+  const arrive=x.de&&x.de.slice(0,10)===jour,part=x.a&&x.a.slice(0,10)===jour;
+  if(arrive&&part)return 'Sur place seulement de '+hh(x.de)+' à '+hh(x.a)+'.';
+  if(part)return 'Part en location à '+hh(x.a)+' : passer avant (ou la veille au soir).';
+  if(arrive)return 'Arrive à '+hh(x.de)+' : passer après.';
+  return '';
 }
 /* Véhicules rangés par point, dans l'ordre d'arrivée des points dans la liste */
-function weGroupes(items){const pts=[];items.forEach(i=>{if(!pts.includes(i.point))pts.push(i.point)});return pts.map(p=>({p,l:items.filter(i=>i.point===p)}))}
-function weJauge(points){
-  const m=weMinutes(points),z=weZone(m),n=points.length,c=Math.max(0,new Set(points).size-1),pc=x=>Math.min(100,x/(WE_MAX+WE_MARGE)*100).toFixed(1);
+/* v63.24 : points rangés par premier départ en location (le véhicule qui part le plus tôt d'abord), comme l'appli du
+   runner ; sans départ connu ou ex aequo : ordre de la liste. Le temps (changements, retour) suit cet ordre. */
+function weDepart(i,jour){const l=presenceBO(i.plaque,jour);const x=l&&l.find(y=>y.p===i.point);return x&&x.a?x.a:''}
+function weGroupes(items,jour){
+  const v=items.map((i,k)=>({i,dep:jour?weDepart(i,jour):'',r:i.d?(+i.d.astreinte||99):(+i.astreinte||k)}));
+  const pts=[];v.forEach(x=>{if(!pts.includes(x.i.point))pts.push(x.i.point)});
+  const tri=(a,b)=>(a.dep||'9999').localeCompare(b.dep||'9999')||a.r-b.r;
+  return pts.map(p=>{const l=v.filter(x=>x.i.point===p).sort(tri);return {p,l:l.map(x=>x.i),dep:l.map(x=>x.dep).filter(Boolean).sort()[0]||'',r:Math.min(...l.map(x=>x.r))}}).sort(tri);
+}
+function weOrdre(items,jour){return weGroupes(items,jour).reduce((a,g)=>a.concat(g.l.map(i=>i.point)),[])}
+function weJauge(points,maison){
+  const m=weMinutes(points,maison),rt=weRetour(points,maison),z=weZone(m),n=points.length,c=Math.max(0,new Set(points).size-1),pc=x=>Math.min(100,x/(WE_MAX+WE_MARGE)*100).toFixed(1);
   const pill=z==='rouge'?`<span class="pill we-r">${weDuree(m-WE_MAX-WE_MARGE)} de trop</span>`:z==='orange'?`<span class="pill we-o">Marge galère utilisée</span>`:n?`<span class="pill ok">Reste ${weDuree(WE_MAX-m)}</span>`:'';
   return `<div class="we-g ${z}"><div class="we-gt"><div class="we-gb">${weDuree(m)} <small>/ 7 h · marge 7 h 30</small></div>${pill}</div>
     <div class="we-bar" aria-hidden="true"><i style="width:${pc(m)}%"></i><b style="left:${pc(WE_MAX)}%"></b></div>
-    <div class="meta">${n} véhicule${n>1?'s':''} × 30 min${c?' + '+c+' changement'+(c>1?'s':'')+' de point × 1 h':''}</div>
+    <div class="meta">${n} véhicule${n>1?'s':''} × 30 min${c?' + '+c+' changement'+(c>1?'s':'')+' de point × 1 h':''}${rt?' + 1 h de retour':''}</div>
     ${z==='orange'?'<div class="we-msg o">Entre 7 h et 7 h 30 : on garde 30 min de marge en cas de galère. L\'envoi reste possible.</div>':z==='rouge'?'<div class="we-msg r"><b>Trop long pour une journée.</b> Retirez un véhicule ou mettez-le sur l\'autre jour.</div>':''}</div>`;
 }
 function weAjoutHtml(jour,envoye){return `<form class="we-add" data-weform="${jour}" autocomplete="off">
@@ -460,38 +499,40 @@ function weCarte(jour){
     const run=env[0].runner,par=env[0].envoye_par,afaire=env.filter(d=>d.statut==='à faire'&&!ENVOIS.has(d.id)),faits=env.filter(d=>d.statut==='faite').length;
     const items=env.map(d=>({id:d.id,plaque:d.plaque,point:d.point,d}));
     return `<section class="card we-c"><div class="card-h we-h ok"><h2>${esc(titre)}</h2><span class="meta">Envoyée à ${esc(run)} · ${faits}/${env.length} fait${faits>1?'s':''}</span></div>
-      <div class="card-b">${weJauge(items.map(i=>i.point))}<div class="meta">Runner d'astreinte : <b>${esc(run)}</b>${par?' · liste envoyée par '+esc(par):''}</div></div>
-      ${weGroupes(items).map((g,k)=>`${k?'<div class="we-move">Changement de point : + 1 h</div>':''}<div class="we-gh"><span>${k+1} · ${esc(nomPt(g.p))}</span><span class="meta">${g.l.length} véh. · ${weDuree(g.l.length*WE_VEH)}</span></div>
-        ${g.l.map(i=>`<div class="we-v"><div><span class="plate-t">${esc(i.plaque)}</span> ${weStatut(i.d)}${i.d.consigne?`<div class="meta">${esc(i.d.consigne)}</div>`:''}</div>${i.d.statut==='à faire'&&!ENVOIS.has(i.d.id)?`<button type="button" class="x" data-del="${esc(i.d.id)}" aria-label="Retirer ${esc(i.plaque)}">✕</button>`:''}</div>`).join('')}`).join('')}
+      <div class="card-b">${weJauge(weOrdre(items,jour),weMaison(run))}<div class="meta">Runner d'astreinte : <b>${esc(run)}</b>${par?' · liste envoyée par '+esc(par):''}</div></div>
+      ${weGroupes(items,jour).map((g,k)=>`${k?'<div class="we-move">Changement de point : + 1 h</div>':''}<div class="we-gh"><span>${k+1} · ${esc(nomPt(g.p))}</span><span class="meta">${g.l.length} véh. · ${weDuree(g.l.length*WE_VEH)}</span></div>
+        ${g.l.map(i=>`<div class="we-v"><div><span class="plate-t">${esc(i.plaque)}</span> ${weStatut(i.d)}${i.d.consigne?`<div class="meta">${esc(i.d.consigne)}</div>`:''}${i.d.statut==='à faire'?(t=>t?`<div class="we-msg o">${esc(t)}</div>`:'')(dispoTxt(i.plaque,jour,i.point)):''}</div>${i.d.statut==='à faire'&&!ENVOIS.has(i.d.id)?`<button type="button" class="x" data-del="${esc(i.d.id)}" aria-label="Retirer ${esc(i.plaque)}">✕</button>`:''}</div>`).join('')}`).join('')}${weRetourHtml(weOrdre(items,jour),weMaison(run))}
       <div class="card-b">${weAjoutHtml(jour,true)}
       ${afaire.length?(WE_ANNUL===jour?`<div class="actions"><button type="button" class="btn danger" data-weannul="${jour}" data-ok="1">Oui, retirer les ${afaire.length} véhicule${afaire.length>1?'s':''} à faire</button><button type="button" class="btn" data-weannul="">Non</button></div>`:`<button type="button" class="btn danger" data-weannul="${jour}">Annuler la liste</button>`):''}</div></section>`;
   }
   if(!br)return `<section class="card we-c"><div class="card-h we-h vide"><h2>${esc(titre)}</h2><span class="meta">Pas de liste</span></div><div class="card-b"><button type="button" class="btn" data-weprep="${jour}">Préparer la liste</button></div></section>`;
-  const runners=D.runners.filter(r=>estActif(r)).map(r=>r.prenom),m=weMinutes(br.items.map(i=>i.point)),ko=weZone(m)==='rouge',sans=br.items.filter(i=>!i.point).length;
+  const runners=D.runners.filter(r=>estActif(r)).map(r=>r.prenom),m=weMinutes(weOrdre(br.items,jour),weMaison(br.runner)),ko=weZone(m)==='rouge',sans=br.items.filter(i=>!i.point).length;
   const envoi=WE_ENVOI.has(jour);
   return `<section class="card we-c"><div class="card-h we-h"><h2>${esc(titre)}</h2><span class="meta">Brouillon, pas encore envoyé</span></div>
     <div class="card-b"><div class="field"><span class="lbl we-l">Runner d'astreinte</span><div class="seg exp" role="radiogroup">${runners.map(p=>`<button type="button" role="radio" data-werun="${esc(p)}" data-jour="${jour}" class="${br.runner===p?'on':''}" aria-checked="${br.runner===p}">${esc(p)}</button>`).join('')}</div></div>
-    ${weJauge(br.items.map(i=>i.point))}${weAjoutHtml(jour,false)}</div>
-    ${br.items.length?weGroupes(br.items).map((g,k)=>`${k?'<div class="we-move">Changement de point : + 1 h</div>':''}<div class="we-gh"><span>${k+1} · ${esc(nomPt(g.p))}</span><span class="meta">${g.l.length} véh. · ${weDuree(g.l.length*WE_VEH)}</span></div>
-      ${g.l.map(i=>`<div class="we-v"><div><span class="plate-t">${esc(i.plaque)}</span>${i.consigne?`<div class="meta">${esc(i.consigne)}</div>`:''}${!i.point?'<div class="we-msg r">Point inconnu dans le BO : retirez-le et remettez-le en choisissant le point.</div>':''}</div><button type="button" class="x" data-werm="${esc(i.id)}" data-jour="${jour}" aria-label="Retirer ${esc(i.plaque)}">✕</button></div>`).join('')}`).join(''):''}
+    ${weJauge(weOrdre(br.items,jour),weMaison(br.runner))}${weAjoutHtml(jour,false)}</div>
+    ${br.items.length?weGroupes(br.items,jour).map((g,k)=>`${k?'<div class="we-move">Changement de point : + 1 h</div>':''}<div class="we-gh"><span>${k+1} · ${esc(nomPt(g.p))}</span><span class="meta">${g.l.length} véh. · ${weDuree(g.l.length*WE_VEH)}</span></div>
+      ${g.l.map(i=>`<div class="we-v"><div><span class="plate-t">${esc(i.plaque)}</span>${i.consigne?`<div class="meta">${esc(i.consigne)}</div>`:''}${i.point?(t=>t?`<div class="we-msg o">${esc(t)}</div>`:'')(dispoTxt(i.plaque,jour,i.point)):''}${!i.point?'<div class="we-msg r">Point inconnu dans le BO : retirez-le et remettez-le en choisissant le point.</div>':''}</div><button type="button" class="x" data-werm="${esc(i.id)}" data-jour="${jour}" aria-label="Retirer ${esc(i.plaque)}">✕</button></div>`).join('')}`).join('')+weRetourHtml(weOrdre(br.items,jour),weMaison(br.runner)):''}
     <div class="card-b"><button type="button" class="btn primary we-send" data-wesend="${jour}" ${!br.runner||!br.items.length||ko||sans||envoi?'disabled':''}>${envoi?'Envoi en cours…':br.runner?'Envoyer la liste à '+esc(br.runner):'Choisissez le runner'}</button>
     ${ko?'<div class="meta">Le bouton reste grisé tant que ça dépasse 7 h 30.</div>':''}<button type="button" class="btn small" data-wejeter="${jour}">Jeter ce brouillon</button></div></section>`;
 }
 function bandeauWeekend(){const l=weManquants();if(!l.length)return '';
   return `<div class="we-rappel" role="status"><span aria-hidden="true">⚠</span><div><b>${l.map(j=>cap1(dLabel(j))).join(' et ')} : pas encore de liste d'astreinte</b>${tab==='weekend'?'Ce bandeau reste tant qu\'un jour du week-end n\'a pas de liste envoyée.':'<button type="button" class="bo-lien" data-tab="weekend">Préparer maintenant</button>'}</div></div>`}
 function vWeekend(){const plates=[...fleet().keys()];
-  return `${bandeauWeekend()}<section class="card"><div class="card-b">${expHtml()}<div class="meta">Une liste par jour et par runner : 30 min par véhicule, + 1 h à chaque changement de point, 7 h par jour (7 h 30 avec la marge). Le runner la voit en haut de son appli le jour venu ; le suivi part dans Slack en un seul message.</div><div class="we-dl"><button type="button" class="btn small" id="weRecap" ${RECAP_EN_COURS?'disabled':''}>${RECAP_EN_COURS?'Préparation du fichier…':'Télécharger le récap astreintes (Excel)'}</button><span class="meta">Toutes les astreintes faites : à envoyer à Mickaël et Jérôme.</span></div></div></section><datalist id="fleet">${plates.map(p=>`<option value="${esc(p)}">`).join('')}</datalist>
+  return `${bandeauWeekend()}<section class="card"><div class="card-b">${expHtml()}<div class="meta">Une liste par jour et par runner : 30 min par véhicule, + 1 h à chaque changement de point, + 1 h de retour si la liste ne finit pas sur le point du runner, 7 h par jour (7 h 30 avec la marge). Le runner la voit en haut de son appli le jour venu ; le suivi part dans Slack en un seul message.</div><div class="we-dl"><button type="button" class="btn small" id="weRecap" ${RECAP_EN_COURS?'disabled':''}>${RECAP_EN_COURS?'Préparation du fichier…':'Télécharger le récap astreintes (Excel)'}</button><span class="meta">Toutes les astreintes faites : à envoyer à Mickaël et Jérôme.</span></div></div></section><datalist id="fleet">${plates.map(p=>`<option value="${esc(p)}">`).join('')}</datalist>
   ${weJours().map(weCarte).join('')}`}
 /* Ajout d'une plaque (brouillon, ou liste déjà envoyée : part tout de suite) */
 async function weAjouter(jour){
   const pe=$('#wP_'+jour),te=$('#wT_'+jour),ce=$('#wC_'+jour);if(!pe)return;
   const plaque=fmtPlaque(pe.value.trim());if(!plaqueOk(plaque)){toast('Plaque incomplète.');pe.focus();return}
-  const point=te.value||pointBO(plaque,jour),consigne=ce.value.trim();
-  if(!point){toast(plaque+' : point inconnu dans le BO, choisissez-le dans la liste.');te.focus();return}
+  const pr=te.value?null:presenceBO(plaque,jour),point=te.value||(pr&&pr.length===1?pr[0].p:''),consigne=ce.value.trim();
+  /* v63.24 : on ne demande le point que si le BO ne peut pas le dire (2 points ce jour-là, en location toute la journée, pas dans l'export) */
+  if(!point){toast(plaque+' : '+(!pr?'pas dans l\'export du BO':pr.length>1?'sur 2 points ce jour-là ('+pr.map(x=>nomPt(x.p)).join(' puis ')+')':'pas sur un de nos points ce jour-là d\'après le BO (en location ?)')+'. Choisissez le point dans la liste.');te.focus();return}
+  {const dt=dispoTxt(plaque,jour,point);if(dt)setTimeout(()=>toast(plaque+' : '+dt),50)}
   const env=weEnvoyees(jour);
   if(env.length){
     if(env.some(d=>norm(d.plaque)===norm(plaque))){toast(plaque+' est déjà dans la liste.');return}
-    const m=weMinutes(env.map(d=>d.point).concat([point]));if(weZone(m)==='rouge'){toast('Trop long : '+weDuree(m)+' prévues (7 h 30 au plus).');return}
+    const m=weMinutes(weOrdre(env.map(d=>({plaque:d.plaque,point:d.point,astreinte:d.astreinte})).concat([{plaque,point,astreinte:'999'}]),jour),weMaison(env[0].runner));if(weZone(m)==='rouge'){toast('Trop long : '+weDuree(m)+' prévues (7 h 30 au plus).');return}
     const par=expOk();if(!par){toast('Choisissez qui envoie.');return}
     pe.value='';ce.value='';te.value='';
     weEnvoyer(jour,env[0].runner,par,[{id:'D'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),plaque,point,consigne}]);return}
@@ -500,9 +541,9 @@ async function weAjouter(jour){
   if(br.items.length>=40){toast('40 véhicules au plus.');return}
   br.items.push({id:'D'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),plaque,point,consigne});weSauver();
   pe.value='';ce.value='';te.value='';render();const n=$('#wP_'+jour);if(n)n.focus();
-  if(weZone(weMinutes(br.items.map(i=>i.point)))==='rouge')toast(plaque+' fait dépasser 7 h 30 : retirez un véhicule.');
+  if(weZone(weMinutes(weOrdre(br.items,jour),weMaison(br.runner)))==='rouge')toast(plaque+' fait dépasser 7 h 30 : retirez un véhicule.');
 }
-async function weEnvoyer(jour,runner,par,vehicules){
+async function weEnvoyer(jour,runner,par,vehicules,brouillon){
   if(WE_ENVOI.has(jour))return;WE_ENVOI.add(jour);
   /* affiché tout de suite comme les demandes (retiré si Google refuse) */
   const rangs=weEnvoyees(jour).reduce((m,d)=>Math.max(m,parseInt(d.astreinte,10)||0),0);
@@ -513,7 +554,7 @@ async function weEnvoyer(jour,runner,par,vehicules){
   if(r.erreur==='réseau'&&D){tmp.forEach(x=>ENVOIS.delete(x.id));if(await load()&&tmp.every(x=>load.ids.has(x.id)))r={ok:true,ajoutes:tmp.length}}
   tmp.forEach(x=>ENVOIS.delete(x.id));WE_ENVOI.delete(jour);
   if(r.erreur){if(D)D.demandes=D.demandes.filter(d=>!tmp.some(x=>x.id===d.id));render();toast('Liste non envoyée : '+(r.erreur==='réseau'?'pas de réseau':r.erreur)+'. Réessayez.');return false}
-  if(WE_BR[jour]&&vehicules.length&&WE_BR[jour].items===vehicules){delete WE_BR[jour];weSauver()}
+  if(brouillon&&WE_BR[jour]){delete WE_BR[jour];weSauver()}
   render();
   toast((vehicules.length>1?'Liste envoyée à '+runner:vehicules[0].plaque+' ajouté à la liste de '+runner)+(r.ignores&&r.ignores.length?' ('+r.ignores.join(', ')+' déjà dedans)':'')+(r.prevenus>0?' · alerte sur son téléphone.':'.'));
   return true;
@@ -762,7 +803,7 @@ function classeurAstreintes(EJ,lignes){
    '• Onglet « Astreintes » : une ligne par véhicule de la liste donnée au runner (remplie par l\'appli).',
    '• Onglet « Par astreinte » : une ligne par jour d\'astreinte (prévus, faits, défauts, temps prévu, heure de début et de fin).',
    '• Onglet « Par runner » : le total par runner.','',
-   'Temps prévu = 30 min par véhicule + 1 h à chaque changement de point (le trajet vers le 1er point n\'est pas compté).',
+   'Temps prévu = 30 min par véhicule + 1 h à chaque changement de point + 1 h de retour si le dernier point n\'est pas celui du runner (le trajet vers le 1er point n\'est pas compté).',
    'Normal : 7 h au plus. Orange = entre 7 h et 7 h 30 (marge en cas de galère). Rouge = plus de 7 h 30.',
    'Résultats : OK / Défauts signalés / Pas trouvé sur place / Pas fait (jour passé sans passage) / À faire (jour pas encore passé).',
    'Heure de passage = heure où le runner a validé le véhicule dans l\'appli.'].forEach((t,i)=>{const c=lis.getCell(i+1,1);c.value=t;if(!i)c.font={bold:true,size:13,color:{argb:'FFC00000'}}});
@@ -804,9 +845,9 @@ document.addEventListener('click',async e=>{
     render();toast(ko?ko+' véhicule'+(ko>1?'s':'')+' non retiré'+(ko>1?'s':'')+'. Réessayez.':'Liste annulée.');return}
   if(d.wesend){const jour=d.wesend,br=WE_BR[jour];if(!br||!br.items.length||!br.runner)return;
     const par=expOk();if(!par){EXP_MANQUE=true;render();const g=$('#dExp');if(g)g.scrollIntoView({block:'center',behavior:'smooth'});toast('Choisissez qui envoie la liste.');return}
-    if(weZone(weMinutes(br.items.map(i=>i.point)))==='rouge'){toast('Trop long : retirez un véhicule.');return}
+    if(weZone(weMinutes(weOrdre(br.items,jour),weMaison(br.runner)))==='rouge'){toast('Trop long : retirez un véhicule.');return}
     if(weEnvoyees(jour).length){toast('Une liste existe déjà ce jour-là : ajoutez les véhicules dedans.');return}
-    weEnvoyer(jour,br.runner,par,br.items);return}
+    weEnvoyer(jour,br.runner,par,weGroupes(br.items,jour).reduce((a,g)=>a.concat(g.l),[]),true);return} /* v63.24 : rangs dans l'ordre affiché (premier départ) */
   if(d.rmph!=null){PH_D.splice(+d.rmph,1);majPhForm();return}
   if(d.jourp){JOUR_P=d.jourp;render();return}
   if(d.creneau!=null){CRENEAU=CRENEAU===d.creneau?'':d.creneau;CR_SRC='bo';improHint();return}
