@@ -408,7 +408,7 @@ function fleet(){
 /* ---------- v63.20 (20/11, Fabian) : astreintes du week-end (onglet « Week-end ») ----------
    La liste d'un runner pour un jour part d'un coup (action « astreinte », script v34.20) : une demande par véhicule,
    colonne « astreinte » = rang dans la liste. Temps prévu : 30 min par véhicule + 1 h par changement de point
-   (le trajet vers le 1er point n'est pas compté). Vert jusqu'à 7 h, orange jusqu'à 7 h 30 (marge en cas de galère),
+   (le trajet vers le 1er point n'est pas compté). Vert jusqu'à 7 h, orange jusqu'à 7 h 30 (marge si urgence),
    rouge au-delà : envoi impossible. Brouillon gardé sur cet appareil tant que la liste n'est pas envoyée. */
 const WE_VEH=30,WE_PT=60,WE_MAX=7*60,WE_MARGE=30;
 const ALIAS_V={'nanterre':'La Def','la def':'La Def','la defense':'La Def','paris la defense':'La Def','saint cloud':'Saint-Cloud','st cloud':'Saint-Cloud','aulnay':'Aulnay','aulnay sous bois':'Aulnay','paris centre':'Paris-Centre','coignieres':'Coignières','evry':'Évry','evry courcouronnes':'Évry','paris | evry':'Évry','mantes':'Mantes','mantes la jolie':'Mantes','paris | mantes la jolie':'Mantes','garches':'Garches','paris | garches':'Garches'};
@@ -479,11 +479,11 @@ function weGroupes(items,jour){
 function weOrdre(items,jour){return weGroupes(items,jour).reduce((a,g)=>a.concat(g.l.map(i=>i.point)),[])}
 function weJauge(points,maison){
   const m=weMinutes(points,maison),rt=weRetour(points,maison),z=weZone(m),n=points.length,c=Math.max(0,new Set(points).size-1),pc=x=>Math.min(100,x/(WE_MAX+WE_MARGE)*100).toFixed(1);
-  const pill=z==='rouge'?`<span class="pill we-r">${weDuree(m-WE_MAX-WE_MARGE)} de trop</span>`:z==='orange'?`<span class="pill we-o">Marge galère utilisée</span>`:n?`<span class="pill ok">Reste ${weDuree(WE_MAX-m)}</span>`:'';
+  const pill=z==='rouge'?`<span class="pill we-r">${weDuree(m-WE_MAX-WE_MARGE)} de trop</span>`:z==='orange'?`<span class="pill we-o">Marge urgence utilisée</span>`:n?`<span class="pill ok">Reste ${weDuree(WE_MAX-m)}</span>`:'';
   return `<div class="we-g ${z}"><div class="we-gt"><div class="we-gb">${weDuree(m)} <small>/ 7 h · marge 7 h 30</small></div>${pill}</div>
     <div class="we-bar" aria-hidden="true"><i style="width:${pc(m)}%"></i><b style="left:${pc(WE_MAX)}%"></b></div>
     <div class="meta">${n} véhicule${n>1?'s':''} × 30 min${c?' + '+c+' changement'+(c>1?'s':'')+' de point × 1 h':''}${rt?' + 1 h de retour':''}</div>
-    ${z==='orange'?'<div class="we-msg o">Entre 7 h et 7 h 30 : on garde 30 min de marge en cas de galère. L\'envoi reste possible.</div>':z==='rouge'?'<div class="we-msg r"><b>Trop long pour une journée.</b> Retirez un véhicule ou mettez-le sur l\'autre jour.</div>':''}</div>`;
+    ${z==='orange'?'<div class="we-msg o">Entre 7 h et 7 h 30 : on garde 30 min de marge si urgence. L\'envoi reste possible.</div>':z==='rouge'?'<div class="we-msg r"><b>Trop long pour une journée.</b> Retirez un véhicule ou mettez-le sur l\'autre jour.</div>':''}</div>`;
 }
 function weAjoutHtml(jour,envoye){return `<form class="we-add" data-weform="${jour}" autocomplete="off">
   <div class="we-addr"><div class="field"><label for="wP_${jour}">Plaque</label><input id="wP_${jour}" data-keep="1" class="plate" maxlength="20" list="fleet" placeholder="AA-123-CD"></div>
@@ -804,7 +804,7 @@ function classeurAstreintes(EJ,lignes){
    '• Onglet « Par astreinte » : une ligne par jour d\'astreinte (prévus, faits, défauts, temps prévu, heure de début et de fin).',
    '• Onglet « Par runner » : le total par runner.','',
    'Temps prévu = 30 min par véhicule + 1 h à chaque changement de point + 1 h de retour si le dernier point n\'est pas celui du runner (le trajet vers le 1er point n\'est pas compté).',
-   'Normal : 7 h au plus. Orange = entre 7 h et 7 h 30 (marge en cas de galère). Rouge = plus de 7 h 30.',
+   'Normal : 7 h au plus. Orange = entre 7 h et 7 h 30 (marge si urgence). Rouge = plus de 7 h 30.',
    'Résultats : OK / Défauts signalés / Pas trouvé sur place / Pas fait (jour passé sans passage) / À faire (jour pas encore passé).',
    'Heure de passage = heure où le runner a validé le véhicule dans l\'appli.'].forEach((t,i)=>{const c=lis.getCell(i+1,1);c.value=t;if(!i)c.font={bold:true,size:13,color:{argb:'FFC00000'}}});
   const ws=onglet('Astreintes',[['Date',12],['Jour',11],['Runner',11],['Point',14],['Plaque',12],['Ordre',7],['Temps prévu (min)',10],['Heure de passage',11],['Résultat',20],['Défauts / remarque',36],['Liste envoyée par',12]]);
@@ -823,7 +823,7 @@ function classeurAstreintes(EJ,lignes){
     if(min>450){r.getCell(9).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFF7C80'}};r.getCell(9).font={bold:true,color:{argb:'FF9C0006'}}}
     else if(min>420){r.getCell(9).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFFC000'}};r.getCell(9).font={bold:true}}
     const t=tot.get(x[2])||{a:0,f:0,d:0,p:0,m:0};t.a++;t.f+=n.faits;t.d+=n.def;t.p+=n.pt;t.m+=min;tot.set(x[2],t)});
-  pa.addRow([]);pa.addRow(['Temps prévu : orange = entre 7 h et 7 h 30 (marge en cas de galère) ; rouge = plus de 7 h 30.']).getCell(1).font={italic:true,color:{argb:'FF808080'}};
+  pa.addRow([]);pa.addRow(['Temps prévu : orange = entre 7 h et 7 h 30 (marge si urgence) ; rouge = plus de 7 h 30.']).getCell(1).font={italic:true,color:{argb:'FF808080'}};
   const pr=onglet('Par runner',[['Runner',12],['Astreintes faites',11],['Véhicules faits',10],['Avec défauts',10],['Pas trouvés',10],['Heures prévues',10]]);
   [...tot.entries()].sort((a,b)=>a[0].localeCompare(b[0])).forEach(([nom,t])=>{const r=pr.addRow([nom,t.a,t.f,t.d,t.p,Math.round(t.m/6)/10]);r.getCell(6).numFmt='0.0';r.eachCell(c=>{c.border=bord})});
   return wb}
