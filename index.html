@@ -820,6 +820,23 @@ function staysOn(day){
 function improsFor(p,from,to){return S.impros.filter(i=>i.plaque===p&&(!to||i.debut<=to)&&(!from||!i.fin||i.fin>=from)).sort((a,b)=>a.debut.localeCompare(b.debut))}
 function staysToday(){return staysOn(TODAY)}
 function stayFor(p,day){return staysOn(day||TODAY).find(s=>s.plaque===p)||null}
+/* v63.26 (Fabian 20/11) : véhicule d'une liste du week-end : son séjour est cherché sur le point de la liste, même si ce
+   n'est pas un des points du runner. Avant, stayFor ne connaissait que ses points : « Pas dans le planning », sans heures. */
+function sejourAstr(p,pt,day){
+  const rs=lignesPar()[p]||[],a=day+' 00:00',b=day+' 23:59',now=day===TODAY?nowStr():'';
+  const cherche=pt=>{const out=[],ok=v=>v&&(!pt||city(v)===city(pt));
+    rs.forEach((r,i)=>{
+      if(ok(r.villeArr)){const nx=rs[i+1],lv=nx&&nx.villeDep===r.villeArr?nx:null;
+        out.push({plaque:p,point:r.villeArr,from:r.arr,fromCity:r.villeDep,to:lv?lv.dep:'',toCity:lv?lv.villeArr:'',fromCaler:!!r.caler,toCaler:!!(lv&&lv.caler),fromCalerP:r.calerP||null,toCalerP:lv&&lv.calerP||null})}
+      if(ok(r.villeDep)){const pv=rs[i-1];if(!(pv&&pv.villeArr===r.villeDep))out.push({plaque:p,point:r.villeDep,from:'',fromCity:'',to:r.dep,toCity:r.villeArr,toCaler:!!r.caler,toCalerP:r.calerP||null})}
+    });
+    const l=out.filter(s=>(!s.from||s.from<=b)&&(!s.to||s.to>=a)).sort((x,y)=>(x.to||'9999').localeCompare(y.to||'9999')||(x.from||'').localeCompare(y.from||''));
+    return l.find(s=>!now||!s.to||s.to>=now)||l[l.length-1]||null};
+  const s=(pt&&cherche(pt))||cherche('');
+  return s?Object.assign(s,{arrives:!!(s.from&&s.from.slice(0,10)===day),leaves:!!(s.to&&s.to.slice(0,10)===day),impros:improsFor(p,s.from,s.to),astr:true}):null;
+}
+/* Demande d'astreinte (aujourd'hui ou à venir) pour cette plaque : pas de question « Tu es sur quel point ? » */
+function astrDem(p){for(const j of astrJours()){const d=astrJour(j).find(x=>x.plaque===p);if(d)return d}return null}
 /* Un passage reste valable tant que le véhicule n'a pas quitté le point */
 function sid(s){return s.plaque+'|'+(s.from||'')+'|'+s.point}
 function keyFor(p){const s=stayFor(p);return s?sid(s):'manual|'+TODAY+'|'+p}
@@ -1032,7 +1049,7 @@ const LABO_CHOIX={};
 function record(p,types,comment,photos,faits,objet){
   const st=stayFor(p),ask=askFor(p),ici=ICI_CHOIX[p]&&!types.includes('Pas trouvé sur place')?ICI_CHOIX[p]:'',labo=LABO_CHOIX[p]||'';delete ICI_CHOIX[p];delete LABO_CHOIX[p];
   const at=nowStr(),bo=ici?(st&&st.point!==ici?st.point:ouBO(p))||'?':'';
-  const q={id:uid(),action:'passage',cle:ici?p+'|'+at+'|'+ici:keyFor(p),plaque:p,point:ici||(st?st.point:labo||(P['manual|'+TODAY+'|'+p]||{}).point||(ask&&ask.point)||'Hors liste') /* v63.10 : repris le même jour : même lieu que la 1re fois */,problemes:types,commentaire:comment,faits:types.length&&faits?String(faits).slice(0,500):'',photos:(photos||[]).slice(0,MAX_PHOTOS),demande_id:asksFor(p).map(d=>d.id).concat(astrIds(p)).filter((x,i,a)=>a.indexOf(x)===i).join(','),at,by:S.who};if(bo)q.bo=bo;if(objet)q.objet=String(objet).slice(0,300); /* v63.8 */
+  const q={id:uid(),action:'passage',cle:ici?p+'|'+at+'|'+ici:keyFor(p),plaque:p,point:ici||(st?st.point:labo||(P['manual|'+TODAY+'|'+p]||{}).point||(astrDem(p)||{}).point||(ask&&ask.point)||'Hors liste') /* v63.10 : repris le même jour : même lieu que la 1re fois */,problemes:types,commentaire:comment,faits:types.length&&faits?String(faits).slice(0,500):'',photos:(photos||[]).slice(0,MAX_PHOTOS),demande_id:asksFor(p).map(d=>d.id).concat(astrIds(p)).filter((x,i,a)=>a.indexOf(x)===i).join(','),at,by:S.who};if(bo)q.bo=bo;if(objet)q.objet=String(objet).slice(0,300); /* v63.8 */
   if(q.photos.length&&MINI.get(q.photos[0]))q.mini=MINI.get(q.photos[0]);
   if(DEMO){const x=fromQueue(q);delete x.pending;S.passages.push(x)}else{S.queue.push(q);savePhotos(q)}
   save();run();
@@ -1492,7 +1509,7 @@ const WE_MIN=30,WE_CHG=60,WE_MAX=420,WE_MARGE=450;
 function hMin(m){const h=Math.floor(m/60),r=m%60;return h?h+' h'+(r?' '+String(r).padStart(2,'0'):''):r+' min'}
 function weStatut(x){if(!x)return '';const pb=x.pb||[];return pb.length?(pb.length===1&&pb[0]==='Pas trouvé sur place'?'<span class="pill dep">Pas trouvé</span>':'<span class="pill dep">Défaut signalé</span>'):'<span class="pill seen">Vu · OK</span>'}
 function weGroupes(day){
-  const l=astrJour(day).map(d=>{const st=stayFor(d.plaque,day);return {d,st,pt:d.point||(st||{}).point||'',dep:st&&st.to&&!st.toCaler?st.to:'',x:FAITES.has(d.id)?passageDem(d.id)||{pb:[]}:null}});
+  const l=astrJour(day).map(d=>{const st=sejourAstr(d.plaque,d.point,day);return {d,st,pt:d.point||(st||{}).point||'',dep:st&&st.to&&!st.toCaler?st.to:'',x:FAITES.has(d.id)?passageDem(d.id)||{pb:[]}:null}});
   const g={};l.forEach(v=>{(g[v.pt]=g[v.pt]||[]).push(v)});
   const tri=(a,b)=>(a.dep||'9999').localeCompare(b.dep||'9999')||(+a.d.astreinte||0)-(+b.d.astreinte||0);
   return Object.keys(g).map(pt=>{const vs=g[pt].sort(tri);return {pt,vs,dep:vs.map(v=>v.dep).filter(Boolean).sort()[0]||'',rang:Math.min(...vs.map(v=>+v.d.astreinte||99))}})
@@ -1573,7 +1590,7 @@ function vSearch(){
 function vSheet(){
   if(sheet.search)return vSearch();
   if(sheet.asks)return vAsks();
-  const p=sheet.plaque;const v=vehicle(p)||{plaque:p,events:[]};const now=DAY===TODAY;const st=stayFor(p,DAY);
+  const p=sheet.plaque;const v=vehicle(p)||{plaque:p,events:[]};const now=DAY===TODAY;const st0=stayFor(p,DAY),stA=!st0&&now?astrDem(p):null,st=st0||(stA&&sejourAstr(p,stA.point,stA.date));
   const done=passageOf(p);const mine=done&&done.by===S.who;
   /* v59 : un autre runner est repassé après moi : je peux quand même annuler ma propre validation du jour */
   const moi=!mine&&done&&doneToday().find(x=>x.plaque===p&&x.cle===done.cle);
@@ -1625,7 +1642,7 @@ function vSheet(){
   const choix=ICI_CHOIX[p]||'',labo=LABO_CHOIX[p]||'',bo=st?st.point:ouBO(p);
   const cands=(()=>{const m=S.myPoints.filter(x=>LOCAL.includes(x)&&x!==bo);return m.length?m:LOCAL.filter(x=>x!==bo)})();
   /* pas de question pour un véhicule attendu sur mes points (retour en avance) ou demain sur l'un d'eux */
-  const demander=now&&!choix&&!labo&&!(st&&st.ici)&&(sheet.autre||(!st&&!!bo&&!done&&!S.myPoints.includes(bo)&&!stayFor(p,plusDays(1))));
+  const demander=now&&!stA&&!choix&&!labo&&!(st&&st.ici)&&(sheet.autre||(!st&&!!bo&&!done&&!S.myPoints.includes(bo)&&!stayFor(p,plusDays(1))));
   const iciNote=choix?`<div class="imp ici"><div class="imp-h"><i></i>Vu sur un autre point</div><div class="imp-t">Tu le vois à <b>${esc(full(choix))}</b>. Le BO le met à <b>${esc(full(bo||'?'))}</b>. Valide-le ici : le service parc sera prévenu.</div></div>`
     :labo?`<div class="imp ici"><div class="imp-h"><i></i>Sur son point</div><div class="imp-t">Tu es à <b>${esc(full(labo))}</b>, là où le BO le met. Vérifie-le comme d'habitude.</div></div>`
     :demander?`<div class="imp ici"><div class="imp-h"><i></i>${st?'Sur un autre point ?':'Pas prévu sur ton point'}</div><div class="imp-t">Le BO met ce véhicule à <b>${esc(full(bo))}</b>. ${cands.length===1?'Il est devant toi, à '+esc(full(cands[0]))+' ?':'Il est devant toi ? Sur quel point ?'}</div></div>`
@@ -1646,7 +1663,7 @@ function vSheet(){
       ${st?`<div class="card0 times">${st.fromCaler?calerCell('Arrivée','de '+st.fromCity,st.fromCalerP,1):timeCell('Arrivée',st.from,st.fromCity?'de '+st.fromCity:'','Déjà sur place')}<div class="sep" aria-hidden="true"></div>${st.toCaler?calerCell('Départ','vers '+st.toCity,st.toCalerP,0):timeCell('Départ',st.to,st.toCity?'vers '+st.toCity:'','Non planifié')}</div>`:''}
       ${st?st.impros.map(improBlock).join(''):''}
       ${aVenir(p).filter(i=>!(st&&st.impros.includes(i))).map(aVenirBlock).join('')}
-      ${now&&st&&!st.ici&&!choix?'<button type="button" class="btn wide ghosttxt" id="autreBtn">Il est sur un autre point ?</button>':''}
+      ${now&&st&&!stA&&!st.ici&&!choix?'<button type="button" class="btn wide ghosttxt" id="autreBtn">Il est sur un autre point ?</button>':''}
       ${ev.length?`<div class="card0"><div class="sec"><div class="mlabel">Déjà signalé dans le BO</div><ul class="evl">${ev.map(e=>`<li><span>${esc(e.label)}</span>${e.status?`<em>${esc(e.status)}</em>`:''}</li>`).join('')}</ul></div></div>`:''}
     </div>
     <div class="sh-foot pad">
