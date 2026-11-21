@@ -1534,10 +1534,9 @@ function vWeekend(){
   const j=S.weJour,n=dayDiff(j),jour=fullDay(j).split(' ')[0];
   const quand=n===0?"aujourd'hui":n===1?'demain':n===-1?'hier':'';
   const sel=js.length?`<div class="we-jours" role="group" aria-label="Jour de la liste">${js.map(x=>{const r=reste(x),on=x===j;
-    return `<button type="button" class="we-jour${on?' on':''}" data-wejour="${x}" aria-pressed="${on}"><b>${esc(fullDay(x).split(' ').slice(0,2).join(' '))}</b><small>${r?plural(r,'véhicule')+' à voir':'✓ fini'}</small></button>`}).join('')}</div>`:'';
-  const titre=`<div class="we-titre"><span>Liste du</span><b>${esc(fullDay(j).replace(/ \d{4}$/,'').toLowerCase())}</b>${quand?`<small>${quand}</small>`:''}</div>`;
+    return `<button type="button" class="we-jour${on?' on':''}" data-wejour="${x}" aria-pressed="${on}"><b>${esc(fullDay(x))}</b><small>${r?plural(r,'véhicule')+' à voir':'✓ fini'}</small></button>`}).join('')}</div>`:'';
   const passe=n<0&&reste(j)?`<div class="we-passe">Pas fini ${esc(jour.toLowerCase())}. Tu peux encore les faire tant qu'ils sont sur place (liste visible jusqu'à lundi 6h).</div>`:'';
-  return sel+titre+passe+weListe(j);
+  return sel+passe+weListe(j); /* v63.29 (Fabian 20/11) : ligne « Liste du samedi 21 novembre demain » retirée, la date complète est sur le bouton */
 }
 function weListe(day){
   const gs=weGroupes(day),all=gs.reduce((a,g)=>a.concat(g.vs),[]),n=all.length,faits=all.filter(v=>v.x).length,reste=n-faits;
@@ -1560,7 +1559,7 @@ function weListe(day){
     ${r&&dep1?`<div class="we-first">Premier départ : <b>${esc(short(dep1.dep).replace(' à ',' '))}</b>${first?' · commence ici':''}</div>`:r&&first?'<div class="we-first">Commence ici</div>':''}
     ${g.vs.map(v=>{const d=v.d,vh=vehicle(d.plaque)||{},cons=d.consigne&&d.consigne!=='Passer voir ce véhicule.'?d.consigne:'';
       return rowHtml(d.plaque,`<span class="row-t"><span class="plate">${esc(d.plaque)}</span>${v.x?weStatut(v.x):'<span class="pill unseen">≈ 30 min</span>'}${phPill(d)}${etqPanne(d.plaque,plaquesEnPanne(day),day)}</span>${vh.modele?`<span class="model">${esc(vh.modele)}</span>`:''}${cons?`<span class="consigne">${esc(cons)}</span>`:''}${v.st?timesHtml(v.st)+bloque(d,v.st):'<span class="spec">'+(day===TODAY?'Pas dans le planning aujourd\'hui':day===DEMAIN?'Pas dans le planning demain':'Pas dans le planning ce jour-là')+'</span>'+bloque(d,v.st)}`,(v.x?'we-vu':'')+(v===dep1?' dep1':''))}).join('')}
-  </section>`}).join('')+(retour&&reste?`<div class="we-chg">→ Retour${chez?' vers '+esc(full(chez)):''} · 1 h</div>`:'')+(reste?'<p class="meta" style="text-align:center">Appuie sur un véhicule pour faire le contrôle, comme d\'habitude.</p>':'');
+  </section>`}).join('')+(retour&&reste?`<div class="we-chg">→ Retour${dernier?' depuis '+esc(full(dernier)):''} · 1 h</div>`:'')+(reste?'<p class="meta" style="text-align:center">Appuie sur un véhicule pour faire le contrôle, comme d\'habitude.</p>':'');
 }
 function vDone(){
   const d=doneOn(DONE_DAY);const pb=d.filter(x=>x.pb.length).length;const today=DONE_DAY===TODAY;

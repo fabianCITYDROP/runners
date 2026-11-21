@@ -128,6 +128,7 @@ button.bo-r{cursor:pointer}button.bo-r:hover{background:var(--surface-2)}
 .we-bar i{position:absolute;left:0;top:0;bottom:0;background:var(--accent)}.we-g.orange .we-bar i{background:var(--orange)}.we-g.rouge .we-bar i{background:var(--red)}
 .we-bar b{position:absolute;top:-1px;bottom:-1px;width:2px;background:var(--fg);opacity:.5}
 .pill.we-o{background:var(--orange-soft);color:var(--orange)}.pill.we-r{background:var(--red-soft);color:var(--red)}
+.we-l1{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 8px}.we-inl{font-size:13.5px;font-weight:600;color:var(--orange)}
 .we-msg{font-size:13px;border-radius:8px;padding:8px 10px}.we-msg.o{background:var(--orange-soft);color:var(--orange)}.we-msg.r{background:var(--red-soft);color:var(--red)}
 .we-gh{display:flex;justify-content:space-between;align-items:center;padding:9px 16px;background:var(--surface-2);font-weight:700;font-size:13.5px;border-top:1px solid var(--line)}
 .we-move{padding:6px 16px;font-size:12.5px;font-weight:600;color:var(--blue);background:var(--blue-soft);border-top:1px dashed var(--line-strong)}
@@ -148,6 +149,11 @@ button.bo-r{cursor:pointer}button.bo-r:hover{background:var(--surface-2)}
 .btn{min-height:44px;padding:10px 16px;border-radius:10px;border:1px solid var(--line-strong);background:var(--surface);font-size:14px;font-weight:600;white-space:nowrap}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
 .btn.danger{border-color:var(--warn);color:var(--warn)}
+.modal-fond{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(10,14,12,.55)}
+.modal{width:100%;max-width:420px;padding:20px;border-radius:16px;background:var(--surface);color:var(--fg);box-shadow:0 12px 40px rgba(0,0,0,.35);display:flex;flex-direction:column;gap:10px}
+.modal h2{margin:0;font-size:19px;line-height:1.3}.modal p{margin:0;font-size:15px;line-height:1.45}
+.modal-a{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:6px}
+.btn.danger-plein{background:var(--red);border-color:var(--red);color:var(--surface)}
 .btn.small{min-height:36px;padding:6px 12px;font-size:13px}
 .btn:disabled{opacity:.5;cursor:default}
 .checks{display:flex;flex-wrap:wrap;gap:6px}
@@ -420,7 +426,8 @@ function wePoints(points){const d=[];points.forEach(p=>{if(!d.includes(p))d.push
 function weRetour(points,maison){const d=wePoints(points);return maison!==undefined&&d.length&&d[d.length-1]!==maison?WE_PT:0}
 function weMinutes(points,maison){const d=wePoints(points);return points.length*WE_VEH+Math.max(0,d.length-1)*WE_PT+weRetour(points,maison)}
 function weMaison(prenom){if(!prenom)return undefined;const r=D&&D.runners.find(x=>String(x.prenom).trim().toLowerCase()===String(prenom).trim().toLowerCase());return r?cityV(String(r.points||'').split(/[,;]/)[0]):''}
-function weRetourHtml(points,maison){return weRetour(points,maison)?`<div class="we-move">Retour vers ${maison?esc(nomPt(maison)):'son point'} : + 1 h</div>`:''}
+/* v63.29 (Fabian 20/11) : la ligne nomme le dernier point de la liste, d'où il repart (« Retour depuis Paris-Centre »). Calcul inchangé. */
+function weRetourHtml(points,maison){const d=wePoints(points),der=d[d.length-1];return weRetour(points,maison)?`<div class="we-move">Retour depuis ${der?esc(nomPt(der)):'le dernier point'} : + 1 h</div>`:''}
 function weDuree(m){const h=Math.floor(m/60),r=m%60;if(!h)return r+' min';return h+' h'+(r?' '+String(r).padStart(2,'0'):'')}
 function weZone(m){return m>WE_MAX+WE_MARGE?'rouge':m>WE_MAX?'orange':'vert'}
 /* Samedis et dimanches des 8 prochains jours (aujourd'hui compris) */
@@ -461,9 +468,10 @@ function dispoTxt(plaque,jour,point){
   const l=presenceBO(plaque,jour);const x=l&&l.find(y=>y.p===point);if(!x)return l&&l.length?'Le BO ne le met pas à '+nomPt(point)+' ce jour-là.':'';
   const hh=t=>{const h=Number(t.slice(11,13)),m=t.slice(14,16);return h+'h'+(m==='00'?'':m)};
   const arrive=x.de&&x.de.slice(0,10)===jour,part=x.a&&x.a.slice(0,10)===jour;
-  if(arrive&&part)return 'Sur place seulement de '+hh(x.de)+' à '+hh(x.a)+'.';
-  if(part)return 'Part en location à '+hh(x.a)+' : passer avant (ou la veille au soir).';
-  if(arrive)return 'Arrive à '+hh(x.de)+' : passer après.';
+  if(arrive&&part)return 'Sur place de '+hh(x.de)+' à '+hh(x.a);
+  /* v63.29 (Fabian 20/11) : texte court, sur la ligne de la plaque (« passer avant / après » retiré) */
+  if(part)return 'Part en location à '+hh(x.a);
+  if(arrive)return 'Arrive à '+hh(x.de);
   return '';
 }
 /* Véhicules rangés par point, dans l'ordre d'arrivée des points dans la liste */
@@ -501,7 +509,7 @@ function weCarte(jour){
     return `<section class="card we-c"><div class="card-h we-h ok"><h2>${esc(titre)}</h2><span class="meta">Envoyée à ${esc(run)} · ${faits}/${env.length} fait${faits>1?'s':''}</span></div>
       <div class="card-b">${weJauge(weOrdre(items,jour),weMaison(run))}<div class="meta">Runner d'astreinte : <b>${esc(run)}</b>${par?' · liste envoyée par '+esc(par):''}</div></div>
       ${weGroupes(items,jour).map((g,k)=>`${k?'<div class="we-move">Changement de point : + 1 h</div>':''}<div class="we-gh"><span>${k+1} · ${esc(nomPt(g.p))}</span><span class="meta">${g.l.length} véh. · ${weDuree(g.l.length*WE_VEH)}</span></div>
-        ${g.l.map(i=>`<div class="we-v"><div><span class="plate-t">${esc(i.plaque)}</span> ${weStatut(i.d)}${i.d.consigne?`<div class="meta">${esc(i.d.consigne)}</div>`:''}${i.d.statut==='à faire'?(t=>t?`<div class="we-msg o">${esc(t)}</div>`:'')(dispoTxt(i.plaque,jour,i.point)):''}</div>${i.d.statut==='à faire'&&!ENVOIS.has(i.d.id)?`<button type="button" class="x" data-del="${esc(i.d.id)}" aria-label="Retirer ${esc(i.plaque)}">✕</button>`:''}</div>`).join('')}`).join('')}${weRetourHtml(weOrdre(items,jour),weMaison(run))}
+        ${g.l.map(i=>`<div class="we-v"><div><div class="we-l1"><span class="plate-t">${esc(i.plaque)}</span> ${weStatut(i.d)}${i.d.statut==='à faire'?(t=>t?`<span class="we-inl">· ${esc(t)}</span>`:'')(dispoTxt(i.plaque,jour,i.point)):''}</div>${i.d.consigne?`<div class="meta">${esc(i.d.consigne)}</div>`:''}</div>${i.d.statut==='à faire'&&!ENVOIS.has(i.d.id)?`<button type="button" class="x" data-del="${esc(i.d.id)}" aria-label="Retirer ${esc(i.plaque)}">✕</button>`:''}</div>`).join('')}`).join('')}${weRetourHtml(weOrdre(items,jour),weMaison(run))}
       <div class="card-b">${weAjoutHtml(jour,true)}
       ${afaire.length?(WE_ANNUL===jour?`<div class="actions"><button type="button" class="btn danger" data-weannul="${jour}" data-ok="1">Oui, retirer les ${afaire.length} véhicule${afaire.length>1?'s':''} à faire</button><button type="button" class="btn" data-weannul="">Non</button></div>`:`<button type="button" class="btn danger" data-weannul="${jour}">Annuler la liste</button>`):''}</div></section>`;
   }
@@ -512,7 +520,7 @@ function weCarte(jour){
     <div class="card-b"><div class="field"><span class="lbl we-l">Runner d'astreinte</span><div class="seg exp" role="radiogroup">${runners.map(p=>`<button type="button" role="radio" data-werun="${esc(p)}" data-jour="${jour}" class="${br.runner===p?'on':''}" aria-checked="${br.runner===p}">${esc(p)}</button>`).join('')}</div></div>
     ${weJauge(weOrdre(br.items,jour),weMaison(br.runner))}${weAjoutHtml(jour,false)}</div>
     ${br.items.length?weGroupes(br.items,jour).map((g,k)=>`${k?'<div class="we-move">Changement de point : + 1 h</div>':''}<div class="we-gh"><span>${k+1} · ${esc(nomPt(g.p))}</span><span class="meta">${g.l.length} véh. · ${weDuree(g.l.length*WE_VEH)}</span></div>
-      ${g.l.map(i=>`<div class="we-v"><div><span class="plate-t">${esc(i.plaque)}</span>${i.consigne?`<div class="meta">${esc(i.consigne)}</div>`:''}${i.point?(t=>t?`<div class="we-msg o">${esc(t)}</div>`:'')(dispoTxt(i.plaque,jour,i.point)):''}${!i.point?'<div class="we-msg r">Point inconnu dans le BO : retirez-le et remettez-le en choisissant le point.</div>':''}</div><button type="button" class="x" data-werm="${esc(i.id)}" data-jour="${jour}" aria-label="Retirer ${esc(i.plaque)}">✕</button></div>`).join('')}`).join('')+weRetourHtml(weOrdre(br.items,jour),weMaison(br.runner)):''}
+      ${g.l.map(i=>`<div class="we-v"><div><div class="we-l1"><span class="plate-t">${esc(i.plaque)}</span>${i.point?(t=>t?`<span class="we-inl">· ${esc(t)}</span>`:'')(dispoTxt(i.plaque,jour,i.point)):''}</div>${i.consigne?`<div class="meta">${esc(i.consigne)}</div>`:''}${!i.point?'<div class="we-msg r">Point inconnu dans le BO : retirez-le et remettez-le en choisissant le point.</div>':''}</div><button type="button" class="x" data-werm="${esc(i.id)}" data-jour="${jour}" aria-label="Retirer ${esc(i.plaque)}">✕</button></div>`).join('')}`).join('')+weRetourHtml(weOrdre(br.items,jour),weMaison(br.runner)):''}
     <div class="card-b"><button type="button" class="btn primary we-send" data-wesend="${jour}" ${!br.runner||!br.items.length||ko||sans||envoi?'disabled':''}>${envoi?'Envoi en cours…':br.runner?'Envoyer la liste à '+esc(br.runner):'Choisissez le runner'}</button>
     ${ko?'<div class="meta">Le bouton reste grisé tant que ça dépasse 7 h 30.</div>':''}<button type="button" class="btn small" data-wejeter="${jour}">Jeter ce brouillon</button></div></section>`;
 }
@@ -665,12 +673,24 @@ function vRunners(){
       <div class="link">${esc(url)}</div>
       <div class="acts">
         <button type="button" class="btn small" data-copy="${esc(url)}">Copier le lien</button>
-        ${confirmCode===r.prenom?`<button type="button" class="btn small danger" data-newcode="${esc(r.prenom)}">Confirmer : l'ancien lien ne marchera plus</button><button type="button" class="btn small" data-cancel="1">Annuler</button>`
-        :`<button type="button" class="btn small" data-ask="${esc(r.prenom)}">Nouveau lien</button>`}
+        <button type="button" class="btn small" data-ask="${esc(r.prenom)}">Nouveau lien</button>
       </div>
     </section>`}).join('')}</div>
   <div class="meta no-print">Pour installer l'appli : sur le téléphone du runner, scanner son QR code avec l'appareil photo, puis « Ajouter à l'écran d'accueil ». « Nouveau lien » sert si un téléphone est perdu : l'ancien lien est aussitôt désactivé. Pour retirer un runner, mettre « non » dans la colonne « actif » de l'onglet Runners du Google Sheet.</div>
-  <div class="no-print"><button type="button" class="btn" id="print">Imprimer les QR codes</button></div>`;
+  <div class="no-print"><button type="button" class="btn" id="print">Imprimer les QR codes</button></div>`+confirmLien();
+}
+/* v63.29 (Fabian 20/11) : « Nouveau lien » ouvre une vraie fenêtre de confirmation au milieu de l'écran (avant : le bouton
+   « Confirmer » apparaissait à la même place, un double-clic suffisait). « Annuler » est le choix par défaut (Échap, clic à côté). */
+let CONFIRM_DEPUIS=0;
+function confirmLien(){
+  if(!confirmCode)return '';
+  const n=esc(confirmCode);
+  return `<div class="modal-fond no-print" data-cancel="1"><div class="modal" role="alertdialog" aria-modal="true" aria-labelledby="mT" aria-describedby="mD">
+    <h2 id="mT">Créer un nouveau lien pour ${n} ?</h2>
+    <p id="mD">L'ancien lien ne marchera plus. Il faudra réinstaller l'appli sur son téléphone avec le nouveau QR code.</p>
+    <p class="meta">À faire seulement si son téléphone est perdu ou volé.</p>
+    <div class="modal-a"><button type="button" class="btn" data-cancel="1" id="mNon">Annuler</button><button type="button" class="btn danger-plein" data-newcode="${n}">Oui, créer</button></div>
+  </div></div>`;
 }
 function gate(){
   return `<form class="card gate" id="fCode"><div class="card-b">
@@ -829,6 +849,10 @@ function classeurAstreintes(EJ,lignes){
   return wb}
 
 /* ---------- Événements ---------- */
+/* v63.29 : fenêtre « Nouveau lien » : clic à côté ou Échap = Annuler */
+document.addEventListener('click',e=>{if(confirmCode&&Date.now()-CONFIRM_DEPUIS>600&&e.target.classList&&e.target.classList.contains('modal-fond')){confirmCode='';render()}}); /* pas sur le 2e clic d'un double-clic */
+document.addEventListener('keydown',e=>{if(confirmCode&&e.key==='Escape'){confirmCode='';render()}});
+document.addEventListener('mousedown',e=>{if(confirmCode&&e.target.classList&&e.target.classList.contains('modal-fond'))e.preventDefault()}); /* garde « Annuler » sélectionné */
 document.addEventListener('click',async e=>{
   const b=e.target.closest('button');if(!b)return;const d=b.dataset;
   if(d.tab){if(tab==='demandes'&&d.tab!=='demandes'&&$('#dPlate')&&($('#dPlate').value.trim()||$('#dText').value.trim()))BROUILLON=lireForm(); /* seulement s'il y a quelque chose à garder (sinon la mise à jour auto était bloquée) */tab=d.tab;confirmCode='';render();return}
@@ -871,9 +895,9 @@ document.addEventListener('click',async e=>{
     act('demande_suppr',{id}).then(r=>{RETRAIT.delete(id);if(r&&r.erreur==='déjà faite par un runner'){toast((x?x.plaque+' : ':'')+'un runner vient de la faire, elle est dans « Retours runners ».');load();return}
       if(r&&r.erreur){toast((x?x.plaque+' ':'')+'non retiré : '+(r.erreur==='réseau'?'pas de réseau':r.erreur)+'. Réessayez.')}else if(x)x.statut='supprimée';render()});return}
   if(d.copy){try{await navigator.clipboard.writeText(d.copy);toast('Lien copié.')}catch(err){toast('Copie impossible : sélectionnez le lien à la main.')}return}
-  if(d.ask){confirmCode=d.ask;render();return}
+  if(d.ask){confirmCode=d.ask;CONFIRM_DEPUIS=Date.now();render();const n=$('#mNon');if(n)n.focus();return}
   if(d.cancel){confirmCode='';render();return}
-  if(d.newcode){b.disabled=true;const r=await act('runner_code',{prenom:d.newcode});confirmCode='';render();if(!r.erreur)toast('Nouveau lien créé pour '+d.newcode+'. Réinstallez l\'appli sur son téléphone.');return}
+  if(d.newcode){if(d.newcode!==confirmCode||Date.now()-CONFIRM_DEPUIS<600)return; /* pas de création sur un double-clic */b.disabled=true;const r=await act('runner_code',{prenom:d.newcode});confirmCode='';render();if(!r.erreur)toast('Nouveau lien créé pour '+d.newcode+'. Réinstallez l\'appli sur son téléphone.');return}
 });
 document.addEventListener('input',e=>{if(e.target.id==='dPlate'){tirets(e);plateHint()}if(e.target.id==='dDate'||e.target.id==='dFin')recapDate();if(e.target.id==='iDe'||e.target.id==='iA')creneauMain()});
 document.addEventListener('change',async e=>{
